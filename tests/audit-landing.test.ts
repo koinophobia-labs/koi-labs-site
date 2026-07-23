@@ -47,7 +47,7 @@ test("intake route rejects honeypot submissions before touching storage", async 
   const form = new FormData();
   form.set("companyWebsite", "https://spam.example.com");
   const response = await intakeRoute(
-    new NextRequest("https://example.com/api/intake", { method: "POST", body: form }),
+    new NextRequest("https://example.com/api/intake", { method: "POST", body: form, headers: { "sec-fetch-site": "same-origin" } }),
   );
   assert.equal(response.status, 400);
 });
@@ -56,7 +56,7 @@ test("intake route returns field errors for an incomplete submission", async () 
   const form = new FormData();
   form.set("name", "Missing Everything Else");
   const response = await intakeRoute(
-    new NextRequest("https://example.com/api/intake", { method: "POST", body: form }),
+    new NextRequest("https://example.com/api/intake", { method: "POST", body: form, headers: { "sec-fetch-site": "same-origin" } }),
   );
   assert.equal(response.status, 422);
   const payload = await response.json();

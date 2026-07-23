@@ -13,10 +13,10 @@ import {
 } from "@/lib/acquisition/intake";
 import { consumeAuditRateLimit } from "@/lib/audits";
 import { isTrustedMutationRequest } from "@/lib/security/origin";
+import { resolveIntakeIdempotencyKey, shouldSendLeadEmail, trustedClientKey } from "@/lib/acquisition/intake-abuse";
 
-function clientKey(request: NextRequest) { return (request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip") || "unknown").trim(); }
 async function publicRateLimited(request: NextRequest) {
-  const key = clientKey(request);
+  const key = trustedClientKey(request);
   if (process.env.DATABASE_URL) {
     try {
       const actorKey = `intake:${createHash("sha256").update(key).digest("hex").slice(0, 32)}`;
@@ -39,17 +39,30 @@ export async function POST(request: NextRequest) {
   const parsed = validateIntake(form);
   if (!parsed.input) { log("validation_failed", requestId, { fields: Object.keys(parsed.errors || {}) }); return failure("Please correct the highlighted information and try again.", 422, requestId, { errors: parsed.errors }); }
   const input = parsed.input;
-  const suppliedIdempotencyKey = request.headers.get("idempotency-key")?.trim();
-  const idempotencyKey = input.concierge?.sessionId ? `concierge:${input.concierge.sessionId}` : suppliedIdempotencyKey && suppliedIdempotencyKey.length <= 200 ? suppliedIdempotencyKey : requestId;
+  // SITE-01: the standard form used a fresh per-request id when no concierge
+  // session and no explicit idempotency-key were present, so every resubmit
+  // created a new lead + new email. Fall back to a deterministic content-derived
+  // key within a time window so accidental resubmits fold onto one lead.
+  const idempotencyKey = resolveIntakeIdempotencyKey({
+    conciergeSessionId: input.concierge?.sessionId,
+    suppliedKey: request.headers.get("idempotency-key"),
+    content: { email: input.email, businessName: input.businessName, biggestProblem: input.biggestProblem },
+    nowMs: Date.now(),
+  })
   let saved = false;
   let created = false;
   let leadId: string | undefined;
   try { const result = await storeLead(input, idempotencyKey); saved = Boolean(result.lead); created = result.created; leadId = result.lead.id; }
   catch { log("lead_storage_failed", requestId); }
-  const delivery = await sendLeadEmail(input, leadId);
+  // SITE-01: send the lead email once per lead. Skip it on a confirmed dedupe
+  // (already stored AND not newly created); still send when storage failed so a
+  // lead is never silently lost.
+  const emailThisSubmission = shouldSendLeadEmail(created, saved);
+  const delivery = emailThisSubmission ? await sendLeadEmail(input, leadId) : { ok: true as const };
+  if (!emailThisSubmission) log("email_skipped_duplicate", requestId, { leadId });
   const outcome = intakeOutcome(saved, delivery.ok);
   if (!outcome.ok) { log("persistence_failed", requestId, { providerAccepted: delivery.ok }); return failure(outcome.message, outcome.status, requestId, { mailto: leadMailto(input) }); }
   if (!delivery.ok) log("provider_failed", requestId, { reason: delivery.reason, status: "status" in delivery ? delivery.status : undefined, saved, source: input.source });
-  else log("accepted", requestId, { providerAccepted: true, providerId: delivery.providerId, saved, created, source: input.source });
+  else log("accepted", requestId, { providerAccepted: true, providerId: "providerId" in delivery ? delivery.providerId : undefined, emailSkipped: !emailThisSubmission, saved, created, source: input.source });
   return NextResponse.json({ ok: true, requestId, emailSent: outcome.emailSent, message: outcome.message }, { headers: { "x-request-id": requestId, "cache-control": "no-store", "x-content-type-options": "nosniff" } });
 }
