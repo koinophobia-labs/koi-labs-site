@@ -9,7 +9,7 @@
     "start": "next start",
     "screenshots": "node scripts/capture-screenshots.mjs",
     "lint": "eslint",
-    "test:crm": "tsx --test tests/crm.test.ts tests/crm-routes.test.ts tests/proposals.test.ts tests/audits.test.ts tests/audit-persistence.test.ts tests/audit-crawler.test.ts tests/payments.test.ts tests/audit-landing.test.ts tests/resume.test.ts tests/about.test.ts tests/you-know-ball.test.ts tests/trendi-hero.test.ts",
+    "test:crm": "tsx --test tests/crm.test.ts tests/crm-routes.test.ts tests/proposals.test.ts tests/audits.test.ts tests/audit-persistence.test.ts tests/audit-crawler.test.ts tests/payments.test.ts tests/audit-landing.test.ts tests/resume.test.ts tests/about.test.ts tests/you-know-ball.test.ts tests/trendi-hero.test.ts tests/redaction.test.ts",
     "test:ykb": "tsx --test tests/you-know-ball.test.ts",
     "test:trendi": "tsx --test tests/trendi-hero.test.ts",
     "test:commercial": "tsx --test tests/commercial.test.ts",

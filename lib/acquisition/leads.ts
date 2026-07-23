@@ -1,5 +1,6 @@
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import type { ConciergeLeadData } from "@/lib/concierge/types";
+import { redactSecrets } from "@/lib/security/redaction";
 
 export const leadStatuses = ["new", "contacted", "replied", "meeting", "proposal", "won", "lost"] as const;
 export const leadOutcomes = ["open", "won", "lost"] as const;
@@ -52,14 +53,52 @@ export function leadDedupeKey(idempotencyKey: string) {
   return Buffer.from(idempotencyKey.trim()).toString("base64url");
 }
 
+/**
+ * SITE-03: mask obvious secrets in visitor free-text before it is persisted to
+ * crm_leads or placed in the lead email. Only free-text fields are touched;
+ * structured/routing fields (name, email, recommendation, confidence, scores,
+ * sessionId) are left intact so deterministic routing and the concierge
+ * signature — both already computed upstream — are preserved. Returns a NEW
+ * object; never mutates the caller's input.
+ */
+export function redactLeadFreeText(input: LeadInput): LeadInput {
+  const redacted: LeadInput = {
+    ...input,
+    biggestProblem: redactSecrets(input.biggestProblem),
+    notes: input.notes ? redactSecrets(input.notes) : input.notes,
+  };
+  const concierge = input.concierge;
+  if (concierge) {
+    redacted.concierge = {
+      ...concierge,
+      visitorPrimaryProblem: redactSecrets(concierge.visitorPrimaryProblem),
+      desiredOutcome: redactSecrets(concierge.desiredOutcome),
+      currentTools: concierge.currentTools.map((tool) => redactSecrets(tool)),
+      qualificationSummary: redactSecrets(concierge.qualificationSummary),
+      recommendationReasons: concierge.recommendationReasons.map((reason) => redactSecrets(reason)),
+      answers: {
+        ...concierge.answers,
+        primaryProblem: redactSecrets(concierge.answers.primaryProblem),
+        branchContext: redactSecrets(concierge.answers.branchContext),
+        impact: redactSecrets(concierge.answers.impact),
+        currentTools: redactSecrets(concierge.answers.currentTools),
+        desiredOutcome: redactSecrets(concierge.answers.desiredOutcome),
+      },
+    };
+  }
+  return redacted;
+}
+
 export async function storeLead(input: LeadInput, idempotencyKey = crypto.randomUUID(), db: Queryable = database()): Promise<{ lead: LeadRecord; created: boolean }> {
   const id = crypto.randomUUID();
+  // SITE-03: persist redacted free-text, never the raw visitor paste.
+  const safe = redactLeadFreeText(input);
   const result = await db.query(`
     insert into crm_leads (id, dedupe_key, source, name, business_name, email, phone, website_or_social, industry, service_interest, budget_range, timeline, biggest_problem, notes, concierge_data)
     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb)
     on conflict (dedupe_key) do update set updated_at = crm_leads.updated_at
     returning *, (xmax = 0) as created
-  `, [id, leadDedupeKey(idempotencyKey), input.source || "website intake", input.name, input.businessName, input.email.toLowerCase(), input.phone || "", input.websiteOrSocial, input.industry, input.serviceInterest, input.budgetRange || "", input.timeline, input.biggestProblem, input.notes || "", JSON.stringify(input.concierge || {})]);
+  `, [id, leadDedupeKey(idempotencyKey), safe.source || "website intake", safe.name, safe.businessName, safe.email.toLowerCase(), safe.phone || "", safe.websiteOrSocial, safe.industry, safe.serviceInterest, safe.budgetRange || "", safe.timeline, safe.biggestProblem, safe.notes || "", JSON.stringify(safe.concierge || {})]);
   return { lead: map(result.rows[0]), created: Boolean(result.rows[0].created) };
 }
 

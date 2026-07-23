@@ -1,4 +1,4 @@
-import { type LeadInput } from "@/lib/acquisition/leads";
+import { type LeadInput, redactLeadFreeText } from "@/lib/acquisition/leads";
 import { serviceLabel } from "@/lib/concierge/questions";
 import { deterministicQualificationSummary, scoreConcierge, splitTools } from "@/lib/concierge/routing";
 import { verifyConciergeEvaluation } from "@/lib/concierge/signing";
@@ -100,13 +100,17 @@ function recommendationText(input: LeadInput) {
   return `\n\nConcierge qualification:\nRecommended service: ${serviceLabel(concierge.recommendedService)}\nConfidence: ${Math.round(concierge.recommendationConfidence * 100)}%\nSource: ${concierge.recommendationSource}\nHuman review: ${concierge.requiresHumanReview ? "Required" : "Standard review"}\nSummary: ${concierge.qualificationSummary}\nReasons:\n${concierge.recommendationReasons.map((reason) => `- ${reason}`).join("\n")}\nCurrent tools: ${concierge.currentTools.join(", ") || "Not provided"}`;
 }
 
-export function formatLeadEmailText(input: LeadInput, leadId?: string) {
+export function formatLeadEmailText(rawInput: LeadInput, leadId?: string) {
+  // SITE-03: mask obvious secrets before they reach Blake's inbox.
+  const input = redactLeadFreeText(rawInput);
   const crmLink = leadId ? `\nCRM: ${(process.env.NEXT_PUBLIC_SITE_URL || "https://koinophobialabs.com").replace(/\/$/, "")}/crm/leads/${encodeURIComponent(leadId)}` : "";
   return `New Koinophobia Labs lead\n\nName: ${input.name}\nBusiness name: ${input.businessName}\nEmail: ${input.email}\nPhone: ${input.phone || "Not provided"}\nWebsite/social: ${input.websiteOrSocial}\nIndustry: ${input.industry}\nService interest: ${input.serviceInterest}\nBudget range: ${input.budgetRange || "Not provided"}\nTimeline: ${input.timeline}\n\nBiggest problem:\n${input.biggestProblem}\n\nNotes:\n${input.notes || "Not provided"}\n\nSource: ${input.source || "website intake"}${recommendationText(input)}${crmLink}`;
 }
 
 function escapeHtml(value: string) { return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
-export function formatLeadEmailHtml(input: LeadInput, leadId?: string) {
+export function formatLeadEmailHtml(rawInput: LeadInput, leadId?: string) {
+  // SITE-03: mask obvious secrets before they reach Blake's inbox.
+  const input = redactLeadFreeText(rawInput);
   const conciergeRows = input.concierge ? [["Recommended service", serviceLabel(input.concierge.recommendedService)], ["Rule confidence", `${Math.round(input.concierge.recommendationConfidence * 100)}%`], ["Recommendation source", input.concierge.recommendationSource], ["Human review", input.concierge.requiresHumanReview ? "Required" : "Standard review"]] : [];
   const rows = [["Name", input.name], ["Business name", input.businessName], ["Email", input.email], ["Phone", input.phone || "Not provided"], ["Website/social", input.websiteOrSocial], ["Industry", input.industry], ["Service interest", input.serviceInterest], ["Budget range", input.budgetRange || "Not provided"], ["Timeline", input.timeline], ["Source", input.source || "website intake"], ...conciergeRows];
   const concierge = input.concierge ? `<h2>Concierge qualification</h2><p style="white-space:pre-wrap">${escapeHtml(input.concierge.qualificationSummary)}</p><ul>${input.concierge.recommendationReasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>` : "";
