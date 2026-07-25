@@ -109,11 +109,49 @@ Two requested production variables are not currently configured:
 
 ## Deployment and post-deploy gate
 
-The existing Vercel build script runs `node scripts/migrate-crm.mjs && next build`, so deployment must have the intended production `DATABASE_URL` before the build begins.
+`vercel-build` runs `next build` only. Vercel preview, branch, and production
+builds must never execute schema migrations based on an inherited
+`DATABASE_URL`.
 
-Migration `007` is additive and backward compatible with the currently deployed application: it adds a defaulted JSONB column and indexes, while the old application neither reads nor writes that column. The new application is not safe to serve before the migration because every intake insert includes `concierge_data`. The existing `vercel-build` order is therefore the correct sequence: migrate first, build the new artifact second, and only activate it after the build succeeds. A failed migration prevents the new deployment from replacing the current one.
+Migrations are a separate, guarded release action. The production database must
+be identified by its independently supplied Neon compute endpoint ID, expected
+database name, and approved migration role. Application traffic may use a pooled
+URL, but the migration operator must supply the direct URL through the approved
+secret manager. From an approved operator environment, run:
 
-The three indexes use regular `CREATE INDEX`, so they can briefly block writes while each index is built. The production `crm_leads` row count was not inspected. Run the deployment during a low-write window if that table has grown materially; do not bypass `vercel-build` or deploy the new artifact before migration completion.
+```bash
+ALLOW_DATABASE_MIGRATIONS=true \
+DATABASE_PROVIDER=neon \
+TARGET_DATABASE_ENVIRONMENT=production \
+EXPECTED_NEON_ENDPOINT_ID=ep-approved-production-id \
+EXPECTED_DATABASE_NAME=approved_database_name \
+EXPECTED_DATABASE_ROLE=approved_migration_role \
+DATABASE_URL_UNPOOLED='postgresql://…direct-host…/approved_database_name?sslmode=require' \
+npm run db:migrate-crm
+```
+
+The runner validates the direct Neon endpoint and URL database before
+connecting, then verifies the connected database, role, writable status,
+recovery status, and application baseline before the first migration
+transaction. It applies each migration transactionally, rolls back and stops on
+failure, and logs only safe environment labels and migration filenames. No
+custom database setting or elevated Neon permission is required. See
+`docs/DATABASE_RELEASE_BOUNDARY.md`.
+
+Migrations `007` and `008` are additive and backward compatible with the prior
+application. The new application is not safe to serve before its required
+columns exist, so use this order:
+
+1. Confirm backup.
+2. Verify the intended database identity.
+3. Run the explicit guarded migration command.
+4. Verify schema.
+5. Deploy application code.
+6. Run controlled smoke verification.
+
+The indexes use regular `CREATE INDEX`, so they can briefly block writes while
+each index is built. Run the explicit migration during a low-write window if
+the affected tables have grown materially.
 
 After confirming the environment and database target, use the repository's PR workflow:
 
@@ -121,9 +159,11 @@ After confirming the environment and database target, use the repository's PR wo
 npm ci
 npm run test:concierge
 npm run test:crm
+npm run test:migrations
 npm run build
-# Push codex/ai-project-concierge, open a PR to main, and merge after checks pass.
-# The Vercel Git integration then runs vercel-build and applies migration 007.
+# Apply migrations deliberately with the guarded command before deployment.
+# Push the release branch, open a PR to main, and merge after checks pass.
+# The Vercel Git integration builds application code only.
 ```
 
 Do not use a Vercel CLI production promotion for this repository. Its recorded deployment guardrail requires production to remain traceable to `main` through the Git integration.
@@ -132,8 +172,9 @@ Then complete one real-provider concierge recommendation, submit one controlled 
 
 ## Remaining launch risks
 
-- The committed feature branch is local and has not been pushed or merged to `main`.
-- GitHub CLI authentication is currently invalid and must be restored before the branch and draft PR can be published.
+- Draft PR #40 remains unmerged pending release-boundary review.
+- The production database identity marker must be configured and verified
+  before the next explicit production migration.
 - `CONCIERGE_SIGNING_SECRET` and `NEXT_PUBLIC_SITE_URL` must be added to the Vercel production environment before merge.
 - Production migration and provider/email smoke checks are the only blocking launch gates identified.
 - Manual screen-reader review remains advisable even though automated accessibility checks pass.

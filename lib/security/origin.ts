@@ -12,7 +12,11 @@ export function isTrustedMutationRequest(request: NextRequest) {
 
   const rawOrigin = request.headers.get("origin");
   const origin = normalizedOrigin(rawOrigin);
-  if (!origin) return !rawOrigin;
+  // SITE-02: a request that carries NEITHER a usable Origin NOR a sec-fetch-site
+  // header is not a real same-origin browser submission (browsers always send at
+  // least one) — it is a scripted/curl client. Treat it as untrusted instead of
+  // trusting the absence of an Origin header.
+  if (!origin) return false;
 
   const allowed = new Set<string>([request.nextUrl.origin]);
   const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();

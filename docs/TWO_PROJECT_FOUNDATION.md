@@ -77,6 +77,7 @@ retire).
 - Production deploys from `main` via the git integration only. **No
   `vercel deploy`/CLI promotions** — that is what caused the divergent
   production this sprint repaired.
-- `vercel-build` runs DB migrations for the studio app; never wire
-  migrations into the dev app's build.
+- `vercel-build` is application-build-only. Database migrations are a separate,
+  explicitly approved release action with target and connected-database
+  identity checks. Never wire migrations into either app's build.
 - The dev app must not receive CRM/Stripe/Resend/DB env vars.

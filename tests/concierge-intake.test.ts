@@ -134,7 +134,7 @@ test("CRM persistence writes the concierge envelope to JSONB", async () => {
 
 test("the versioned concierge migration is included in the migration runner", () => {
   const migration = readFileSync("db/007_ai_project_concierge.sql", "utf8");
-  const runner = readFileSync("scripts/migrate-crm.mjs", "utf8");
+  const runner = readFileSync("scripts/database-migrations.mjs", "utf8");
   assert.match(migration, /add column if not exists concierge_data jsonb/i);
   assert.match(migration, /create unique index/i);
   assert.match(runner, /007_ai_project_concierge\.sql/);
