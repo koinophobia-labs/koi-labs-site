@@ -226,6 +226,11 @@ NEXT_PUBLIC_SITE_URL=https://koinophobialabs.com
 
 # Deliberate migration invocation only; leave unset during builds/runtime.
 ALLOW_DATABASE_MIGRATIONS=
+DATABASE_PROVIDER=
+DATABASE_URL_UNPOOLED=
+EXPECTED_NEON_ENDPOINT_ID=
+EXPECTED_DATABASE_NAME=
+EXPECTED_DATABASE_ROLE=
 TARGET_DATABASE_ENVIRONMENT=
 
 # Optional AI enhancement
@@ -252,9 +257,11 @@ npm run dev
 ```
 
 The local override is restricted to a `development` or `test` target and a
-loopback PostgreSQL host. Shared databases require the non-secret
-`koinophobia.environment` database label and an exact target match. Vercel
-builds never execute migrations. See `docs/DATABASE_RELEASE_BOUNDARY.md`.
+loopback PostgreSQL host. Shared Neon databases require an independently
+supplied endpoint ID, the direct unpooled URL, the expected database name, the
+approved migration role, and an exact target match. Application traffic may
+continue using its pooled `DATABASE_URL`. Vercel builds never execute
+migrations. See `docs/DATABASE_RELEASE_BOUNDARY.md`.
 
 For UI-only local evaluation, the concierge route works without a database or
 AI key. Final intake persistence requires the database.

@@ -1,6 +1,5 @@
 import fs from "node:fs";
 
-export const DATABASE_ENVIRONMENT_SETTING = "koinophobia.environment";
 export const MIGRATION_FILES = Object.freeze([
   "001_crm_leads.sql",
   "002_crm_proposals.sql",
@@ -12,6 +11,7 @@ export const MIGRATION_FILES = Object.freeze([
   "008_founder_sales_packet.sql",
 ]);
 
+const DATABASE_PROVIDER = "neon";
 const ALLOWED_ENVIRONMENTS = new Set([
   "development",
   "preview",
@@ -20,6 +20,15 @@ const ALLOWED_ENVIRONMENTS = new Set([
 ]);
 const LOCAL_ENVIRONMENTS = new Set(["development", "test"]);
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+const REQUIRED_SSL_MODES = new Set(["require", "verify-ca", "verify-full"]);
+const NEON_ENDPOINT_PATTERN = /^ep-[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const REQUIRED_BASELINE_COLUMNS = Object.freeze([
+  "dedupe_key",
+  "email",
+  "id",
+  "source",
+  "status",
+]);
 
 class MigrationSafetyError extends Error {
   constructor(code, message) {
@@ -33,15 +42,88 @@ function refuse(code, message) {
   throw new MigrationSafetyError(code, message);
 }
 
-function databaseHost(databaseUrl) {
+function parseDatabaseUrl(databaseUrl, errorCode, errorMessage) {
   try {
     const parsed = new URL(databaseUrl);
     if (parsed.protocol !== "postgres:" && parsed.protocol !== "postgresql:") {
-      return null;
+      refuse(errorCode, errorMessage);
     }
-    return parsed.hostname;
+    return parsed;
   } catch {
-    return null;
+    refuse(errorCode, errorMessage);
+  }
+}
+
+function parseDatabaseName(parsedUrl) {
+  if (
+    !parsedUrl.pathname.startsWith("/") ||
+    parsedUrl.pathname.length === 1 ||
+    parsedUrl.pathname.slice(1).includes("/")
+  ) {
+    refuse(
+      "DATABASE_NAME_INVALID",
+      "The direct migration URL must select exactly one database.",
+    );
+  }
+
+  try {
+    return decodeURIComponent(parsedUrl.pathname.slice(1));
+  } catch {
+    refuse(
+      "DATABASE_NAME_INVALID",
+      "The direct migration URL must contain a valid database name.",
+    );
+  }
+}
+
+function validateNeonMigrationUrl(databaseUrl, expectedEndpointId, expectedDatabaseName) {
+  const parsed = parseDatabaseUrl(
+    databaseUrl,
+    "DATABASE_URL_UNPOOLED_INVALID",
+    "DATABASE_URL_UNPOOLED must be a valid PostgreSQL URL.",
+  );
+
+  if (!REQUIRED_SSL_MODES.has(parsed.searchParams.get("sslmode") ?? "")) {
+    refuse(
+      "DATABASE_TLS_REQUIRED",
+      "DATABASE_URL_UNPOOLED must require PostgreSQL TLS.",
+    );
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  if (!hostname.endsWith(".neon.tech")) {
+    refuse(
+      "DATABASE_PROVIDER_HOST_MISMATCH",
+      "DATABASE_URL_UNPOOLED must use a Neon endpoint.",
+    );
+  }
+
+  const hostEndpointId = hostname.split(".")[0] ?? "";
+  if (hostEndpointId.endsWith("-pooler")) {
+    refuse(
+      "POOLED_DATABASE_URL_REFUSED",
+      "Database migrations require a direct Neon connection, not a pooled connection.",
+    );
+  }
+  if (!NEON_ENDPOINT_PATTERN.test(hostEndpointId)) {
+    refuse(
+      "NEON_ENDPOINT_INVALID",
+      "The direct migration URL does not contain a valid Neon endpoint identity.",
+    );
+  }
+  if (hostEndpointId !== expectedEndpointId) {
+    refuse(
+      "NEON_ENDPOINT_MISMATCH",
+      "The direct migration URL does not match the approved Neon endpoint identity.",
+    );
+  }
+
+  const urlDatabaseName = parseDatabaseName(parsed);
+  if (urlDatabaseName !== expectedDatabaseName) {
+    refuse(
+      "DATABASE_NAME_MISMATCH",
+      "The direct migration URL does not match the approved database name.",
+    );
   }
 }
 
@@ -60,7 +142,7 @@ export function resolveMigrationPlan(env = process.env) {
     );
   }
 
-  const targetEnvironment = env.TARGET_DATABASE_ENVIRONMENT?.trim() ?? "";
+  const targetEnvironment = env.TARGET_DATABASE_ENVIRONMENT ?? "";
   if (!targetEnvironment) {
     refuse(
       "TARGET_REQUIRED",
@@ -74,7 +156,7 @@ export function resolveMigrationPlan(env = process.env) {
     );
   }
 
-  const vercelEnvironment = env.VERCEL_ENV?.trim() ?? "";
+  const vercelEnvironment = env.VERCEL_ENV ?? "";
   if (vercelEnvironment && !ALLOWED_ENVIRONMENTS.has(vercelEnvironment)) {
     refuse(
       "RUNTIME_ENVIRONMENT_INVALID",
@@ -91,12 +173,7 @@ export function resolveMigrationPlan(env = process.env) {
     );
   }
 
-  const databaseUrl = env.DATABASE_URL?.trim() ?? "";
-  if (!databaseUrl) {
-    refuse("DATABASE_URL_REQUIRED", "DATABASE_URL is required.");
-  }
-
-  const localOverrideValue = env.ALLOW_UNMARKED_LOCAL_DATABASE?.trim() ?? "";
+  const localOverrideValue = env.ALLOW_UNMARKED_LOCAL_DATABASE ?? "";
   if (localOverrideValue && localOverrideValue !== "true") {
     refuse(
       "LOCAL_OVERRIDE_INVALID",
@@ -112,18 +189,88 @@ export function resolveMigrationPlan(env = process.env) {
         "The unmarked local database override is restricted to development or test targets.",
       );
     }
-    const host = databaseHost(databaseUrl);
-    if (!host || !LOOPBACK_HOSTS.has(host)) {
+    const databaseUrl = env.DATABASE_URL ?? "";
+    if (!databaseUrl) {
+      refuse(
+        "LOCAL_DATABASE_URL_REQUIRED",
+        "DATABASE_URL is required for the explicit local database override.",
+      );
+    }
+    const parsed = parseDatabaseUrl(
+      databaseUrl,
+      "LOCAL_DATABASE_URL_INVALID",
+      "The local database override requires a valid PostgreSQL URL.",
+    );
+    if (!LOOPBACK_HOSTS.has(parsed.hostname)) {
       refuse(
         "LOCAL_OVERRIDE_HOST_REFUSED",
         "The unmarked local database override requires a loopback PostgreSQL host.",
       );
     }
+
+    return {
+      allowUnmarkedLocalDatabase,
+      databaseUrl,
+      targetEnvironment,
+    };
   }
+
+  if (env.DATABASE_PROVIDER !== DATABASE_PROVIDER) {
+    refuse(
+      "DATABASE_PROVIDER_REQUIRED",
+      "DATABASE_PROVIDER must be neon exactly for shared database migrations.",
+    );
+  }
+
+  const databaseUrl = env.DATABASE_URL_UNPOOLED ?? "";
+  if (!databaseUrl) {
+    refuse(
+      "DATABASE_URL_UNPOOLED_REQUIRED",
+      "DATABASE_URL_UNPOOLED is required for shared database migrations.",
+    );
+  }
+
+  const expectedEndpointId = env.EXPECTED_NEON_ENDPOINT_ID ?? "";
+  if (!expectedEndpointId) {
+    refuse(
+      "EXPECTED_NEON_ENDPOINT_ID_REQUIRED",
+      "EXPECTED_NEON_ENDPOINT_ID must be supplied independently.",
+    );
+  }
+  if (!NEON_ENDPOINT_PATTERN.test(expectedEndpointId)) {
+    refuse(
+      "EXPECTED_NEON_ENDPOINT_ID_INVALID",
+      "EXPECTED_NEON_ENDPOINT_ID is not a valid Neon endpoint identity.",
+    );
+  }
+
+  const expectedDatabaseName = env.EXPECTED_DATABASE_NAME ?? "";
+  if (!expectedDatabaseName) {
+    refuse(
+      "EXPECTED_DATABASE_NAME_REQUIRED",
+      "EXPECTED_DATABASE_NAME is required.",
+    );
+  }
+
+  const expectedDatabaseRole = env.EXPECTED_DATABASE_ROLE ?? "";
+  if (!expectedDatabaseRole) {
+    refuse(
+      "EXPECTED_DATABASE_ROLE_REQUIRED",
+      "EXPECTED_DATABASE_ROLE is required.",
+    );
+  }
+
+  validateNeonMigrationUrl(
+    databaseUrl,
+    expectedEndpointId,
+    expectedDatabaseName,
+  );
 
   return {
     allowUnmarkedLocalDatabase,
     databaseUrl,
+    expectedDatabaseName,
+    expectedDatabaseRole,
     targetEnvironment,
   };
 }
@@ -146,7 +293,22 @@ export async function verifyDatabaseIdentity(client, plan, logger = console) {
   let result;
   try {
     result = await client.query(
-      `select current_setting('${DATABASE_ENVIRONMENT_SETTING}', true) as environment_label`,
+      `
+        select
+          current_database()::text as database_name,
+          current_user::text as database_role,
+          current_setting('transaction_read_only') as transaction_read_only,
+          pg_is_in_recovery() as in_recovery,
+          to_regclass('public.crm_leads') is not null as baseline_table_exists,
+          (
+            select count(*)::integer
+            from information_schema.columns
+            where table_schema = 'public'
+              and table_name = 'crm_leads'
+              and column_name = any($1::text[])
+          ) as baseline_column_count
+      `,
+      [REQUIRED_BASELINE_COLUMNS],
     );
   } catch {
     refuse(
@@ -155,34 +317,57 @@ export async function verifyDatabaseIdentity(client, plan, logger = console) {
     );
   }
 
-  const environmentLabel = result?.rows?.[0]?.environment_label;
-  if (!environmentLabel) {
-    if (plan.allowUnmarkedLocalDatabase) {
-      logger.log(
-        `Database identity verified: ${plan.targetEnvironment} (explicit loopback override).`,
-      );
-      return;
-    }
+  const identity = result?.rows?.[0];
+  if (!identity) {
     refuse(
-      "DATABASE_IDENTITY_MISSING",
-      `Connected database has no ${DATABASE_ENVIRONMENT_SETTING} label; no migrations were executed.`,
+      "DATABASE_IDENTITY_UNAVAILABLE",
+      `Unable to verify database identity for ${plan.targetEnvironment}; no migrations were executed.`,
     );
   }
 
-  if (!ALLOWED_ENVIRONMENTS.has(environmentLabel)) {
+  if (identity.transaction_read_only !== "off") {
     refuse(
-      "DATABASE_IDENTITY_INVALID",
-      `Connected database has an unrecognized environment label; no migrations were executed.`,
+      "DATABASE_READ_ONLY_REFUSED",
+      `Connected database is read-only for ${plan.targetEnvironment}; no migrations were executed.`,
     );
   }
-  if (environmentLabel !== plan.targetEnvironment) {
+  if (identity.in_recovery !== false) {
     refuse(
-      "DATABASE_IDENTITY_MISMATCH",
-      `Connected database is labeled ${environmentLabel}, not ${plan.targetEnvironment}; no migrations were executed.`,
+      "DATABASE_RECOVERY_REFUSED",
+      `Connected database is in recovery for ${plan.targetEnvironment}; no migrations were executed.`,
     );
   }
 
-  logger.log(`Database identity verified: ${environmentLabel}.`);
+  if (plan.allowUnmarkedLocalDatabase) {
+    logger.log(
+      `Database identity verified: ${plan.targetEnvironment} (explicit loopback override).`,
+    );
+    return;
+  }
+
+  if (identity.database_name !== plan.expectedDatabaseName) {
+    refuse(
+      "CONNECTED_DATABASE_NAME_MISMATCH",
+      `Connected database does not match the approved ${plan.targetEnvironment} database; no migrations were executed.`,
+    );
+  }
+  if (identity.database_role !== plan.expectedDatabaseRole) {
+    refuse(
+      "CONNECTED_DATABASE_ROLE_MISMATCH",
+      `Connected role does not match the approved ${plan.targetEnvironment} migration role; no migrations were executed.`,
+    );
+  }
+  if (
+    identity.baseline_table_exists !== true ||
+    identity.baseline_column_count !== REQUIRED_BASELINE_COLUMNS.length
+  ) {
+    refuse(
+      "DATABASE_BASELINE_MISMATCH",
+      `Connected database does not contain the expected application baseline for ${plan.targetEnvironment}; no migrations were executed.`,
+    );
+  }
+
+  logger.log(`Database identity verified: ${plan.targetEnvironment}.`);
 }
 
 async function applyMigration(client, name, sql, logger) {

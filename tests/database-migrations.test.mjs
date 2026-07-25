@@ -16,17 +16,30 @@ import {
 } from "../scripts/database-migrations.mjs";
 
 const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+const productionEndpointId = "ep-production-release-1234";
+const productionDatabaseName = "koinophobia";
+const productionDatabaseRole = "release_owner";
 const productionEnvironment = {
   ALLOW_DATABASE_MIGRATIONS: "true",
-  DATABASE_URL: "postgresql://fixture.invalid/release",
+  DATABASE_PROVIDER: "neon",
+  DATABASE_URL_UNPOOLED:
+    `postgresql://${productionDatabaseRole}@${productionEndpointId}.us-east-2.aws.neon.tech/${productionDatabaseName}?sslmode=require`,
+  EXPECTED_DATABASE_NAME: productionDatabaseName,
+  EXPECTED_DATABASE_ROLE: productionDatabaseRole,
+  EXPECTED_NEON_ENDPOINT_ID: productionEndpointId,
   TARGET_DATABASE_ENVIRONMENT: "production",
   VERCEL_ENV: "production",
 };
 
 function fakeClient({
-  environmentLabel = "production",
+  baselineColumnCount = 5,
+  baselineTableExists = true,
+  databaseName = productionDatabaseName,
+  databaseRole = productionDatabaseRole,
   failIdentity = false,
   failOn = "",
+  inRecovery = false,
+  transactionReadOnly = "off",
 } = {}) {
   const queries = [];
   return {
@@ -35,11 +48,20 @@ function fakeClient({
     async query(sql) {
       const text = typeof sql === "string" ? sql : sql.text;
       queries.push(text);
-      if (text.includes("current_setting")) {
+      if (text.includes("current_database()")) {
         if (failIdentity) {
           throw new Error("fixture identity query failure");
         }
-        return { rows: [{ environment_label: environmentLabel }] };
+        return {
+          rows: [{
+            baseline_column_count: baselineColumnCount,
+            baseline_table_exists: baselineTableExists,
+            database_name: databaseName,
+            database_role: databaseRole,
+            in_recovery: inRecovery,
+            transaction_read_only: transactionReadOnly,
+          }],
+        };
       }
       if (failOn && text.includes(failOn)) {
         throw new Error("fixture database failure");
@@ -71,9 +93,7 @@ async function availablePort() {
   return port;
 }
 
-test("preview Vercel builds cannot execute migrations", async () => {
-  assert.equal(packageJson.scripts["vercel-build"], "next build");
-
+async function expectPreconnectRefusal(env, pattern) {
   let connected = false;
   await assert.rejects(
     runMigrations({
@@ -81,15 +101,23 @@ test("preview Vercel builds cannot execute migrations", async () => {
         connected = true;
         return fakeClient();
       },
-      env: {
-        ...productionEnvironment,
-        VERCEL_ENV: "preview",
-      },
+      env,
       logger: quietLogger(),
     }),
-    /disabled inside Vercel preview environments/,
+    pattern,
   );
   assert.equal(connected, false);
+}
+
+test("preview Vercel builds cannot execute migrations", async () => {
+  assert.equal(packageJson.scripts["vercel-build"], "next build");
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      VERCEL_ENV: "preview",
+    },
+    /disabled inside Vercel preview environments/,
+  );
 });
 
 test("ordinary production Vercel builds are application-only", () => {
@@ -97,7 +125,7 @@ test("ordinary production Vercel builds are application-only", () => {
   assert.doesNotMatch(packageJson.scripts["vercel-build"], /migrat|database|sql/i);
 });
 
-test("explicit production migration succeeds with every required guard", async () => {
+test("a direct production Neon endpoint succeeds with every required guard", async () => {
   const client = fakeClient();
   await runMigrations({
     connect: async () => client,
@@ -105,7 +133,11 @@ test("explicit production migration succeeds with every required guard", async (
     logger: quietLogger(),
   });
 
-  assert.match(client.queries[0], /current_setting/);
+  assert.match(client.queries[0], /current_database\(\)/);
+  assert.match(client.queries[0], /current_user/);
+  assert.match(client.queries[0], /transaction_read_only/);
+  assert.match(client.queries[0], /pg_is_in_recovery/);
+  assert.match(client.queries[0], /public\.crm_leads/);
   assert.equal(client.queries.filter((query) => query === "begin").length, 8);
   assert.equal(client.queries.filter((query) => query === "commit").length, 8);
   assert.equal(client.queries.filter((query) => query === "rollback").length, 0);
@@ -114,77 +146,234 @@ test("explicit production migration succeeds with every required guard", async (
 
 test("missing or vague approval refuses before connecting or executing SQL", async () => {
   for (const approval of [undefined, "", "1", "TRUE", "yes"]) {
-    let connected = false;
-    await assert.rejects(
-      runMigrations({
-        connect: async () => {
-          connected = true;
-          return fakeClient();
-        },
-        env: {
-          ...productionEnvironment,
-          ALLOW_DATABASE_MIGRATIONS: approval,
-        },
-        logger: quietLogger(),
-      }),
+    await expectPreconnectRefusal(
+      {
+        ...productionEnvironment,
+        ALLOW_DATABASE_MIGRATIONS: approval,
+      },
       /ALLOW_DATABASE_MIGRATIONS=true exactly/,
     );
-    assert.equal(connected, false);
   }
 });
 
-test("a missing target refuses before connecting or executing SQL", async () => {
-  let connected = false;
-  await assert.rejects(
-    runMigrations({
-      connect: async () => {
-        connected = true;
-        return fakeClient();
-      },
-      env: {
-        ...productionEnvironment,
-        TARGET_DATABASE_ENVIRONMENT: "",
-      },
-      logger: quietLogger(),
-    }),
+test("target and runtime mismatches refuse before connecting", async () => {
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      TARGET_DATABASE_ENVIRONMENT: "",
+    },
     /TARGET_DATABASE_ENVIRONMENT is required/,
   );
-  assert.equal(connected, false);
-});
-
-test("environment mismatch refuses before connecting or executing SQL", async () => {
-  let connected = false;
-  await assert.rejects(
-    runMigrations({
-      connect: async () => {
-        connected = true;
-        return fakeClient();
-      },
-      env: {
-        ...productionEnvironment,
-        TARGET_DATABASE_ENVIRONMENT: "test",
-      },
-      logger: quietLogger(),
-    }),
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      TARGET_DATABASE_ENVIRONMENT: "test",
+    },
     /does not match the allowed runtime environment/,
   );
-  assert.equal(connected, false);
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      VERCEL_ENV: "branch",
+    },
+    /VERCEL_ENV is not a recognized migration environment/,
+  );
 });
 
-test("an unverifiable connection or identity stops before migration SQL", async () => {
+test("the database provider, direct URL, protocol, and TLS are mandatory", async () => {
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      DATABASE_PROVIDER: undefined,
+    },
+    /DATABASE_PROVIDER must be neon exactly/,
+  );
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      DATABASE_URL_UNPOOLED: undefined,
+    },
+    /DATABASE_URL_UNPOOLED is required/,
+  );
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      DATABASE_URL_UNPOOLED:
+        `https://${productionEndpointId}.us-east-2.aws.neon.tech/${productionDatabaseName}?sslmode=require`,
+    },
+    /valid PostgreSQL URL/,
+  );
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      DATABASE_URL_UNPOOLED:
+        `postgresql://${productionDatabaseRole}@${productionEndpointId}.us-east-2.aws.neon.tech/${productionDatabaseName}`,
+    },
+    /must require PostgreSQL TLS/,
+  );
+});
+
+test("a wrong Neon endpoint is refused before connecting", async () => {
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      DATABASE_URL_UNPOOLED:
+        `postgresql://${productionDatabaseRole}@ep-wrong-release-5678.us-east-2.aws.neon.tech/${productionDatabaseName}?sslmode=require`,
+    },
+    /does not match the approved Neon endpoint identity/,
+  );
+});
+
+test("a preview endpoint is refused when production is expected", async () => {
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      DATABASE_URL_UNPOOLED:
+        `postgresql://${productionDatabaseRole}@ep-preview-branch-5678.us-east-2.aws.neon.tech/${productionDatabaseName}?sslmode=require`,
+    },
+    /does not match the approved Neon endpoint identity/,
+  );
+});
+
+test("a pooled Neon hostname is refused before connecting", async () => {
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      DATABASE_URL_UNPOOLED:
+        `postgresql://${productionDatabaseRole}@${productionEndpointId}-pooler.us-east-2.aws.neon.tech/${productionDatabaseName}?sslmode=require`,
+    },
+    /direct Neon connection, not a pooled connection/,
+  );
+});
+
+test("the expected endpoint ID must be supplied independently", async () => {
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      EXPECTED_NEON_ENDPOINT_ID: undefined,
+    },
+    /EXPECTED_NEON_ENDPOINT_ID must be supplied independently/,
+  );
+});
+
+test("the expected database name and migration role are mandatory", async () => {
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      EXPECTED_DATABASE_NAME: undefined,
+    },
+    /EXPECTED_DATABASE_NAME is required/,
+  );
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      EXPECTED_DATABASE_ROLE: undefined,
+    },
+    /EXPECTED_DATABASE_ROLE is required/,
+  );
+});
+
+test("a URL database-name mismatch is refused before connecting", async () => {
+  await expectPreconnectRefusal(
+    {
+      ...productionEnvironment,
+      DATABASE_URL_UNPOOLED:
+        `postgresql://${productionDatabaseRole}@${productionEndpointId}.us-east-2.aws.neon.tech/wrong_database?sslmode=require`,
+    },
+    /does not match the approved database name/,
+  );
+});
+
+test("a connected database-name mismatch refuses before migration SQL", async () => {
+  const client = fakeClient({ databaseName: "wrong_database" });
+  await assert.rejects(
+    runMigrations({
+      connect: async () => client,
+      env: productionEnvironment,
+      logger: quietLogger(),
+    }),
+    /does not match the approved production database/,
+  );
+  assert.equal(client.queries.length, 1);
+  assert.equal(client.queries.includes("begin"), false);
+});
+
+test("a connected role mismatch refuses before migration SQL", async () => {
+  const client = fakeClient({ databaseRole: "application_role" });
+  await assert.rejects(
+    runMigrations({
+      connect: async () => client,
+      env: productionEnvironment,
+      logger: quietLogger(),
+    }),
+    /does not match the approved production migration role/,
+  );
+  assert.equal(client.queries.length, 1);
+  assert.equal(client.queries.includes("begin"), false);
+});
+
+test("read-only and recovery connections refuse before migration SQL", async () => {
+  for (const client of [
+    fakeClient({ transactionReadOnly: "on" }),
+    fakeClient({ inRecovery: true }),
+  ]) {
+    await assert.rejects(
+      runMigrations({
+        connect: async () => client,
+        env: productionEnvironment,
+        logger: quietLogger(),
+      }),
+      /read-only|in recovery/,
+    );
+    assert.equal(client.queries.length, 1);
+    assert.equal(client.queries.includes("begin"), false);
+  }
+});
+
+test("an unexpected application baseline refuses before migration SQL", async () => {
+  for (const client of [
+    fakeClient({ baselineTableExists: false }),
+    fakeClient({ baselineColumnCount: 4 }),
+  ]) {
+    await assert.rejects(
+      runMigrations({
+        connect: async () => client,
+        env: productionEnvironment,
+        logger: quietLogger(),
+      }),
+      /does not contain the expected application baseline/,
+    );
+    assert.equal(client.queries.length, 1);
+    assert.equal(client.queries.includes("begin"), false);
+  }
+});
+
+test("connection and identity failures expose no connection secrets", async () => {
+  const privateEndpoint = "ep-private-fixture-9999";
+  const privateHost = `${privateEndpoint}.us-east-2.aws.neon.tech`;
+  const privateUrlFixture = new URL(
+    `postgresql://${privateHost}/${productionDatabaseName}?sslmode=require`,
+  );
+  privateUrlFixture.username = productionDatabaseRole;
+  privateUrlFixture.password = "fixture-credential";
+  const privateUrl = privateUrlFixture.toString();
+  const privateEnvironment = {
+    ...productionEnvironment,
+    DATABASE_URL_UNPOOLED: privateUrl,
+    EXPECTED_NEON_ENDPOINT_ID: privateEndpoint,
+  };
+
   await assert.rejects(
     runMigrations({
       connect: async () => {
-        throw new Error(
-          "database connection failed at secret-host.invalid with credential do-not-log",
-        );
+        throw new Error(`connection failed at ${privateUrl}`);
       },
-      env: productionEnvironment,
+      env: privateEnvironment,
       logger: quietLogger(),
     }),
     (error) => {
       assert.match(error.message, /Unable to verify database identity/);
-      assert.doesNotMatch(error.message, /password|secret-host/);
+      assert.doesNotMatch(error.message, /fixture-credential|ep-private|neon\.tech|postgresql:\/\//);
       return true;
     },
   );
@@ -193,52 +382,44 @@ test("an unverifiable connection or identity stops before migration SQL", async 
   await assert.rejects(
     runMigrations({
       connect: async () => client,
-      env: productionEnvironment,
+      env: privateEnvironment,
       logger: quietLogger(),
     }),
-    /Unable to verify database identity/,
+    (error) => {
+      assert.match(error.message, /Unable to verify database identity/);
+      assert.doesNotMatch(error.message, /fixture-credential|ep-private|neon\.tech|postgresql:\/\//);
+      return true;
+    },
   );
   assert.equal(client.queries.length, 1);
   assert.equal(client.queries.includes("begin"), false);
 });
 
-test("an unrecognized Vercel environment refuses before connecting", async () => {
-  let connected = false;
-  await assert.rejects(
-    runMigrations({
-      connect: async () => {
-        connected = true;
-        return fakeClient();
-      },
-      env: {
-        ...productionEnvironment,
-        VERCEL_ENV: "branch",
-      },
-      logger: quietLogger(),
-    }),
-    /VERCEL_ENV is not a recognized migration environment/,
+test("successful output exposes only the safe target and migration filenames", async () => {
+  const messages = [];
+  await runMigrations({
+    connect: async () => fakeClient(),
+    env: productionEnvironment,
+    logger: { log: (message) => messages.push(message) },
+  });
+
+  const output = messages.join("\n");
+  assert.match(output, /Database identity verified: production/);
+  assert.match(output, /008_founder_sales_packet\.sql/);
+  assert.doesNotMatch(
+    output,
+    /release_owner|ep-production|neon\.tech|koinophobia|postgresql:\/\//,
   );
-  assert.equal(connected, false);
 });
 
-test("database identity mismatch refuses before the first migration transaction", async () => {
-  const client = fakeClient({ environmentLabel: "preview" });
-  await assert.rejects(
-    runMigrations({
-      connect: async () => client,
-      env: productionEnvironment,
-      logger: quietLogger(),
-    }),
-    /labeled preview, not production/,
-  );
-  assert.equal(client.queries.length, 1);
-  assert.match(client.queries[0], /current_setting/);
-  assert.equal(client.queries.includes("begin"), false);
-});
-
-test("test and development migrations allow an explicit loopback-only override", async () => {
+test("test and development migrations allow an explicit loopback-only path", async () => {
   for (const targetEnvironment of ["test", "development"]) {
-    const client = fakeClient({ environmentLabel: null });
+    const client = fakeClient({
+      baselineColumnCount: 0,
+      baselineTableExists: false,
+      databaseName: "local_fixture",
+      databaseRole: "local_role",
+    });
     await runMigrations({
       connect: async () => client,
       env: {
@@ -253,7 +434,7 @@ test("test and development migrations allow an explicit loopback-only override",
   }
 });
 
-test("the unmarked local override refuses remote and production targets", async () => {
+test("the local override refuses remote and production targets", async () => {
   for (const env of [
     {
       ALLOW_DATABASE_MIGRATIONS: "true",
@@ -268,19 +449,7 @@ test("the unmarked local override refuses remote and production targets", async 
       TARGET_DATABASE_ENVIRONMENT: "production",
     },
   ]) {
-    let connected = false;
-    await assert.rejects(
-      runMigrations({
-        connect: async () => {
-          connected = true;
-          return fakeClient();
-        },
-        env,
-        logger: quietLogger(),
-      }),
-      /override/,
-    );
-    assert.equal(connected, false);
+    await expectPreconnectRefusal(env, /override/);
   }
 });
 
@@ -302,21 +471,14 @@ test("migration failures roll back, identify the file, and stop", async () => {
   );
 });
 
-test("successful output exposes only safe labels and migration filenames", async () => {
-  const messages = [];
-  await runMigrations({
-    connect: async () => fakeClient(),
-    env: {
-      ...productionEnvironment,
-      DATABASE_URL: "postgresql://secret-host.invalid/release?credential=do-not-log",
-    },
-    logger: { log: (message) => messages.push(message) },
-  });
-
-  const output = messages.join("\n");
-  assert.match(output, /Database identity verified: production/);
-  assert.match(output, /008_founder_sales_packet\.sql/);
-  assert.doesNotMatch(output, /password|secret-host|postgresql:\/\//);
+test("the former custom database setting is not required anywhere", () => {
+  const formerSetting = ["koinophobia", "environment"].join(".");
+  const search = spawnSync(
+    "git",
+    ["grep", "-n", formerSetting, "--", ".", ":(exclude)outputs/**"],
+    { encoding: "utf8" },
+  );
+  assert.equal(search.status, 1, search.stdout || search.stderr);
 });
 
 test("migration 008 keeps idempotent guards for all columns and indexes", () => {
@@ -339,7 +501,7 @@ test("migration 008 keeps idempotent guards for all columns and indexes", () => 
 });
 
 test(
-  "an existing PostgreSQL schema containing migration 008 is accepted unchanged",
+  "a real PostgreSQL schema containing migration 008 is accepted unchanged",
   { skip: !commandExists("initdb") || !commandExists("pg_ctl") },
   async () => {
     const clusterDirectory = mkdtempSync(
@@ -370,15 +532,9 @@ test(
 
       const pg = await import("pg");
       const databaseUrl = `postgresql://127.0.0.1:${port}/postgres`;
-      const metadataClient = new pg.default.Client({ connectionString: databaseUrl });
-      await metadataClient.connect();
-      await metadataClient.query(
-        `alter database postgres set "koinophobia.environment" to 'test'`,
-      );
-      await metadataClient.end();
-
       const env = {
         ALLOW_DATABASE_MIGRATIONS: "true",
+        ALLOW_UNMARKED_LOCAL_DATABASE: "true",
         DATABASE_URL: databaseUrl,
         TARGET_DATABASE_ENVIRONMENT: "test",
       };

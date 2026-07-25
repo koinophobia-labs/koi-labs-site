@@ -114,19 +114,28 @@ builds must never execute schema migrations based on an inherited
 `DATABASE_URL`.
 
 Migrations are a separate, guarded release action. The production database must
-carry the non-secret PostgreSQL setting
-`koinophobia.environment=production`. From an approved operator environment,
-run:
+be identified by its independently supplied Neon compute endpoint ID, expected
+database name, and approved migration role. Application traffic may use a pooled
+URL, but the migration operator must supply the direct URL through the approved
+secret manager. From an approved operator environment, run:
 
 ```bash
 ALLOW_DATABASE_MIGRATIONS=true \
+DATABASE_PROVIDER=neon \
 TARGET_DATABASE_ENVIRONMENT=production \
+EXPECTED_NEON_ENDPOINT_ID=ep-approved-production-id \
+EXPECTED_DATABASE_NAME=approved_database_name \
+EXPECTED_DATABASE_ROLE=approved_migration_role \
+DATABASE_URL_UNPOOLED='postgresql://…direct-host…/approved_database_name?sslmode=require' \
 npm run db:migrate-crm
 ```
 
-The runner verifies the connected database label before the first migration
-transaction, applies each migration transactionally, rolls back and stops on
-failure, and logs only safe environment labels and migration filenames. See
+The runner validates the direct Neon endpoint and URL database before
+connecting, then verifies the connected database, role, writable status,
+recovery status, and application baseline before the first migration
+transaction. It applies each migration transactionally, rolls back and stops on
+failure, and logs only safe environment labels and migration filenames. No
+custom database setting or elevated Neon permission is required. See
 `docs/DATABASE_RELEASE_BOUNDARY.md`.
 
 Migrations `007` and `008` are additive and backward compatible with the prior
