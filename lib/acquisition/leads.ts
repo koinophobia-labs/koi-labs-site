@@ -1,5 +1,10 @@
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import type { ConciergeLeadData } from "@/lib/concierge/types";
+import {
+  buildFounderSalesPacket,
+  packetMarksProspect,
+  type FounderSalesPacket,
+} from "@/lib/acquisition/founder-packet";
 import { redactSecrets } from "@/lib/security/redaction";
 
 export const leadStatuses = ["new", "contacted", "replied", "meeting", "proposal", "won", "lost"] as const;
@@ -12,6 +17,8 @@ export type LeadInput = {
   websiteOrSocial: string; industry: string; serviceInterest: string;
   budgetRange?: string; timeline: string; biggestProblem: string;
   notes?: string; source?: string; concierge?: ConciergeLeadData;
+  /** Server-only packet context; the public form response never returns it. */
+  desiredOutcome?: string; currentTools?: string;
 };
 
 export type LeadRecord = LeadInput & {
@@ -19,6 +26,9 @@ export type LeadRecord = LeadInput & {
   lastContactedAt: string | null; followUpAt: string | null;
   auditCompleted: boolean; proposalSentAt: string | null;
   outcome: LeadOutcome; internalNotes: string;
+  founderPacket?: FounderSalesPacket;
+  isProspect: boolean;
+  nonProspectReason: string;
   /** Compatibility aliases for the pre-existing internal acquisition pages. */
   paymentStatus: "not_started"|"deposit_pending"|"deposit_paid"|"balance_pending"|"paid"|"failed"|"refunded"; lastContacted?: string; nextFollowUpDate?: string;
 };
@@ -46,6 +56,9 @@ function map(row: QueryResultRow): LeadRecord {
     lastContacted: row.last_contacted_at ? new Date(row.last_contacted_at).toISOString() : undefined,
     nextFollowUpDate: row.follow_up_at ? new Date(row.follow_up_at).toISOString() : undefined,
     concierge: row.source === "ai_project_concierge" && row.concierge_data && typeof row.concierge_data === "object" && typeof row.concierge_data.sessionId === "string" ? row.concierge_data as ConciergeLeadData : undefined,
+    founderPacket: row.founder_packet && typeof row.founder_packet === "object" && row.founder_packet.schemaVersion === 1 ? row.founder_packet as FounderSalesPacket : undefined,
+    isProspect: row.is_prospect !== false,
+    nonProspectReason: row.non_prospect_reason || "",
   };
 }
 
@@ -66,6 +79,8 @@ export function redactLeadFreeText(input: LeadInput): LeadInput {
     ...input,
     biggestProblem: redactSecrets(input.biggestProblem),
     notes: input.notes ? redactSecrets(input.notes) : input.notes,
+    desiredOutcome: input.desiredOutcome ? redactSecrets(input.desiredOutcome) : input.desiredOutcome,
+    currentTools: input.currentTools ? redactSecrets(input.currentTools) : input.currentTools,
   };
   const concierge = input.concierge;
   if (concierge) {
@@ -93,12 +108,15 @@ export async function storeLead(input: LeadInput, idempotencyKey = crypto.random
   const id = crypto.randomUUID();
   // SITE-03: persist redacted free-text, never the raw visitor paste.
   const safe = redactLeadFreeText(input);
+  const founderPacket = buildFounderSalesPacket(safe);
+  const isProspect = packetMarksProspect(founderPacket);
+  const nonProspectReason = isProspect ? "" : founderPacket.disposition.reason;
   const result = await db.query(`
-    insert into crm_leads (id, dedupe_key, source, name, business_name, email, phone, website_or_social, industry, service_interest, budget_range, timeline, biggest_problem, notes, concierge_data)
-    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb)
+    insert into crm_leads (id, dedupe_key, source, name, business_name, email, phone, website_or_social, industry, service_interest, budget_range, timeline, biggest_problem, notes, concierge_data, founder_packet, is_prospect, non_prospect_reason)
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16::jsonb,$17,$18)
     on conflict (dedupe_key) do update set updated_at = crm_leads.updated_at
     returning *, (xmax = 0) as created
-  `, [id, leadDedupeKey(idempotencyKey), safe.source || "website intake", safe.name, safe.businessName, safe.email.toLowerCase(), safe.phone || "", safe.websiteOrSocial, safe.industry, safe.serviceInterest, safe.budgetRange || "", safe.timeline, safe.biggestProblem, safe.notes || "", JSON.stringify(safe.concierge || {})]);
+  `, [id, leadDedupeKey(idempotencyKey), safe.source || "website intake", safe.name, safe.businessName, safe.email.toLowerCase(), safe.phone || "", safe.websiteOrSocial, safe.industry, safe.serviceInterest, safe.budgetRange || "", safe.timeline, safe.biggestProblem, safe.notes || "", JSON.stringify(safe.concierge || {}), JSON.stringify(founderPacket), isProspect, nonProspectReason]);
   return { lead: map(result.rows[0]), created: Boolean(result.rows[0].created) };
 }
 
