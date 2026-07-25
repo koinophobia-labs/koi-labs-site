@@ -1,1 +1,32 @@
-import{cookies}from"next/headers";import{notFound,redirect}from"next/navigation";import Link from"next/link";import{CRM_COOKIE,verifyCrmSession}from"@/lib/crm-auth";import{getAuditPackage}from"@/lib/audits";import{getLead}from"@/lib/acquisition/leads";import AuditEditor from"./AuditEditor";export const dynamic="force-dynamic";export default async function Page({params}:{params:Promise<{id:string}>}){if(!verifyCrmSession((await cookies()).get(CRM_COOKIE)?.value))redirect("/crm/login");const data=await getAuditPackage((await params).id);if(!data)notFound();const lead=await getLead(data.audit.leadId);if(!lead)notFound();return <main className="section simple-page crm-page"><Link href={`/crm/leads/${lead.id}`}>← {lead.businessName}</Link><p className="kicker kicker-gold">Measured website audit</p><h1>{data.audit.finalUrl||data.audit.targetUrl}</h1><AuditEditor initial={data.audit} initialFindings={data.findings}/></main>}
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { requireCrmPageAccess } from "@/lib/crm-access";
+import { getAuditPackage } from "@/lib/audits";
+import { getLead } from "@/lib/acquisition/leads";
+import CrmSignOut from "../../CrmSignOut";
+import AuditEditor from "./AuditEditor";
+
+export const dynamic = "force-dynamic";
+
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  await requireCrmPageAccess();
+  const data = await getAuditPackage((await params).id);
+  if (!data) notFound();
+  const lead = await getLead(data.audit.leadId);
+  if (!lead) notFound();
+  return (
+    <main className="section simple-page crm-page">
+      <div className="crm-auth-actions">
+        <Link href={`/crm/leads/${lead.id}`}>← {lead.businessName}</Link>
+        <CrmSignOut />
+      </div>
+      <p className="kicker kicker-gold">Measured website audit</p>
+      <h1>{data.audit.finalUrl || data.audit.targetUrl}</h1>
+      <AuditEditor initial={data.audit} initialFindings={data.findings} />
+    </main>
+  );
+}

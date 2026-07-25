@@ -1,11 +1,11 @@
-import { cookies } from "next/headers";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getLead, leadOutcomes, leadStatuses } from "@/lib/acquisition/leads";
 import { listAudits } from "@/lib/audits";
-import { CRM_COOKIE, verifyCrmSession } from "@/lib/crm-auth";
+import { requireCrmPageAccess } from "@/lib/crm-access";
 import { serviceLabel } from "@/lib/concierge/questions";
 import { listProposals } from "@/lib/proposals";
+import CrmSignOut from "../../CrmSignOut";
 import AuditRunner from "./AuditRunner";
 import LeadEditor from "./LeadEditor";
 import ProposalCreator from "./ProposalCreator";
@@ -13,12 +13,12 @@ import ProposalCreator from "./ProposalCreator";
 export const dynamic = "force-dynamic";
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  if (!verifyCrmSession((await cookies()).get(CRM_COOKIE)?.value)) redirect("/crm/login");
+  await requireCrmPageAccess();
   const lead = await getLead((await params).id);
   if (!lead) notFound();
   const [proposals, audits] = await Promise.all([listProposals(lead.id), listAudits(lead.id)]);
   return <main className="section simple-page crm-page">
-    <Link href="/crm">← All leads</Link><p className="kicker kicker-gold">Lead detail</p><h1>{lead.businessName}</h1>
+    <div className="crm-auth-actions"><Link href="/crm">← All leads</Link><CrmSignOut /></div><p className="kicker kicker-gold">Lead detail</p><h1>{lead.businessName}</h1>
     <div className="panel crm-detail"><p><strong>{lead.name}</strong> · <a href={`mailto:${lead.email}`}>{lead.email}</a> · {lead.phone || "No phone"}</p><p><a href={lead.websiteOrSocial}>{lead.websiteOrSocial}</a> · {lead.industry}</p><h2>What they need</h2><p>{lead.serviceInterest} · {lead.budgetRange || "Budget not supplied"} · {lead.timeline}</p><p>{lead.biggestProblem}</p>{lead.notes && <p>{lead.notes}</p>}</div>
     {lead.founderPacket ? <section className="panel crm-concierge">
       <div className="crm-concierge__head"><div><span className="crm-source-badge">Founder sales packet · Internal only</span><h2>{lead.founderPacket.disposition.label}</h2></div><div><strong>{lead.founderPacket.recommendedOffer.confidenceLevel}</strong><span>{Math.round(lead.founderPacket.recommendedOffer.confidenceScore * 100)}% confidence</span></div></div>
