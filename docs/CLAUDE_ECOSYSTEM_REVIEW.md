@@ -113,12 +113,17 @@ The internal-product vs. client-proof distinction **is currently obvious and wel
 
 ## 6. Infrastructure Review
 
-**Current architecture:** one git-connected Vercel project (`prj_vrNiN0q9…`, productionBranch `main`, Next.js 15/Turbopack, `nodejs` lambdas in iad1), one Next.js app, domain behavior implemented entirely as two `vercel.json` redirects. `next.config.ts` is trivial (`images.unoptimized: true`). No middleware. DB migrations run inside `vercel-build` (`migrate-crm.mjs` before `next build`).
+**Architecture at the time of this review:** one git-connected Vercel project (`prj_vrNiN0q9…`, productionBranch `main`, Next.js 15/Turbopack, `nodejs` lambdas in iad1), one Next.js app, domain behavior implemented entirely as two `vercel.json` redirects. `next.config.ts` is trivial (`images.unoptimized: true`). No middleware. DB migrations ran inside `vercel-build` (`migrate-crm.mjs` before `next build`); the 2026-07-25 release-boundary update below replaces that behavior.
 
 **Main risks, in order:**
 
 1. **Divergent production (critical).** Production = CLI-promoted unmerged branch; `productionBranch` = main; main ≠ production content. Any main push reverts the live site; any rebuild-branch push updates previews nobody is watching. This already caused one same-night overwrite. Additionally, CLI promotions bypass the PR/review flow entirely.
 2. **Migrations on every deploy with no rollback story.** `vercel-build` runs DB migrations; a bad merge deploy can mutate the production DB. Rollback via Vercel restores code, not schema. (Migrations are append-only so far; risk is procedural, not observed.)
+
+   **Release-boundary update (2026-07-25):** PR #40 removes migrations from
+   `vercel-build` and replaces that path with an explicit, environment-guarded,
+   database-identity-verified, transactional migration command. Preview and
+   ordinary production builds are application-build-only.
 3. **Per-endpoint CRM auth.** `verifyCrmSession` is correctly called in all current CRM pages/routes (HMAC-SHA256, timing-safe, httpOnly/secure/strict cookies) — but there is no central middleware guard, so the next CRM route someone adds is unprotected by default.
 4. **In-memory rate limiting** on `/api/intake` (Map keyed by IP, 5/10min) resets per serverless instance/cold start — it's a speed bump, not a limit. Honeypot + validation are the real defenses; fine at current traffic, insufficient if the site gets promoted hard.
 5. **Sprawl.** 15+ stale branches (`agent/*` ×7 for the logo/intro alone, `design/*`, `media/*`, `backup/*`, `audit/founding-funnel-production-probe`), two overlapping concept data systems, three nav/footer systems, 12.5k lines of accreted global CSS across 12 files with explicit patch-layers (`founder-brand-refresh` → `founder-polish` → `you-know-ball-home-fix`). This is textbook "multiple sites sewn together," and it is the direct cause of the /audit page wearing the wrong design system.

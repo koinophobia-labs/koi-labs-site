@@ -22,7 +22,8 @@
     "test:now": "tsx --test tests/now.test.ts",
     "test:release-qa": "node scripts/blake-release-qa.mjs",
     "db:migrate-crm": "node scripts/migrate-crm.mjs",
-    "vercel-build": "node scripts/migrate-crm.mjs && next build",
+    "test:migrations": "node --test tests/database-migrations.test.mjs",
+    "vercel-build": "next build",
     "test:dev-universe": "tsx --test tests/dev-universe.test.ts",
     "test:dev-koi": "tsx --test tests/dev-koi.test.ts"
   },

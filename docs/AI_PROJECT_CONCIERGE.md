@@ -224,6 +224,10 @@ CONTACT_TO_EMAIL=
 CONTACT_FROM_EMAIL="Koinophobia Labs Leads <leads@koinophobialabs.com>"
 NEXT_PUBLIC_SITE_URL=https://koinophobialabs.com
 
+# Deliberate migration invocation only; leave unset during builds/runtime.
+ALLOW_DATABASE_MIGRATIONS=
+TARGET_DATABASE_ENVIRONMENT=
+
 # Optional AI enhancement
 OPENAI_API_KEY=
 CONCIERGE_OPENAI_MODEL=gpt-5.6-luna
@@ -239,11 +243,21 @@ The deterministic concierge does not require `OPENAI_API_KEY`. CRM persistence s
 
 ```bash
 npm ci
+ALLOW_DATABASE_MIGRATIONS=true \
+ALLOW_UNMARKED_LOCAL_DATABASE=true \
+TARGET_DATABASE_ENVIRONMENT=development \
+DATABASE_URL=postgresql://127.0.0.1:5432/koinophobia_local \
 npm run db:migrate-crm
 npm run dev
 ```
 
-Run migrations only against the intended database. For UI-only local evaluation, the concierge route works without a database or AI key. Final intake persistence requires the database.
+The local override is restricted to a `development` or `test` target and a
+loopback PostgreSQL host. Shared databases require the non-secret
+`koinophobia.environment` database label and an exact target match. Vercel
+builds never execute migrations. See `docs/DATABASE_RELEASE_BOUNDARY.md`.
+
+For UI-only local evaluation, the concierge route works without a database or
+AI key. Final intake persistence requires the database.
 
 ## Testing
 
@@ -253,6 +267,7 @@ npm run test:concierge:e2e
 npm run test:koi-companion:e2e
 npm run screenshots:koi
 npm run test:crm
+npm run test:migrations
 npm run test:commercial
 npx tsc --noEmit
 npm run lint

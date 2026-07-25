@@ -275,7 +275,7 @@ test("the packet is persisted on the lead and smoke submissions remain non-prosp
 
 test("the additive packet migration is in the migration runner", () => {
   const migration = readFileSync("db/008_founder_sales_packet.sql", "utf8");
-  const runner = readFileSync("scripts/migrate-crm.mjs", "utf8");
+  const runner = readFileSync("scripts/database-migrations.mjs", "utf8");
   assert.match(migration, /founder_packet jsonb/i);
   assert.match(migration, /is_prospect boolean/i);
   assert.match(runner, /008_founder_sales_packet\.sql/);
