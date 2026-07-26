@@ -7,7 +7,7 @@ import {
 
 test("Preview uses the explicit isolated database override", () => {
   const environment = {
-    KOINOPHOBIA_DATABASE_ENVIRONMENT: "preview",
+    VERCEL_ENV: "preview",
     DATABASE_URL: "postgresql://project-wide-integration/database",
     KOINOPHOBIA_PREVIEW_DATABASE_URL:
       "postgresql://isolated-preview/database",
@@ -21,7 +21,7 @@ test("Preview uses the explicit isolated database override", () => {
 
 test("Production cannot consume the Preview database override", () => {
   const environment = {
-    KOINOPHOBIA_DATABASE_ENVIRONMENT: "production",
+    VERCEL_ENV: "production",
     DATABASE_URL: "postgresql://production/database",
     KOINOPHOBIA_PREVIEW_DATABASE_URL:
       "postgresql://isolated-preview/database",
@@ -41,7 +41,7 @@ test("branch variables cannot redirect local or undeclared environments", () => 
   assert.equal(
     applicationDatabaseUrl({
       ...previewOverride,
-      KOINOPHOBIA_DATABASE_ENVIRONMENT: "development",
+      VERCEL_ENV: "development",
       DATABASE_URL: "postgresql://local/database",
     }),
     "postgresql://local/database",
