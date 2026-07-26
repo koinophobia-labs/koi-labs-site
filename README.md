@@ -4,11 +4,10 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 Payment collection uses Stripe-hosted Checkout and is available only for accepted CRM proposals. Configure encrypted test-mode `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` variables before deploying.
 
-The private founder CRM uses staged Google authentication with an exact
-administrator allowlist. See
+The private founder CRM uses Google authentication with an exact administrator
+allowlist. See
 [`docs/CRM_GOOGLE_AUTH.md`](docs/CRM_GOOGLE_AUTH.md) for the security boundary,
-Google Cloud setup, Vercel variables, preview gate, and post-verification legacy
-secret cleanup.
+Google Cloud setup, Vercel variables, and release verification.
 
 Register `https://koinophobialabs.com/api/stripe/webhook` for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, and `charge.refunded`.
 

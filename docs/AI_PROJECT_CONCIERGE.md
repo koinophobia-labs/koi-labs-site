@@ -129,7 +129,7 @@ type ConciergeEvaluationRequest = {
 
 The response includes extracted qualification fields, the deterministic recommendation, missing information, the recommendation source, and an optional signed evaluation token.
 
-The token binds the session ID, normalized answer digest, issue time, source, and qualification summary. It expires after 24 hours. Production signing uses `CONCIERGE_SIGNING_SECRET` or the existing `CRM_ADMIN_SECRET` when it contains at least 32 characters.
+The token binds the session ID, normalized answer digest, issue time, source, and qualification summary. It expires after 24 hours. Production signing requires a dedicated `CONCIERGE_SIGNING_SECRET` containing at least 32 characters.
 
 The intake endpoint always overlays the visitor's editable final form values, revalidates all answers, and recomputes the recommendation. A stale or modified handoff invalidates the signed summary and falls back to a deterministic summary. Client-supplied recommendation fields are ignored.
 
@@ -218,7 +218,6 @@ The concierge is intentionally indexed because it is distinct, useful commercial
 ```bash
 # Existing infrastructure
 DATABASE_URL=
-CRM_ADMIN_SECRET=
 RESEND_API_KEY=
 CONTACT_TO_EMAIL=
 CONTACT_FROM_EMAIL="Koinophobia Labs Leads <leads@koinophobialabs.com>"
@@ -238,7 +237,7 @@ OPENAI_API_KEY=
 CONCIERGE_OPENAI_MODEL=gpt-5.6-luna
 CONCIERGE_OPENAI_BASE_URL=https://api.openai.com/v1
 
-# Recommended separate HMAC secret; CRM_ADMIN_SECRET is the fallback
+# Required dedicated HMAC secret; use at least 32 random characters
 CONCIERGE_SIGNING_SECRET=
 ```
 

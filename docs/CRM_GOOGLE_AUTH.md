@@ -133,57 +133,31 @@ References:
 - [Google OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect)
 - [Google web-server OAuth redirect rules](https://developers.google.com/identity/protocols/oauth2/web-server)
 
-## Controlled rollout
+## Release and rollback
 
-### Phase 1: preview with the legacy fallback retained
+Production Google sign-in, protected CRM rendering, PDF export, sign-out, and
+anonymous denial were verified before the legacy secret path was retired.
+`/crm/login` exposes only **Continue with Google**.
 
-This PR intentionally retains the existing `CRM_ADMIN_SECRET` session verifier
-and `/api/crm/login` handler as a hidden lockout fallback. `/crm/login` exposes
-only **Continue with Google**; the legacy form is no longer visible.
-
-Before approving production:
-
-1. Use a preview with its own isolated database.
-2. Configure all four Auth.js/CRM variables in Preview.
-3. Register the exact preview origin and callback with Google.
-4. Verify the approved account reaches `/crm`.
-5. Verify a different valid Google account receives only the generic denied
-   message and cannot access a CRM API.
-6. Verify anonymous requests to every CRM page redirect to `/crm/login`.
-7. Verify anonymous requests to every CRM API return `401`.
-8. Verify public intake and concierge routes still work.
-
-Do not retrieve, print, rotate, or expose the existing legacy secret during
-this phase.
+The retired `/api/crm/login` endpoint, custom HMAC session code, legacy cookie,
+and runtime dependence on `CRM_ADMIN_SECRET` must not be reintroduced. Signed
+concierge handoffs use their dedicated `CONCIERGE_SIGNING_SECRET`.
 
 For local-only HTTP validation, Auth.js also requires
 `AUTH_TRUST_HOST=true`. Vercel hosts are inferred by Auth.js; do not treat this
 local trust setting as an authorization control or add arbitrary production
 hosts.
 
-### Phase 2: controlled production verification
+Release verification must cover:
 
-1. Configure the four production variables.
-2. Deploy through the normal reviewed Git-to-Vercel production path.
-3. Verify the approved administrator can enter `/crm`.
-4. Verify the visible sign-out action returns to `/crm/login` and invalidates
-   the session.
-5. Verify an unapproved Google account is denied.
-6. Verify CRM read, mutation, and PDF endpoints reject anonymous requests.
-7. Confirm intake and concierge submissions remain public and unchanged.
+1. The approved administrator can enter `/crm`.
+2. Sign-out returns to `/crm/login` and invalidates the Auth.js session.
+3. Unapproved identities are denied without revealing the allowlist.
+4. Anonymous CRM pages redirect and private APIs return `401`.
+5. Authenticated proposal and audit exports remain available.
+6. Public intake and concierge routes remain unchanged.
 
-### Phase 3: remove the legacy secret in a separate cleanup change
-
-Only after Phase 2 succeeds:
-
-1. Delete `/api/crm/login`.
-2. Delete the custom HMAC session implementation and legacy cookie support.
-3. Remove `CRM_ADMIN_SECRET` from Vercel, examples, tests, and documentation.
-4. Set a dedicated `CONCIERGE_SIGNING_SECRET` before removing the concierge's
-   temporary legacy fallback.
-5. Run the full auth, CRM, concierge, typecheck, lint, and build suites.
-6. Confirm a POST to the retired secret endpoint returns `404` or `405` and
-   cannot create a session.
-
-Do not merge the cleanup until production Google sign-in and sign-out are
-recorded as successful. No database migration is required for any phase.
+If Google authentication fails after a release, roll back the application to
+the last known-good deployment while retaining the current Auth.js and Google
+OAuth environment variables. No database rollback is required for auth-only
+changes.

@@ -11,7 +11,7 @@ type SignedEvaluation = {
 };
 
 function secret() {
-  const value = process.env.CONCIERGE_SIGNING_SECRET || process.env.CRM_ADMIN_SECRET || "";
+  const value = process.env.CONCIERGE_SIGNING_SECRET || "";
   return value.length >= 32 ? value : "";
 }
 export function conciergeAnswerDigest(answers: ConciergeAnswers) {

@@ -1,13 +1,11 @@
 import type { Session } from "next-auth";
 import type { NextRequest } from "next/server";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import {
   isAuthorizedCrmSession,
   type CrmSessionIdentity,
 } from "@/lib/crm-authorization";
-import { CRM_COOKIE, verifyCrmSession } from "@/lib/crm-auth";
 
 type SessionLoader = () => Promise<Session | null>;
 
@@ -27,22 +25,14 @@ export async function hasAuthorizedGoogleCrmSession(
   try {
     return isAuthorizedCrmSession(sessionIdentity(await loadSession()));
   } catch {
-    // During the staged rollout, an Auth.js configuration problem must not
-    // lock out the still-supported legacy administrator session.
     return false;
   }
 }
 
 export async function hasCrmPageAccess(
-  legacyToken?: string,
   loadSession: SessionLoader = auth,
 ) {
-  if (await hasAuthorizedGoogleCrmSession(loadSession)) return true;
-  const token =
-    legacyToken === undefined
-      ? (await cookies()).get(CRM_COOKIE)?.value
-      : legacyToken;
-  return verifyCrmSession(token);
+  return hasAuthorizedGoogleCrmSession(loadSession);
 }
 
 export async function requireCrmPageAccess() {
@@ -50,9 +40,8 @@ export async function requireCrmPageAccess() {
 }
 
 export async function isCrmApiAuthorized(
-  request: NextRequest,
+  _request: NextRequest,
   loadSession: SessionLoader = auth,
 ) {
-  if (await hasAuthorizedGoogleCrmSession(loadSession)) return true;
-  return verifyCrmSession(request.cookies.get(CRM_COOKIE)?.value);
+  return hasAuthorizedGoogleCrmSession(loadSession);
 }

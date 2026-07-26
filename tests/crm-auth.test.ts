@@ -1,11 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { Session } from "next-auth";
 import { NextRequest } from "next/server";
 import { authConfig, SESSION_MAX_AGE_SECONDS } from "../auth";
-import { POST as legacySecretLogin } from "../app/api/crm/login/route";
 import {
   hasAuthorizedGoogleCrmSession,
   hasCrmPageAccess,
@@ -17,11 +16,6 @@ import {
   normalizeCrmEmail,
   parseCrmAllowedEmails,
 } from "../lib/crm-authorization";
-import {
-  createCrmSession,
-  validAdminSecret,
-  verifyCrmSession,
-} from "../lib/crm-auth";
 
 const approvedEmail = "approved-admin@example.invalid";
 const allowedEmails = ` second-admin@example.invalid, ${approvedEmail.toUpperCase()} `;
@@ -196,46 +190,39 @@ test("approved and unapproved Auth.js sessions are enforced by page and API guar
     false,
   );
   assert.equal(
-    await hasCrmPageAccess("", async () => session()),
+    await hasCrmPageAccess(async () => session()),
     true,
   );
   assert.equal(
-    await hasCrmPageAccess("", async () => null),
+    await hasCrmPageAccess(async () => null),
     false,
   );
 });
 
-test("legacy fallback can be retired by removing its secret", async () => {
-  const original = process.env.CRM_ADMIN_SECRET;
-  try {
-    process.env.CRM_ADMIN_SECRET = "test-legacy-secret-with-enough-entropy";
-    const token = createCrmSession();
-    assert.equal(await hasCrmPageAccess(token, async () => null), true);
-    delete process.env.CRM_ADMIN_SECRET;
-    assert.equal(verifyCrmSession(token), false);
-    assert.equal(validAdminSecret("test-legacy-secret-with-enough-entropy"), false);
-    assert.equal(await hasCrmPageAccess(token, async () => null), false);
+test("retired secret endpoint and HMAC session code remain deleted", () => {
+  assert.equal(
+    existsSync(join(process.cwd(), "app/api/crm/login/route.ts")),
+    false,
+  );
+  assert.equal(existsSync(join(process.cwd(), "lib/crm-auth.ts")), false);
 
-    const form = new FormData();
-    form.set("secret", "test-legacy-secret-with-enough-entropy");
-    const response = await legacySecretLogin(
-      new NextRequest("https://example.invalid/api/crm/login", {
-        method: "POST",
-        body: form,
-      }),
-    );
-    assert.equal(response.status, 303);
-    assert.match(response.headers.get("location") || "", /\/crm\/login\?error=1$/);
-    assert.equal(response.headers.get("set-cookie"), null);
-  } finally {
-    if (original === undefined) delete process.env.CRM_ADMIN_SECRET;
-    else process.env.CRM_ADMIN_SECRET = original;
-  }
+  const access = readFileSync(
+    join(process.cwd(), "lib/crm-access.ts"),
+    "utf8",
+  );
+  assert.doesNotMatch(access, /CRM_ADMIN_SECRET|CRM_COOKIE|verifyCrmSession/);
+
+  const conciergeSigning = readFileSync(
+    join(process.cwd(), "lib/concierge/signing.ts"),
+    "utf8",
+  );
+  assert.match(conciergeSigning, /CONCIERGE_SIGNING_SECRET/);
+  assert.doesNotMatch(conciergeSigning, /CRM_ADMIN_SECRET/);
 });
 
 test("every private CRM surface contains its server-side authorization guard", () => {
   const apiRoutes = filesBelow(join(process.cwd(), "app/api/crm")).filter(
-    (path) => path.endsWith("/route.ts") && !path.endsWith("/login/route.ts"),
+    (path) => path.endsWith("/route.ts"),
   );
   const pages = filesBelow(join(process.cwd(), "app/crm")).filter(
     (path) => path.endsWith("/page.tsx") && !path.endsWith("/login/page.tsx"),
@@ -264,7 +251,7 @@ test("login and OAuth error UI disclose no secret field, token, or configuration
   assert.doesNotMatch(source, /\{error\}/);
 });
 
-test("sign-out clears both session paths and public intake remains outside the boundary", async () => {
+test("sign-out invalidates Auth.js and public intake remains outside the boundary", async () => {
   const authRoute = readFileSync(
     join(process.cwd(), "app/api/auth/[...nextauth]/route.ts"),
     "utf8",
@@ -279,11 +266,11 @@ test("sign-out clears both session paths and public intake remains outside the b
   );
   assert.match(authRoute, /handlers/);
   assert.match(signOut, /Sign out/);
-  assert.match(signOut, /\.delete\(CRM_COOKIE\)/);
   assert.match(signOut, /await signOut/);
   assert.match(signOut, /redirectTo: "\/crm\/login"/);
+  assert.doesNotMatch(signOut, /CRM_COOKIE|cookies\(\)/);
   assert.doesNotMatch(intake, /isCrmApiAuthorized|requireCrmPageAccess/);
-  assert.equal(await hasCrmPageAccess("", async () => null), false);
+  assert.equal(await hasCrmPageAccess(async () => null), false);
 
   const authSource = readFileSync(join(process.cwd(), "auth.ts"), "utf8");
   assert.match(authSource, /scope: "openid email profile"/);
