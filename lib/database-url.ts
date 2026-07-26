@@ -1,18 +1,18 @@
 type DatabaseEnvironment = {
   DATABASE_URL?: string;
+  KOINOPHOBIA_DATABASE_ENVIRONMENT?: string;
   KOINOPHOBIA_PREVIEW_DATABASE_URL?: string;
-  VERCEL_ENV?: string;
 };
 
 /**
  * Vercel-managed database integrations can take precedence over branch-scoped
- * DATABASE_URL values. A Preview-only override keeps E2E traffic on its
- * isolated database without changing the Production integration binding.
+ * DATABASE_URL values. An exact, Preview-scoped environment marker and URL
+ * keep E2E traffic isolated without changing the Production integration.
  */
 export function applicationDatabaseUrl(
   environment: DatabaseEnvironment = process.env as DatabaseEnvironment,
 ) {
-  if (environment.VERCEL_ENV === "preview") {
+  if (environment.KOINOPHOBIA_DATABASE_ENVIRONMENT === "preview") {
     const previewUrl = environment.KOINOPHOBIA_PREVIEW_DATABASE_URL?.trim();
     if (previewUrl) return previewUrl;
   }
