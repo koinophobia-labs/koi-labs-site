@@ -12,13 +12,12 @@ import {
   validateIntake,
 } from "@/lib/acquisition/intake";
 import { consumeAuditRateLimit } from "@/lib/audits";
-import { applicationDatabaseConfigured } from "@/lib/database-url";
 import { isTrustedMutationRequest } from "@/lib/security/origin";
 import { resolveIntakeIdempotencyKey, shouldSendLeadEmail, trustedClientKey } from "@/lib/acquisition/intake-abuse";
 
 async function publicRateLimited(request: NextRequest) {
   const key = trustedClientKey(request);
-  if (applicationDatabaseConfigured()) {
+  if (process.env.DATABASE_URL) {
     try {
       const actorKey = `intake:${createHash("sha256").update(key).digest("hex").slice(0, 32)}`;
       const result = await consumeAuditRateLimit({ actorKey, limit: INTAKE_RATE_MAX, windowSeconds: INTAKE_RATE_WINDOW_MS / 1000 });

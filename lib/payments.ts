@@ -1,6 +1,5 @@
 import Stripe from "stripe";
 import { Pool, type QueryResultRow } from "pg";
-import { applicationDatabaseUrl } from "@/lib/database-url";
 
 export const paymentStatuses = [
   "pending",
@@ -46,10 +45,9 @@ export type Queryable = {
 };
 let pool: Pool | undefined, stripeClient: Stripe | undefined;
 const db = () => {
-  const connectionString = applicationDatabaseUrl();
-  if (!connectionString) throw Error("DATABASE_URL is not configured");
+  if (!process.env.DATABASE_URL) throw Error("DATABASE_URL is not configured");
   return (pool ??= new Pool({
-    connectionString,
+    connectionString: process.env.DATABASE_URL,
     max: 5,
   })) as unknown as Queryable;
 };

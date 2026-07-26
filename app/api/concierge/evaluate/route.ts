@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { consumeAuditRateLimit } from "@/lib/audits";
 import { evaluateConcierge } from "@/lib/concierge/evaluate";
-import { applicationDatabaseConfigured } from "@/lib/database-url";
 import {
   cacheConciergeEvaluation,
   checkConciergeRateLimit,
@@ -20,7 +19,7 @@ function clientKey(request: NextRequest) {
 
 async function publicRateLimited(request: NextRequest) {
   const key = clientKey(request);
-  if (applicationDatabaseConfigured()) {
+  if (process.env.DATABASE_URL) {
     try {
       const actorKey = `concierge:${createHash("sha256").update(key).digest("hex").slice(0, 32)}`;
       const result = await consumeAuditRateLimit({ actorKey, limit: CONCIERGE_RATE_MAX, windowSeconds: CONCIERGE_RATE_WINDOW_MS / 1000 });

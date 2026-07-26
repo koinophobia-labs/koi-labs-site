@@ -1,6 +1,5 @@
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import type { LeadRecord } from "@/lib/acquisition/leads";
-import { applicationDatabaseUrl } from "@/lib/database-url";
 
 export const proposalStatuses = [
   "draft",
@@ -61,10 +60,10 @@ export type ProposalRecord = ProposalInput & {
 type Queryable = Pick<Pool, "query"> | Pick<PoolClient, "query">;
 let pool: Pool | undefined;
 const db = () => {
-  const connectionString = applicationDatabaseUrl();
-  if (!connectionString) throw new Error("DATABASE_URL is not configured");
+  if (!process.env.DATABASE_URL)
+    throw new Error("DATABASE_URL is not configured");
   return (pool ??= new Pool({
-    connectionString,
+    connectionString: process.env.DATABASE_URL,
     max: 5,
   }));
 };
