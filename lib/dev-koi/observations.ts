@@ -356,5 +356,6 @@ export const worldTemperament: Record<string, { drift: number; period: number }>
   forge: { drift: 0.7, period: 1.0 }, // orderly, structured
   signal: { drift: 1.15, period: 0.85 }, // smoother, more conversational
   arena: { drift: 1.3, period: 0.65 }, // quicker, competitive
+  studio: { drift: 0.6, period: 0.9 }, // composed, at the front desk
   cave: { drift: 0.45, period: 1.6 }, // quietest, long rests
 };

@@ -7,7 +7,7 @@ import { LINKS } from "@/lib/links";
 // lastUpdated is a LITERAL, manually maintained string — never a runtime date.
 // Bump it by hand whenever the copy below changes.
 
-export const nowLastUpdated = "July 20, 2026";
+export const nowLastUpdated = "July 26, 2026";
 
 export const nowHero = {
   heading: "What I'm doing now.",
@@ -37,9 +37,9 @@ export const nowActiveWork: Array<{
     name: "Koinophobia Labs",
     stage: "Selling and validating",
     snapshot:
-      "Full-time on the studio since July 2026. Client work runs through the audit-first pipeline on the studio site.",
+      "Full-time on the studio. The AI front office now answers the door on both sites, and qualified leads come back as founder-ready sales packets.",
     doingNow:
-      "Running audit-first outreach and real sales conversations with Chicago-area small businesses, and shaping structured inquiry, booking, and AI front-office systems for local service work.",
+      "Running audit-first outreach with Chicago-area small businesses while the infrastructure behind it hardens — the concierge routing conversations, sales packets generated from qualified leads, and a real sign-in on the private CRM.",
     nextProof:
       "The first repeatable paid engagement — a real business paying for a system that saves it time. Not another redesign.",
     href: LINKS.labs,
@@ -47,12 +47,24 @@ export const nowActiveWork: Array<{
     external: true,
   },
   {
-    name: "Career Forge",
-    stage: "Live beta · paid tier closed",
+    name: "Trendi",
+    stage: "TestFlight · internal, build 122",
     snapshot:
-      "Released to production on July 19 and free to use. I closed the paid tier on July 20 after finding a purchase could fail to deliver without recording it.",
+      "Record Mode reached TestFlight — builds 120, 121 and 122 in one evening, two of them fixing defects a real phone surfaced within hours.",
     doingNow:
-      "Proving the paid path end to end before it reopens — durable fulfillment state, a signed-webhook drill, and a reconciliation against Stripe. Checkout stays shut until that runs.",
+      "Running the deliberate on-device update pass and the focused record → playback → share checks on build 122. The simulator stayed green through both of the defects a genuine install caught, which is exactly why the phone runs the gate.",
+    nextProof:
+      "Creators using the output to publish, repeatedly — not another layer of polish.",
+    href: "/products/trendi",
+    cta: "See Trendi",
+  },
+  {
+    name: "Career Forge",
+    stage: "Live beta · checkout certification-pinned",
+    snapshot:
+      "Free to use in beta. A durable order store now passes its health checks; checkout stays closed until the paid journey is re-proven on the code that's actually deployed.",
+    doingNow:
+      "Re-certifying the paid path on the current build. The sales approval is pinned to an exact commit, so every merge re-closes the store on purpose — reopening takes a demonstrated journey, not a config change.",
     nextProof:
       "External users completing the full workflow, trusting the output, and paying because it materially simplifies their search.",
     href: LINKS.careerForge,
@@ -60,24 +72,12 @@ export const nowActiveWork: Array<{
     external: true,
   },
   {
-    name: "Trendi",
-    stage: "TestFlight · internal only",
-    snapshot:
-      "Build 118 is on TestFlight and installed on my own device. No external testers yet, and the isolation gate isn't closed.",
-    doingNow:
-      "Finishing the clean-state data-isolation check — it needs a second real Apple account on the test phone, which is the whole reason it's still open — then getting the build in front of the first ten creators.",
-    nextProof:
-      "Creators using the output to publish, repeatedly — not another layer of polish.",
-    href: "/products/trendi",
-    cta: "See Trendi",
-  },
-  {
     name: "You Know Ball",
     stage: "Web demo live · iOS uploaded, untested",
     snapshot:
-      "Playable in a browser today. Two iOS builds were accepted by Apple and then never put in front of anyone.",
+      "Playable in a browser today. Builds 26 and 27 sit accepted at App Store Connect, still assigned to no tester.",
     doingNow:
-      "The engine, scoring, replay and receipts are built, and the web demo is live. Builds 26 and 27 reached App Store Connect and stopped there — so the next step is a tester group, not more features.",
+      "The latest engine work — clutch-time finishes and an honest comeback bonus the UI had been promising without paying — is committed on a branch that exists only on this machine. The next step is still a tester group, not more features.",
     nextProof:
       "Real players returning to argue, sharing their receipts, and caring about the outcome.",
     href: "/products/you-know-ball",
@@ -93,8 +93,8 @@ export const nowSnapshot = nowActiveWork.map((item) => ({
 
 export const nowProof = [
   "A first repeatable paid studio engagement.",
-  "A demonstrated Career Forge fulfillment path, then external users finishing the workflow.",
-  "Trendi's isolation gate closed, then the build in ten creators' hands.",
+  "Career Forge's certified journey re-proven on the deployed build, then external users finishing the workflow.",
+  "Trendi's build in ten creators' hands after the on-device gate list clears.",
   "A You Know Ball build assigned to a tester group and installed by someone who isn't me.",
   "A salary role aligned with customer-facing AI and implementation work.",
 ];
@@ -125,8 +125,8 @@ export const nowLearning = [
     body: "\"Live beta\" and \"TestFlight-ready\" earn more credibility than a confident \"launched\" that isn't quite true.",
   },
   {
-    title: "The easiest workflow usually wins.",
-    body: "People reach for the tool that removes the most friction, not the one with the most power.",
+    title: "The simulator votes; the device decides.",
+    body: "Two Trendi defects shipped through weeks of green automated runs and surfaced within hours of a genuine install on a real phone. A gate that never touches hardware isn't a gate.",
   },
   {
     title: "AI should reduce repeated decisions, not judgment.",

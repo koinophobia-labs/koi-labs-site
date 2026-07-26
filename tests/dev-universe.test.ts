@@ -9,6 +9,8 @@ import {
   getProduct,
   products,
   reachLabel,
+  stageFamily,
+  stageFamilyLabel,
   stageLabel,
   stageRank,
   staleProducts,
@@ -173,6 +175,34 @@ test("the stage ladder never collapses distinct release states", () => {
   assert.ok(stageRank["external-testers"] < stageRank.public);
 });
 
+test("every stage maps to a display family, and the family never upgrades a stage", () => {
+  for (const stage of Object.keys(stageLabel) as Stage[]) {
+    assert.ok(stageFamily[stage], `stage "${stage}" has no display family`);
+    assert.ok(stageFamilyLabel[stageFamily[stage]], `family for "${stage}" has no label`);
+  }
+  // The coarse chip is a projection of the fine ladder, never a promotion:
+  // only a genuinely public stage may wear the "Live" chip.
+  for (const stage of Object.keys(stageFamily) as Stage[]) {
+    if (stageFamily[stage] === "live") {
+      assert.equal(stage, "public", `stage "${stage}" wears the Live chip without being public`);
+    }
+  }
+});
+
+test("the front office is in the universe, honestly", () => {
+  const concierge = getProduct("concierge");
+  assert.ok(concierge, "the concierge belongs in the constellation — it's usable today");
+  assert.equal(concierge!.reach, "public");
+  assert.ok(
+    concierge!.evidence.some((e) => /checked 2026|merged/i.test(e.source)),
+    "the concierge needs dated, checkable evidence",
+  );
+  assert.ok(
+    concierge!.notYet.some((line) => /paying|engagement/i.test(line)),
+    "it must say plainly that no routed conversation has become a paid engagement",
+  );
+});
+
 test("TestFlight claims require TestFlight evidence", () => {
   for (const product of products) {
     if (/testflight/i.test(product.status)) {
@@ -204,15 +234,17 @@ test("You Know Ball does not claim it was never uploaded", () => {
   );
 });
 
-test("Trendi reflects build 118, not a superseded blocker", () => {
+test("Trendi reflects build 122, not a superseded release", () => {
+  // Re-pinned 2026-07-26: builds 120/121/122 uploaded July 25 (delivery UUIDs
+  // e5cbeefe / caa3229b / d811be60), 122 is the current TestFlight build.
   const trendi = getProduct("trendi");
   assert.ok(trendi);
   const prose = [trendi!.status, ...trendi!.state].join(" ");
-  assert.match(prose, /118/, "build 118 is the uploaded build");
+  assert.match(prose, /122/, "build 122 is the current TestFlight build");
   assert.doesNotMatch(
     trendi!.status,
-    /blocked on builds? 11[56]|stuck behind an apple account/i,
-    "builds 115/116 are superseded by 118",
+    /blocked on builds? 11[56]|stuck behind an apple account|\b118\b/i,
+    "superseded builds must not headline the status",
   );
   // The isolation gate is genuinely open; the page must not imply otherwise.
   assert.ok(

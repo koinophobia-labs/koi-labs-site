@@ -1,4 +1,5 @@
 import { publishedNotes } from "@/lib/dev/lab";
+import { logEntries } from "@/lib/dev/log";
 import { products } from "@/lib/dev/universe";
 
 // koinophobia.dev's own sitemap.
@@ -23,6 +24,8 @@ export function GET() {
       priority: "0.8",
       changefreq: "monthly",
     })),
+    // The log is only advertised while it actually has entries.
+    ...(logEntries.length > 0 ? [{ path: "/log", priority: "0.9", changefreq: "weekly" }] : []),
     { path: "/now", priority: "0.9", changefreq: "weekly" },
     // /notes is only advertised to crawlers once something is published there.
     ...(publishedNotes.length > 0

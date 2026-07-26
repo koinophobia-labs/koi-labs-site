@@ -14,6 +14,7 @@ import PersonalKoi from "@/components/dev-koi/PersonalKoi";
 // advertised while every note is held for review.
 export const DEV_NAV = [
   { href: "/products", label: "Products" },
+  { href: "/log", label: "Log" },
   { href: "/lab", label: "Lab" },
   ...(publishedNotes.length > 0 ? [{ href: "/notes", label: "Notes" }] : []),
   { href: "/now", label: "Now" },

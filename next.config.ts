@@ -28,7 +28,15 @@ const DEV_HOSTS = [DEV_HOST, DEV_PREVIEW_HOST];
  * Each entry becomes a rewrite (public URL -> /dev source) and a redirect
  * (the /dev URL is never itself public — one canonical address per page).
  */
-const DEV_ROUTES = ["/products", "/products/:slug", "/lab", "/notes", "/notes/:slug", "/about"];
+const DEV_ROUTES = [
+  "/products",
+  "/products/:slug",
+  "/log",
+  "/lab",
+  "/notes",
+  "/notes/:slug",
+  "/about",
+];
 
 const nextConfig: NextConfig = {
   images: {
