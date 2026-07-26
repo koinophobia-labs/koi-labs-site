@@ -108,15 +108,16 @@ or committed environment files.
 
    ```text
    Authorized JavaScript origin:
-   https://<exact-preview-host>
+   https://koinophobia-labs-git-agent-21a205-koinophobia999-8829s-projects.vercel.app
 
    Authorized redirect URI:
-   https://<exact-preview-host>/api/auth/callback/google
+   https://koinophobia-labs-git-agent-21a205-koinophobia999-8829s-projects.vercel.app/api/auth/callback/google
    ```
 
    Google requires an exact redirect URI match, including scheme, host, path,
-   case, and trailing slash. Record the final preview host in the PR before
-   interactive OAuth verification.
+   case, and trailing slash. This branch alias was the exact host used for the
+   PR's anonymous Preview checks and remains stable when Vercel replaces the
+   underlying immutable deployment.
 
 7. Put the client ID, client secret, preview `AUTH_SECRET`, and test-only
    allowlist in the Vercel Preview environment. Redeploy the preview so the new
