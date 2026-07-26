@@ -128,7 +128,7 @@ test("every internal link on the personal home resolves to a real route", () => 
 
 test("every personal route in the nav is reachable on koinophobia.dev", async () => {
   // Each public URL must be either a real app route or a host-scoped rewrite.
-  const navRoutes = ["/products", "/lab", "/notes", "/now", "/about", "/connect"];
+  const navRoutes = ["/products", "/log", "/lab", "/notes", "/now", "/about", "/connect"];
   for (const route of navRoutes) {
     const rewrite = await findRewrite(route, "koinophobia.dev");
     const direct = exists(`app${route}/page.tsx`);

@@ -50,7 +50,7 @@
       "name": "You Know Ball",
       "tag": "SPORTS GAME",
       "url": "https://you-know-ball-orpin.vercel.app",
-      "blurb": "Sports-debate game with deterministic gameplay, guardrails, scoring, and shareable outcomes; TestFlight + live web MVP.",
+      "blurb": "Sports-debate game with deterministic gameplay, guardrails, scoring, and shareable outcomes; live web MVP, iOS builds accepted by App Store Connect.",
       "tone": "orange"
     },
     {

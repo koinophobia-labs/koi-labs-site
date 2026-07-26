@@ -2,7 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import DevShell from "@/components/dev/DevShell";
-import { products, reachLabel, studio, universeLastUpdated } from "@/lib/dev/universe";
+import {
+  products,
+  reachLabel,
+  stageFamily,
+  stageFamilyLabel,
+  stageLabel,
+  studio,
+  universeLastUpdated,
+} from "@/lib/dev/universe";
 
 // Served as koinophobia.dev/products via a host rewrite in next.config.ts.
 // The studio's own /products page is a different page on a different domain.
@@ -10,7 +18,7 @@ import { products, reachLabel, studio, universeLastUpdated } from "@/lib/dev/uni
 export const metadata: Metadata = {
   title: { absolute: "Products — Blake Taylor" },
   description:
-    "Four products built from problems I lived first: Career Forge, Trendi, You Know Ball, and Koi Cave. Honest status on each one.",
+    "Five products built from problems I lived first: Career Forge, Trendi, You Know Ball, the Labs Concierge, and Koi Cave. Honest status on each one.",
   alternates: { canonical: "https://koinophobia.dev/products" },
   openGraph: {
     type: "website",
@@ -18,7 +26,7 @@ export const metadata: Metadata = {
     url: "https://koinophobia.dev/products",
     title: "Products — Blake Taylor",
     description:
-      "Career Forge, Trendi, You Know Ball, Koi Cave. What each one is for, where it actually stands, and what it taught me.",
+      "Career Forge, Trendi, You Know Ball, the Labs Concierge, Koi Cave. What each one is for, where it actually stands, and what it taught me.",
     images: [{ url: "https://koinophobia.dev/og-founder.png", width: 1200, height: 630 }],
   },
 };
@@ -32,7 +40,8 @@ export default function DevProductsPage() {
         <p className="devpage__lede">
           These aren&apos;t a portfolio. Each one exists because I hit the same wall twice and got
           tired of it — a job search with no feedback loop, an idea that died before the record
-          button, an argument nobody kept score of, a tool I didn&apos;t want to rent.
+          button, an argument nobody kept score of, a front door I refused to fake, a tool I
+          didn&apos;t want to rent.
         </p>
         <p className="devpage__lede">
           Every page below opens with the same question: who can use this today without asking me
@@ -53,6 +62,9 @@ export default function DevProductsPage() {
               <h2>{product.name}</h2>
               <p className="devprod-card__tagline">{product.tagline}</p>
               <p className="devprod-card__status">{product.status}</p>
+              <span className="devprod-card__stage">
+                {`${stageFamilyLabel[stageFamily[product.stage]]} · ${stageLabel[product.stage]}`}
+              </span>
             </div>
             <span className="devpage__reach" data-reach={product.reach}>
               {reachLabel[product.reach]}

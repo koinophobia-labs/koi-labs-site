@@ -15,11 +15,13 @@ import { LINKS } from "@/lib/links";
 //     build if either is missing or stale.
 //
 // Reconciled 2026-07-20 against release artifacts, Apple delivery logs, and
-// live HTTP checks. Three claims from the previous pass were provably wrong and
-// are corrected below — including one that UNDER-claimed. See docs/
-// RELEASE-TRUTH-RECONCILIATION.md for the full audit trail.
+// live HTTP checks (see docs/RELEASE-TRUTH-RECONCILIATION.md for that audit
+// trail). Re-verified 2026-07-26 for the Founder OS pass: Trendi moved to
+// build 122, Career Forge grew a durable order store behind its closed
+// checkout, Koi Cave's operator loop produced its first proof-checked receipt,
+// and the front office joined the universe as a product in its own right.
 
-export const universeLastUpdated = "July 20, 2026";
+export const universeLastUpdated = "July 26, 2026";
 
 /** Who owns keeping these statuses honest. Rendered nowhere; asserted in tests. */
 export const statusOwner = "Blake Taylor";
@@ -110,6 +112,37 @@ export const stageRank: Record<Stage, number> = {
   public: 7,
 };
 
+/**
+ * The coarse, at-a-glance grouping over the fine ladder. Cards wear the family
+ * chip; product pages print the precise stage beside it. The fine ladder stays
+ * the source of truth — the family is a display projection, never a field a
+ * product sets by hand (that would reopen the door to optimistic rounding).
+ *
+ * "archived" joins the day something is actually archived. An enum value with
+ * no member is decoration.
+ */
+export type StageFamily = "exploring" | "building" | "testing" | "live" | "paused";
+
+export const stageFamily: Record<Stage, StageFamily> = {
+  concept: "exploring",
+  local: "building",
+  "internally-validated": "building",
+  "release-candidate": "testing",
+  uploaded: "testing",
+  "internal-testers": "testing",
+  "external-testers": "testing",
+  public: "live",
+  paused: "paused",
+};
+
+export const stageFamilyLabel: Record<StageFamily, string> = {
+  exploring: "Exploring",
+  building: "Building",
+  testing: "Testing",
+  live: "Live",
+  paused: "Paused",
+};
+
 export type Evidence = {
   /** The specific claim this backs. */
   claim: string;
@@ -153,26 +186,32 @@ export const products: Product[] = [
     identity: { theme: "forge", register: "Structural · built under pressure" },
     reach: "public",
     stage: "public",
-    status: "Live on the web and free to use. Paid checkout is closed until fulfillment is proven",
-    verifiedAt: "2026-07-20",
+    status:
+      "Live on the web and free to use. Checkout is certification-pinned and currently closed: the deployed code has moved past the last certified commit",
+    verifiedAt: "2026-07-26",
     evidence: [
       {
         claim: "The site is live and serving",
-        source: "HTTP 200 from career-forge-lite.vercel.app, checked 2026-07-20",
+        source: "HTTP 200 from career-forge-lite.vercel.app, checked 2026-07-26",
       },
       {
-        claim: "Paid checkout is closed in production",
+        claim: "Checkout is closed, and closed for the pinned-certification reason",
         source:
-          "GET /api/commerce-health returns canSellSafely:false; POST /api/checkout returns 503 fulfillment_not_ready; /pricing renders no buy control and no stripe.com link (checked 2026-07-20)",
+          "GET /api/commerce-health (2026-07-26): canSellSafely:false; stripe_verified_certification and human_authorization both pin commit 28d3def while the deployment runs 909a5bb8",
       },
       {
-        claim: "Released build",
-        source: "origin/main b1be8b2, tagged v0.10.0-beta.1",
-      },
-      {
-        claim: "Fulfillment could fail silently after payment, and was closed because of it",
+        claim: "A durable order store now exists and answers",
         source:
-          "Audit 2026-07-20: live checkout returned a Payment Link and never learned the outcome. Brake merged as career-forge-lite#28 (3c66a77) and deployed; production health now names STRIPE_WEBHOOK_SECRET, RESEND_API_KEY and LICENSE_EMAIL_FROM as missing",
+          "commerce-health operational checks (2026-07-26): durable_store passed (neon-postgres), store_reachable passed with a round-trip write/read/delete",
+      },
+      {
+        claim: "The beta line shipped July 19",
+        source: "career-forge-lite origin/main b1be8b2, tagged v0.10.0-beta.1",
+      },
+      {
+        claim: "Fulfillment could fail silently after payment, and checkout was closed because of it",
+        source:
+          "Audit 2026-07-20: live checkout returned a Payment Link and never learned the outcome. Brake merged as career-forge-lite#28 (3c66a77) and deployed",
       },
     ],
     problem:
@@ -183,7 +222,8 @@ export const products: Product[] = [
       "Live at career-forge-lite.vercel.app. A stranger can walk in, build a dossier, generate role-specific drafts, and export a real DOCX and ZIP without talking to me.",
       "Released to production on July 19, 2026 (v0.10.0-beta.1) after a readiness sprint: early-win bullets and a lighter first-run profile.",
       "The generation engine is deterministic. There is no model writing your history — every claim traces to something you entered.",
-      "Paid checkout is closed, deliberately. An audit on July 20 found the fulfillment path behind the $49 link ran entirely in the buyer's browser: close the tab on the way back from Stripe and the license was never issued, with nothing recording it. The brake is deployed — the pricing page shows a contact CTA and the checkout endpoint refuses. It reopens only when the whole journey has been demonstrated end to end, not when the right environment variables exist.",
+      "Checkout closed itself on July 20 and has stayed closed on purpose. The audit that day found the $49 fulfillment path ran entirely in the buyer's browser: close the tab on the way back from Stripe and the license was never issued, with nothing recording it.",
+      "Since then the missing piece got built: a durable order store now passes the health check's round-trip. What hasn't happened is re-certification — the sales approval is pinned to the exact commit it certified, the code moved, so the store shut itself again. That reflex is the system working.",
     ],
     decisions: [
       {
@@ -200,11 +240,11 @@ export const products: Product[] = [
       },
       {
         call: "Closed checkout rather than leaving a warning next to a live buy button.",
-        why: "The audit found a paying customer could get nothing and leave no trace. A checkout that refuses to open is a bad day; one that charges and delivers nothing is a refund, an apology, and someone's trust. \"No database\" was the right call for career data and I carried it one step too far, into the one place that needed a record.",
+        why: "The audit found a paying customer could get nothing and leave no trace. A checkout that refuses to open is a bad day; one that charges and delivers nothing is a refund, an apology, and someone's trust.",
       },
       {
-        call: "Made reopening depend on a demonstrated journey, not on configuration.",
-        why: "My first fix checked that six environment variables contained text and called it ready. That is the same mistake in a smaller font — presence isn't proof. Checkout now reopens only after the full path has actually run.",
+        call: "Pinned the sales authorization to a commit hash.",
+        why: "An approval that survives unrelated deploys isn't an approval, it's a permission slip that never expires. Every merge re-closes the store until a human re-certifies the journey on the code that's actually running.",
       },
     ],
     learned:
@@ -213,9 +253,9 @@ export const products: Product[] = [
       { label: "Open Career Forge", href: LINKS.careerForge, external: true, primary: true },
     ],
     notYet: [
-      "I cannot tell you whether anyone has ever paid. There is no order database by design, so the only system that knows is Stripe, and I have not reconciled it. Treat “paying customers” as unestablished in both directions.",
+      "I cannot tell you whether anyone has ever paid. There is no order history from the pre-store era by design, so the only system that knows is Stripe, and I have not reconciled it. Treat “paying customers” as unestablished in both directions.",
       "Worse: before July 20 I could not have told you whether a payment failed to deliver either. Nothing logged it.",
-      "Durable fulfillment state isn't provisioned yet, so checkout stays closed until it is.",
+      "The certified end-to-end journey hasn't been re-demonstrated on the current build, so checkout stays closed.",
       "I have collected zero beta feedback. It saves to the tester's own browser and never reaches me — a design decision I did not think through.",
       "No confirmed job outcome. Nobody has told me this got them hired.",
       "Lane suggestions still come from a fixed library, so an operations résumé gets tech-pivot lanes it didn't ask for. Known defect, not yet fixed.",
@@ -228,22 +268,29 @@ export const products: Product[] = [
     identity: { theme: "signal", register: "Kinetic · spoken out loud" },
     reach: "limited",
     stage: "internal-testers",
-    status: "Build 118 is on TestFlight and installed internally. No external testers yet",
-    verifiedAt: "2026-07-20",
+    status:
+      "Build 122 is on TestFlight with Record Mode in it. Internal only — no outside tester has it yet",
+    verifiedAt: "2026-07-26",
     evidence: [
       {
-        claim: "Build 118 uploaded, processed, and installed from TestFlight",
+        claim: "Builds 120, 121 and 122 were uploaded and accepted on July 25",
         source:
-          "TestFlight app page screenshot showing Version 0.1.0 (118), release date Jul 19 2026, 90-day expiry, with an Open button",
+          "altool delivery UUIDs e5cbeefe (120), caa3229b (121), d811be60 (122); App Store Connect processed each VALID, with 122 READY_FOR_BETA_TESTING",
       },
       {
-        claim: "Builds 114–119 exist as archives",
-        source: "~/Library/Developer/Xcode/Archives/2026-07-{12,17,19}/Trendi-0.1.0-1*.xcarchive",
+        claim: "The archives and release IPA exist on this machine",
+        source:
+          "~/Library/Developer/Xcode/Archives/2026-07-25/Trendi-0.1.0-{120,121,122}.xcarchive and ~/Documents/Trendi-122-rc/Trendi.ipa, checked 2026-07-26",
       },
       {
-        claim: "The data-isolation gate is incomplete",
+        claim: "Installs on the test phone are genuine TestFlight installs",
         source:
-          "PENDING-beta-user-handoff.md — “Status: PENDING — User B unavailable”, cross-user rows all read “Not run”",
+          "devicectl app inventory with --include-default-apps shows TestFlight present on the device; the earlier 'sideload' theory was a filter artifact and was retracted 2026-07-25",
+      },
+      {
+        claim: "The cross-account isolation gate is still open",
+        source:
+          "PENDING-beta-user-handoff.md still reads “Status: PENDING — User B unavailable”, account-identity legs “Not run” (checked 2026-07-26)",
       },
     ],
     problem:
@@ -252,10 +299,10 @@ export const products: Product[] = [
       "Nobody needs another script generator. They need the specific sentence to open with. A coach in your pocket, not a script mill.",
     state: [
       "An iOS app in SwiftUI. You type the messy thought; it hands back hooks, a recordable script, a caption, and a simple shot plan.",
-      "Build 118 was uploaded to App Store Connect, imported clean, and is installed from TestFlight on my own device. That makes it available to internal testers — which today means me.",
-      "Build 119 already exists: an isolation-hardened release candidate, archived and validated. It has never been uploaded, and its three commits exist only on this machine.",
-      "The clean-state data-isolation gate is unfinished. The User A leg passed all seventeen steps it could run; step eighteen needed a second, genuinely different Apple account on the test phone, and there wasn't one. No cross-user conclusion is possible until that runs.",
-      "The newer generation pipeline is still switched off — builds 117, 118 and 119 all ship with the V1 client.",
+      "Record Mode went from a state machine with mocked hardware to real AVFoundation capture to five passed gates on a physical iPhone — including a two-minute real recording and an A→B→A user-switch check that recordings stay isolated between app users.",
+      "Builds 120, 121 and 122 went to TestFlight in one evening on July 25. Not velocity theatre: the first on-phone pass found a paid-for coach script rendering as five empty sections (fixed in 121), then the live camera preview showing sideways on the front sensor (fixed in 122).",
+      "Both of those defects were invisible in the simulator. They surfaced within hours of running the genuinely distributed build on a real phone.",
+      "The newer generation pipeline is still switched off — the shipping builds carry the V1 client on purpose.",
     ],
     decisions: [
       {
@@ -263,8 +310,8 @@ export const products: Product[] = [
         why: "V2 wrote better copy and broke written-mode, leaked a default that assumed one platform, and rejected legitimate stories at the claims gate. A better sentence isn't worth a worse product.",
       },
       {
-        call: "Refused to call 118 the internal release candidate.",
-        why: "It's uploaded, it's installed, and it still isn't signed off, because the cross-user half of the isolation test never ran. An untested isolation boundary is exactly the kind of thing that looks fine until it very much isn't.",
+        call: "Count a gate as passed only when it runs on the phone.",
+        why: "The simulator suite was green for weeks while the first hours on real hardware found two shipping defects. The simulator votes; the device decides.",
       },
       {
         call: "Kept it iOS-only and unpublished.",
@@ -272,16 +319,16 @@ export const products: Product[] = [
       },
     ],
     learned:
-      "Shipping and delivering are different verbs, and I learned it the expensive way — with a finished build sitting behind an account permission for days. What I'd add now is that finishing the upload didn't finish the job either: 118 is in TestFlight and still isn't cleared, because the last gate needs a second person, not more code.",
+      "Shipping and delivering are different verbs, and I learned it the expensive way — with a finished build sitting behind an account permission for days. The newer lesson is that even my own evidence expires: I retired a whole theory about how builds reached my phone after reading one CLI flag's documentation, because the app inventory I'd trusted turned out to be filtered.",
     actions: [
       { label: "Read the full Trendi story", href: "/trendi", primary: true },
       { label: "Ask for beta access", href: LINKS.email },
     ],
     notYet: [
       "Not on the App Store, and not submitted for review.",
-      "No external testers. The only device it has ever run on through TestFlight is mine.",
-      "Data isolation between two users is unproven — the second half of that test has never been run.",
-      "Build 119, the isolation-hardened candidate, is not uploaded and not backed up anywhere but this Mac.",
+      "No external testers. The internal TestFlight group is me.",
+      "The clean-state isolation gate — a second, genuinely different Apple account walking through the app end to end — has still never run.",
+      "The on-phone gate list for build 122 (recording, purchase, share, deletion, endurance) is ahead of it, not behind it.",
     ],
   },
   {
@@ -293,7 +340,7 @@ export const products: Product[] = [
     stage: "uploaded",
     status:
       "Web demo is public. Builds 26 and 27 were accepted by Apple, but reached no tester",
-    verifiedAt: "2026-07-20",
+    verifiedAt: "2026-07-26",
     evidence: [
       {
         claim: "Builds 26 and 27 were accepted by App Store Connect",
@@ -307,7 +354,13 @@ export const products: Product[] = [
       },
       {
         claim: "The iOS work is unmerged and unbacked-up",
-        source: "banter-bot-content-expansion has no git remote configured; main sits at cf74ac4",
+        source:
+          "banter-bot-content-expansion still has no git remote; HEAD 7fa7873 on feature/content-depth-expansion, checked 2026-07-26",
+      },
+      {
+        claim: "Build 27 runs on my own phone with its save intact",
+        source:
+          "devicectl reports 0.1.0 (27) installed; the pre-install container backup and post-install diff were byte-identical (2026-07-17 session record)",
       },
     ],
     problem:
@@ -317,8 +370,9 @@ export const products: Product[] = [
     state: [
       "The web demo is playable right now, in a browser, with no account. Drop a take, the debate engine counters, your argument gets a transparent score.",
       "The engine is deterministic and mechanically neutral across five sports — no model deciding who wins, and a score a player can reconstruct.",
-      "On iOS, builds 26 and 27 were uploaded and accepted by App Store Connect. I never confirmed they finished processing, never assigned them to a tester group, and nobody has installed either one.",
-      "None of the recent engine work is merged to main, and the repository has no remote — it exists on this machine and nowhere else.",
+      "On iOS, builds 26 and 27 were uploaded and accepted by App Store Connect. I never confirmed they finished processing and never assigned either to a tester group — the accepted builds have sat there untouched.",
+      "Build 27 does run on my own phone — through a save-preserving developer install, which is how I caught the engine promising a comeback bonus it never actually paid. That's fixed, along with clutch-time framing for final possessions, on the unmerged branch.",
+      "None of the recent engine work is merged to main, and the repository still has no remote — it exists on this machine and nowhere else.",
     ],
     decisions: [
       {
@@ -348,6 +402,68 @@ export const products: Product[] = [
     ],
   },
   {
+    slug: "concierge",
+    name: "Labs Concierge",
+    tagline: "An AI front desk that would rather refuse than guess.",
+    identity: { theme: "studio", register: "Structured · consent-gated" },
+    reach: "public",
+    stage: "public",
+    status:
+      "Live on both sites as the koi's front office. It routes real conversations; none has become a paid engagement yet",
+    verifiedAt: "2026-07-26",
+    evidence: [
+      {
+        claim: "The front office leads the studio's concierge page",
+        source:
+          "SSR fetch of koinophobialabs.com/concierge renders the concierge-page hero, checked 2026-07-26",
+      },
+      {
+        claim: "Shipped to production through reviewed PRs",
+        source:
+          "koinophobia-labs-site PRs #35–#39, merged 2026-07-20/21 with production deploys verified from those exact SHAs",
+      },
+      {
+        claim: "The ease-of-use audit and its fixes are on the record",
+        source:
+          "2026-07-21 audit scored the first release 63/100 across ten visitor journeys; all nine defects closed in PR #39 (docs/FRONT_OFFICE.md)",
+      },
+    ],
+    problem:
+      "Every business front door forces a bad choice: a dead form that flattens a messy situation into dropdown fields, or a chat widget that cheerfully improvises answers it has no right to give. My studio needed a front door too, and I wasn't willing to ship either.",
+    thesis:
+      "An assistant at the front desk should extract, clarify, and route — never invent. Deterministic understanding first, one question at a time, and nothing leaves the page until the visitor says send.",
+    state: [
+      "Runs on both domains as the koi companion's front office: a messy first message becomes clarifying questions, then a structured brief the visitor can edit, then an honest recommendation.",
+      "On the studio site it fills the exact same intake pipeline as the form — no shadow schema, no second lead system. On this site it collects no contact information at all, and hands hire-intent to the studio with the context carried over.",
+      "It refuses honestly. A budget that doesn't fit is told a smaller or outside solution is the better call, and a question the site's own data can't answer gets a clarification instead of a guess.",
+      "Days after shipping it, I audited it like a stranger and scored it 63 out of 100 — the front door was hidden behind an unlabeled fish. Nine fixes later, every existing help CTA opens it directly and the koi wears a label.",
+    ],
+    decisions: [
+      {
+        call: "Deterministic extraction before any conversation.",
+        why: "A front desk that misremembers your budget is worse than a form. The understanding layer is code I can test, not vibes I can prompt.",
+      },
+      {
+        call: "Zero network calls before consent.",
+        why: "Nothing is created, scored, or sent until the visitor reviews the brief and says so. An abandoned conversation leaves no trace — which is the point.",
+      },
+      {
+        call: "Typing first, suggestion chips second.",
+        why: "The audit caught the free-text box buried under seven chips, two hundred pixels below the fold on a small phone. People think in sentences; the machine adapts, not the person.",
+      },
+    ],
+    learned:
+      "Conversion surfaces rot faster than any other code. The release that felt finished scored 63 out of 100 once I walked through it as six different strangers — and every point it gained back came from fixes a visitor would actually feel, not from new features.",
+    actions: [
+      { label: "Meet it on the studio site", href: LINKS.labs, external: true, primary: true },
+    ],
+    notYet: [
+      "No lead that arrived through it has become a paying engagement. It routes conversations; it hasn't closed one.",
+      "The five-human benchmark hasn't run — every score so far is my own adversarial walkthrough, and I already know how that can fool me.",
+      "It only answers from what the sites already publish. Ask it something the pages don't know and it tells you so.",
+    ],
+  },
+  {
     slug: "koi-cave",
     name: "Koi Cave",
     tagline: "A private operator brain that never leaves the machine.",
@@ -355,16 +471,22 @@ export const products: Product[] = [
     reach: "internal",
     stage: "internally-validated",
     status: "Internal build — dev-signed and un-notarized, so it cannot run on another Mac",
-    verifiedAt: "2026-07-20",
+    verifiedAt: "2026-07-26",
     evidence: [
       {
         claim: "Not distributable to anyone",
         source:
-          "codesign shows “Apple Development: BLAKE JIHAD TAYLOR”; spctl -a returns rejected; stapler reports no ticket",
+          "codesign shows a development identity under team 3TY4W55YC5; spctl -a still returns rejected, re-checked 2026-07-26",
       },
       {
         claim: "The installed app is current, not stale",
-        source: "~/Applications/Koi Cave.app binary stamped Jul 13 2026, built from HEAD 350269a",
+        source:
+          "~/Applications/Koi Cave.app binary stamped Jul 23 2026, built from the operator-loop branch tip",
+      },
+      {
+        claim: "The operator loop produced a real, proof-checked receipt",
+        source:
+          "KOI_CAVE_OPERATOR_LOOP_V1_REPORT.md; receipt 7F044DA9 with proof artifacts on disk under the app's Proof directory, present 2026-07-26",
       },
       {
         claim: "Certified with limitations, and the mail path never ran",
@@ -378,8 +500,9 @@ export const products: Product[] = [
       "Personal infrastructure beats personal productivity apps. If the thing that knows the most about how I work is owned by a company, that's a dependency, not leverage.",
     state: [
       "A macOS app: notes, tasks, memory, and automations, running local-first.",
+      "The operator loop closed for the first time on July 23: a typed command becomes a validated packet, passes an approval gate, runs a repo-inspection worker, and comes back as a receipt that a separate validator re-checks from artifacts on disk.",
+      "That work is deliberately unmerged. The last gate is human hands — me typing the command into the composer myself — before it lands on main.",
       "The morning founder brief is certified with limitations — it survived every failure drill I could design, including corrupt caches, malformed events, and a disconnected mail provider.",
-      "It is signed with a development certificate and not notarized, which means Gatekeeper rejects it on any Mac but this one. There is nothing to hand anyone even if I wanted to.",
       "One known truth bug remains: items waiting on me for more than 72 hours drop out of the brief while it reports no urgent signal. That's the exact failure mode a brief exists to prevent.",
       "The mail integration has never completed a real sync. The stored config holds a client ID and no tokens, so every brief it has ever produced was built from local state.",
     ],
@@ -387,6 +510,10 @@ export const products: Product[] = [
       {
         call: "Local-first, with no hosted fallback.",
         why: "The moment there's a sync server, the privacy claim becomes a policy instead of an architecture.",
+      },
+      {
+        call: "Made the worker unable to complete its own commands.",
+        why: "A system that grades its own homework converges on flattery. Receipts exist only when a validator re-reads the artifacts from disk — a failed check becomes an honest not-healthy receipt, never a quiet success.",
       },
       {
         call: "Certified it with the limitations written down instead of fixing them first.",
@@ -403,6 +530,7 @@ export const products: Product[] = [
     notYet: [
       "No public build, no download, no waitlist. There is nothing to try.",
       "Never notarized, so it cannot be installed by anyone else even privately.",
+      "The operator loop lives on a branch; main doesn't have it yet, and the human-hands gate hasn't run.",
       "The live mail integration has never completed a sync, so the feature has never run against real data.",
       "It is a case study in how I build, not a product I'm offering.",
     ],
@@ -475,7 +603,8 @@ export const arenaScoreboard = [
 
 /**
  * The studio is deliberately NOT in `products`. It is not something to try —
- * it's something to hire, and it lives on its own domain.
+ * it's something to hire, and it lives on its own domain. (Its front office IS
+ * in the universe, because anyone can walk up and use that today.)
  */
 export const studio = {
   name: "Koinophobia Labs",
