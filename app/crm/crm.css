@@ -1,6 +1,12 @@
 .crm-page {
   max-width: 1200px;
 }
+.crm-auth-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
 .audit-runner{display:grid;grid-template-columns:1fr auto;gap:.75rem;align-items:start}.audit-runner input,.audit-editor input,.audit-editor select,.audit-editor textarea{width:100%;padding:.8rem;border:1px solid rgba(255,255,255,.22);border-radius:8px;background:#10141d;color:inherit}.audit-runner p{grid-column:1/-1}.audit-editor{display:grid;gap:1rem}.audit-editor label{display:grid;gap:.4rem}.audit-metrics{display:flex;gap:1rem;flex-wrap:wrap}.audit-finding{display:grid;gap:.8rem}.audit-finding>div{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}.audit-finding select{width:auto}.audit-boundary{padding:.8rem;border-left:3px solid #0795a5;color:#b8c0cc}@media(max-width:760px){.audit-runner{grid-template-columns:1fr}.audit-runner p{grid-column:auto}}
 .crm-login {
   max-width: 480px;
