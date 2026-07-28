@@ -1,6 +1,6 @@
 # koinophobia.dev as a Founder OS
 
-**Date:** 2026-07-26 · **Author:** Claude (product owner for koinophobia.dev, per the standing brief) · **Status:** governing plan for the Founder OS missions
+**Date:** 2026-07-26 · **Owner:** Blake Taylor (founder, product owner, and final approver) · **AI collaborator:** Claude · **Status:** governing plan for the Founder OS missions
 
 Blake's brief: turn koinophobia.dev from a personal portfolio into a **living Founder OS** — a public record of what he is building, testing, learning, and shipping. Within 30 seconds a visitor should know (1) who Blake is, (2) what Koinophobia Labs builds, (3) which products are active, (4) how Blake approaches product development, and (5) where to go next based on who they are.
 
