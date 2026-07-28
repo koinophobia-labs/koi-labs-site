@@ -124,7 +124,7 @@ The internal-product vs. client-proof distinction **is currently obvious and wel
    `vercel-build` and replaces that path with an explicit, environment-guarded,
    database-identity-verified, transactional migration command. Preview and
    ordinary production builds are application-build-only.
-3. **Per-endpoint CRM auth.** `verifyCrmSession` is correctly called in all current CRM pages/routes (HMAC-SHA256, timing-safe, httpOnly/secure/strict cookies) — but there is no central middleware guard, so the next CRM route someone adds is unprotected by default.
+3. **Per-endpoint CRM auth.** This review originally found custom HMAC session checks on every CRM surface. Production now uses the shared Auth.js Google allowlist guards, but there is still no central middleware guard, so the next CRM route someone adds is unprotected by default.
 4. **In-memory rate limiting** on `/api/intake` (Map keyed by IP, 5/10min) resets per serverless instance/cold start — it's a speed bump, not a limit. Honeypot + validation are the real defenses; fine at current traffic, insufficient if the site gets promoted hard.
 5. **Sprawl.** 15+ stale branches (`agent/*` ×7 for the logo/intro alone, `design/*`, `media/*`, `backup/*`, `audit/founding-funnel-production-probe`), two overlapping concept data systems, three nav/footer systems, 12.5k lines of accreted global CSS across 12 files with explicit patch-layers (`founder-brand-refresh` → `founder-polish` → `you-know-ball-home-fix`). This is textbook "multiple sites sewn together," and it is the direct cause of the /audit page wearing the wrong design system.
 
@@ -240,7 +240,7 @@ Alternative rejected: fast-forwarding main to the rebuild (`git push origin d083
 7. **Split into two Vercel projects** (one repo) when the .dev app is built: own sitemap/robots/canonicals/404/analytics per domain; kill cross-host route leakage; change the .dev root redirect to a real homepage.
 8. **Put Career Forge on a custom domain** and move the Trendi product world (and its canonical) to .dev.
 9. **Make analytics real**: the AnalyticsBridge currently dispatches to gtag/plausible **that are never loaded — every event is a no-op in production.** Smallest useful model: load one provider (Plausible or Vercel Analytics), keep the existing commercial events, add `intake_start`/`intake_submit`, `service_view`, and on .dev `resume_view`/`product_case_view`/`live_product_click`/`email_click`, with a host/property dimension. Nothing more.
-10. **Central CRM guard**: move `verifyCrmSession` into middleware (or a shared layout-level server check) so new CRM routes are protected by default.
+10. **Central CRM guard**: move the shared Auth.js CRM authorization check into middleware (or a shared layout-level server check) so new CRM routes are protected by default.
 11. Answer the three missing trust questions on .com: deposit/payment expectations, third-party costs, "what if Blake is unavailable."
 
 ### Useful polish

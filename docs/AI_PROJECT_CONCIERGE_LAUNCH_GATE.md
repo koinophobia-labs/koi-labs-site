@@ -86,7 +86,7 @@ Not verified in this worktree:
 
 ## Production environment audit
 
-The production Vercel environment-name audit on 2026-07-18 confirmed `DATABASE_URL`, `CRM_ADMIN_SECRET`, the existing Resend variables, and the existing Stripe secrets are present and encrypted. Secret values and entropy were not read.
+The production Vercel environment-name audit on 2026-07-18 confirmed `DATABASE_URL`, the existing Resend variables, and the existing Stripe secrets are present and encrypted. Secret values and entropy were not read. The legacy CRM administrator secret referenced by the original audit was subsequently retired from application runtime use after production Google authentication acceptance.
 
 Two requested production variables are not currently configured:
 
@@ -98,8 +98,7 @@ Two requested production variables are not currently configured:
 ## Required production configuration
 
 - `DATABASE_URL`
-- `CRM_ADMIN_SECRET` with sufficient entropy
-- `CONCIERGE_SIGNING_SECRET` with at least 32 random characters (recommended instead of relying on the CRM secret fallback)
+- `CONCIERGE_SIGNING_SECRET` with at least 32 random characters
 - Existing `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, and `CONTACT_FROM_EMAIL`
 - Existing Stripe variables used by the audit/checkout flow
 - `NEXT_PUBLIC_SITE_URL=https://koinophobialabs.com`

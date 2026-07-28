@@ -5,8 +5,6 @@ import { GET as listLeads } from "../app/api/crm/leads/route";
 import { PATCH as updateLead } from "../app/api/crm/leads/[id]/route";
 import { validateIntake } from "../lib/acquisition/intake";
 
-process.env.CRM_ADMIN_SECRET = "test-admin-secret-with-enough-entropy";
-
 test("intake route validation accepts a complete CRM lead", () => {
   const form = new FormData();
   for (const [key, value] of Object.entries({ name:"Route Test", businessName:"Route Test Co", email:"route@example.com", websiteOrSocial:"https://example.com", industry:"Services", serviceInterest:"Website audit", timeline:"Soon", biggestProblem:"Conversions" })) form.set(key, value);
