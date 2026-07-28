@@ -1,50 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Koinophobia Labs + Founder OS
 
-## Stripe payment collection
+[![CI](https://github.com/koinophobia-labs/koinophobia-labs-site/actions/workflows/ci.yml/badge.svg)](https://github.com/koinophobia-labs/koinophobia-labs-site/actions/workflows/ci.yml)
 
-Payment collection uses Stripe-hosted Checkout and is available only for accepted CRM proposals. Configure encrypted test-mode `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` variables before deploying.
+One Next.js codebase powers two connected public surfaces:
 
-The private founder CRM uses staged Google authentication with an exact
-administrator allowlist. See
-[`docs/CRM_GOOGLE_AUTH.md`](docs/CRM_GOOGLE_AUTH.md) for the security boundary,
-Google Cloud setup, Vercel variables, preview gate, and post-verification legacy
-secret cleanup.
+- [koinophobialabs.com](https://koinophobialabs.com) — the studio front office for websites, AI workflows, audits, inquiries, proposals, and payments
+- [koinophobia.dev](https://koinophobia.dev) — Blake Taylor's living Founder OS: products, build log, experiments, current priorities, résumé, and release evidence
 
-Register `https://koinophobialabs.com/api/stripe/webhook` for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, and `charge.refunded`.
+The shared idea is simple: turn messy workflows into useful systems, then make the product state and proof inspectable.
 
-The webhook verifies Stripe's signature against the raw request body. Migration `006_stripe_payments.sql` stores Checkout attempts, payment state, proposal and lead summaries, and processed webhook event IDs. Verify the deposit and balance workflow in Stripe test mode before adding live-mode keys.
+## What this repository demonstrates
 
-## Getting Started
+- a dual-domain product architecture with host-specific routing
+- public studio acquisition and a founder portfolio from one deployment
+- structured intake, concierge routing, CRM persistence, and proposal workflows
+- Stripe Checkout with signed webhooks, idempotent event handling, and payment-state persistence
+- staged Google authentication with an exact administrator allowlist
+- secret and sensitive-pattern redaction before CRM and email persistence
+- rate limiting, trusted-origin checks, deduplication, and preview isolation
+- an evidence-backed product status model with freshness budgets and explicit limitations
+- targeted regression suites for commercial, security, CRM, concierge, product, and Founder OS behavior
 
-First, run the development server:
+## Product surfaces
+
+| Surface | Purpose | Representative routes |
+| --- | --- | --- |
+| Studio | Diagnose business friction and route the right engagement | `/`, `/audit`, `/intake`, `/concierge` |
+| Founder OS | Show what Blake is building, testing, learning, and shipping | `/products`, `/log`, `/lab`, `/now`, `/about`, `/resume` |
+| Private operations | Manage leads, proposals, audits, and payment state | `/internal/*`, protected API routes |
+
+## Architecture
+
+| Layer | Technology and responsibility |
+| --- | --- |
+| Application | Next.js 16 App Router, React 19, TypeScript |
+| UI | Tailwind CSS, Framer Motion, shared design tokens, host-specific product worlds |
+| Data | PostgreSQL with explicit migrations and environment guards |
+| Authentication | NextAuth with staged Google authentication and an administrator allowlist |
+| Payments | Stripe Checkout, raw-body webhook signature verification, idempotent event storage |
+| Documents | `pdf-lib` for founder sales packets and résumé artifacts |
+| Quality | Node test runner through `tsx`, Playwright QA scripts, lint, typecheck, production build |
+| Deployment | Vercel with production, preview, and exact-host behavior |
+
+## Trust boundaries
+
+This codebase treats commercial and portfolio claims as product behavior, not marketing decoration.
+
+- Visitor free text is redacted for high-signal secrets before supported persistence and email sinks.
+- Intake requests use origin checks, platform-derived client identity, rate limits, and deterministic deduplication.
+- Stripe webhooks are signature-verified and processed idempotently.
+- Private CRM routes require staged authentication and exact administrator authorization.
+- Preview and production database behavior is explicitly separated.
+- Product pages carry evidence, current reach, verified dates, and `not yet` limitations.
+- Public client claims are not invented or published without evidence and permission.
+
+See:
+
+- [Founder OS governing plan](docs/FOUNDER-OS.md)
+- [CRM Google authentication boundary](docs/CRM_GOOGLE_AUTH.md)
+- [Database migrations](migrations)
+
+## Development
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Primary verification:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run lint
+npm run typecheck
+npm run test:crm
+npm run test:concierge
+npm run test:commercial
+npm run test:dev-routing
+npm run test:now
+npm run test:migrations
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Some routes require environment variables for connected services. Follow the linked boundary documents and use test-mode credentials before enabling payment or private CRM behavior.
 
-## Learn More
+## Ownership and AI collaboration
 
-To learn more about Next.js, take a look at the following resources:
+Blake Taylor is the founder, product owner, and final approver. AI coding agents contribute implementation, inspection, testing, and documentation under Blake's direction.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The repository records AI co-authorship where applicable. Product decisions, release claims, tradeoffs, and final acceptance remain Blake's responsibility.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Repository status
 
-## Deploy on Vercel
+This repository is public for portfolio transparency and technical inspection. It is not an open-source product; no license is granted for reuse unless a license is added explicitly.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
