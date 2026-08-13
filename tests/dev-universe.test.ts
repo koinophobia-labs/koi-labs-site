@@ -221,26 +221,35 @@ test("You Know Ball does not claim it was never uploaded", () => {
   const ykb = getProduct("you-know-ball");
   assert.ok(ykb);
   const prose = [ykb!.status, ...ykb!.state, ...ykb!.notYet].join(" ");
+  assert.equal(ykb!.stage, "uploaded");
   assert.doesNotMatch(
     prose,
     /never been on testflight|never reached testflight|has never been uploaded/i,
     "Apple's delivery logs contradict this claim",
   );
   assert.match(prose, /accepted by/i, "the accepted-by-Apple fact must stay stated");
-  // And it must still say what did NOT happen after acceptance.
-  assert.ok(
-    ykb!.notYet.some((line) => /tester|processing|installed/i.test(line)),
-    "YKB must say plainly that acceptance never became distribution",
+  assert.match(
+    ykb!.status,
+    /unverified/i,
+    "current processing and tester distribution must remain explicitly unverified",
+  );
+  assert.doesNotMatch(
+    prose,
+    /reached no tester|confirmed testers:\s*zero|never assigned (?:either )?to a tester/i,
+    "missing current Apple evidence cannot prove zero distribution",
   );
 });
 
-test("Trendi reflects build 122, not a superseded release", () => {
-  // Re-pinned 2026-07-26: builds 120/121/122 uploaded July 25 (delivery UUIDs
-  // e5cbeefe / caa3229b / d811be60), 122 is the current TestFlight build.
+test("Trendi reflects build 132 while preserving build 122 TestFlight evidence", () => {
+  // Re-pinned 2026-08-13: build 132 is the current certified free-launch
+  // candidate. Build 122 remains historical proof of internal TestFlight reach.
   const trendi = getProduct("trendi");
   assert.ok(trendi);
   const prose = [trendi!.status, ...trendi!.state].join(" ");
-  assert.match(prose, /122/, "build 122 is the current TestFlight build");
+  assert.equal(trendi!.reach, "internal");
+  assert.equal(trendi!.stage, "release-candidate");
+  assert.match(trendi!.status, /132/, "build 132 must headline the current status");
+  assert.match(prose, /122/, "build 122's historical TestFlight evidence must remain");
   assert.doesNotMatch(
     trendi!.status,
     /blocked on builds? 11[56]|stuck behind an apple account|\b118\b/i,

@@ -20,8 +20,11 @@ import { LINKS } from "@/lib/links";
 // build 122, Career Forge grew a durable order store behind its closed
 // checkout, Koi Cave's operator loop produced its first proof-checked receipt,
 // and the front office joined the universe as a product in its own right.
+// Refreshed 2026-08-13 for the Trendi release pass: build 132 became the
+// certified free-launch candidate, while You Know Ball's historical Apple
+// acceptance was preserved without guessing at its current distribution state.
 
-export const universeLastUpdated = "July 26, 2026";
+export const universeLastUpdated = "August 13, 2026";
 
 /** Who owns keeping these statuses honest. Rendered nowhere; asserted in tests. */
 export const statusOwner = "Blake Taylor";
@@ -266,14 +269,24 @@ export const products: Product[] = [
     name: "Trendi",
     tagline: "The gap between having an idea and pressing record.",
     identity: { theme: "signal", register: "Kinetic · spoken out loud" },
-    reach: "limited",
-    stage: "internal-testers",
+    reach: "internal",
+    stage: "release-candidate",
     status:
-      "Build 122 is on TestFlight with Record Mode in it. Internal only — no outside tester has it yet",
-    verifiedAt: "2026-07-26",
+      "Build 132 is the certified free-launch release candidate awaiting signing and App Store upload; build 122 previously reached internal TestFlight",
+    verifiedAt: "2026-08-13",
     evidence: [
       {
-        claim: "Builds 120, 121 and 122 were uploaded and accepted on July 25",
+        claim: "Build 132 is the exact current release candidate",
+        source:
+          "general-ai-command-center PR #6 at d347f0305f69675ba23cc94bf99f30c8d29af856; 0.1.0 (132), free launch with three Coach Packs per ISO week and no launch IAP or paywall, certified 2026-08-13",
+      },
+      {
+        claim: "Build 132 has not crossed the Apple distribution gates",
+        source:
+          "No signed archive, exported IPA, App Store Connect upload receipt, processed-build record or tester assignment exists for d347f030 / build 132 in the 2026-08-13 release evidence",
+      },
+      {
+        claim: "Build 122 previously reached internal TestFlight",
         source:
           "altool delivery UUIDs e5cbeefe (120), caa3229b (121), d811be60 (122); App Store Connect processed each VALID, with 122 READY_FOR_BETA_TESTING",
       },
@@ -320,15 +333,12 @@ export const products: Product[] = [
     ],
     learned:
       "Shipping and delivering are different verbs, and I learned it the expensive way — with a finished build sitting behind an account permission for days. The newer lesson is that even my own evidence expires: I retired a whole theory about how builds reached my phone after reading one CLI flag's documentation, because the app inventory I'd trusted turned out to be filtered.",
-    actions: [
-      { label: "Read the full Trendi story", href: "/trendi", primary: true },
-      { label: "Ask for beta access", href: LINKS.email },
-    ],
+    actions: [],
     notYet: [
       "Not on the App Store, and not submitted for review.",
-      "No external testers. The internal TestFlight group is me.",
+      "Build 132 has not been signed, uploaded or assigned to testers; build 122's verified reach was internal TestFlight.",
       "The clean-state isolation gate — a second, genuinely different Apple account walking through the app end to end — has still never run.",
-      "The on-phone gate list for build 122 (recording, purchase, share, deletion, endurance) is ahead of it, not behind it.",
+      "The exact build 132 successor still needs its physical-iPhone, screenshot, signing, archive, upload and processing gates.",
     ],
   },
   {
@@ -339,8 +349,8 @@ export const products: Product[] = [
     reach: "public",
     stage: "uploaded",
     status:
-      "Web demo is public. Builds 26 and 27 were accepted by Apple, but reached no tester",
-    verifiedAt: "2026-07-26",
+      "Public web demo. Apple's July 2026 upload responses prove iOS builds 26 and 27 were accepted; current processing, tester assignment and distribution are unverified",
+    verifiedAt: "2026-08-13",
     evidence: [
       {
         claim: "Builds 26 and 27 were accepted by App Store Connect",
@@ -348,14 +358,14 @@ export const products: Product[] = [
           "Apple's own 409 responses: the 2026-07-16 upload log reports previousBundleVersion 26, and the 2026-07-19 log reports 27 — Apple naming builds it had already accepted",
       },
       {
-        claim: "No delivery receipt or tester assignment survives",
+        claim: "The public web demo is still live",
         source:
-          "No success log, no App Store Connect record on this machine; processing state and group assignment unverified",
+          "HTTP 200 from https://you-know-ball-orpin.vercel.app, checked 2026-08-13",
       },
       {
-        claim: "The iOS work is unmerged and unbacked-up",
+        claim: "Current Apple-side distribution state is unverified",
         source:
-          "banter-bot-content-expansion still has no git remote; HEAD 7fa7873 on feature/content-depth-expansion, checked 2026-07-26",
+          "No authenticated App Store Connect query, current processing receipt, beta-group record or tester record was available during the 2026-08-13 evidence refresh; do not infer zero testers",
       },
       {
         claim: "Build 27 runs on my own phone with its save intact",
@@ -370,9 +380,9 @@ export const products: Product[] = [
     state: [
       "The web demo is playable right now, in a browser, with no account. Drop a take, the debate engine counters, your argument gets a transparent score.",
       "The engine is deterministic and mechanically neutral across five sports — no model deciding who wins, and a score a player can reconstruct.",
-      "On iOS, builds 26 and 27 were uploaded and accepted by App Store Connect. I never confirmed they finished processing and never assigned either to a tester group — the accepted builds have sat there untouched.",
+      "On iOS, builds 26 and 27 were uploaded and accepted by App Store Connect. Their current processing, tester-assignment and distribution state was not independently re-verified on August 13.",
       "Build 27 does run on my own phone — through a save-preserving developer install, which is how I caught the engine promising a comeback bonus it never actually paid. That's fixed, along with clutch-time framing for final possessions, on the unmerged branch.",
-      "None of the recent engine work is merged to main, and the repository still has no remote — it exists on this machine and nowhere else.",
+      "At the July 26 check, the recent engine work was unmerged to main and its working repository had no remote; the August 13 distribution refresh did not treat local source state as Apple-side evidence.",
     ],
     decisions: [
       {
@@ -389,15 +399,15 @@ export const products: Product[] = [
       },
     ],
     learned:
-      "I uploaded two builds to Apple and then never took the last step of putting either in front of a person — and until I went looking for evidence, I'd have told you confidently that nothing had ever been uploaded at all. Not knowing the state of your own release is its own kind of failure.",
+      "I uploaded two builds to Apple without preserving a durable record of what happened after acceptance — and until I went looking for evidence, I'd have told you confidently that nothing had ever been uploaded at all. Not knowing the state of your own release is its own kind of failure.",
     actions: [
       { label: "Play the web demo", href: "/you-know-ball/play", primary: true },
       { label: "Open the standalone build", href: LINKS.ykbDemo, external: true },
     ],
     notYet: [
-      "Never confirmed past Apple's processing step, and never assigned to a tester group.",
+      "Current App Store Connect processing and tester assignment are unverified; no current receipt or beta-group record was available in the August 13 evidence refresh.",
       "Not submitted to the App Store.",
-      "No outside player has installed the iOS build. Confirmed testers: zero.",
+      "No current external-tester or install record was available; do not infer either zero testers or successful distribution.",
       "The engine numbers I'd want to quote here — cohort win rates, tournament results — I can't currently point at an artifact for, so I'm not quoting them.",
     ],
   },
