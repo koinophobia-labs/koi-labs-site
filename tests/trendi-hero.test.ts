@@ -127,10 +127,53 @@ test("re-swims happen every 15 seconds, and only when nothing interferes", () =>
 test("the hero page keeps the approved positioning and a clickable CTA", async () => {
   const page = await readFile(new URL("../app/trendi/page.tsx", import.meta.url), "utf8");
   assert.ok(page.includes("Type the thought. Get words to say on camera."));
-  assert.ok(page.includes("Your AI Content Manager"));
+  assert.ok(page.includes("Your content coach"));
   assert.ok(page.includes('id="trendi-hero-cta"'));
+  assert.ok(page.includes("mailto:koinophobia999@gmail.com"));
+  assert.ok(page.includes("Ask about Trendi"));
+  assert.ok(!page.match(/launch updates|availability news/i));
+  assert.ok(!page.match(/TestFlight|beta access|limited beta/i));
   // Semantic heading order: the h1 is the promise, not the decorative mark.
   assert.ok(page.indexOf('id="trendi-identity"') < page.indexOf("<h1"));
+});
+
+test("Trendi privacy and support routes are publication-ready and discoverable", async () => {
+  const [privacy, support, sitemap, brandIntro] = await Promise.all([
+    readFile(new URL("../app/trendi/privacy/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/trendi/support/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/sitemap.ts", import.meta.url), "utf8"),
+    readFile(new URL("../components/brand/BrandIntro.tsx", import.meta.url), "utf8"),
+  ]);
+
+  for (const page of [privacy, support]) {
+    assert.ok(page.includes("koinophobia999@gmail.com"));
+    assert.ok(!page.includes("blake@koinophobialabs.com"));
+    assert.ok(!page.match(/placeholder|launch draft|do not publish/i));
+  }
+
+  assert.ok(privacy.includes('canonical: "/trendi/privacy"'));
+  assert.ok(privacy.includes("Anthropic"));
+  assert.ok(privacy.includes("on device or send it to Apple for recognition"));
+  assert.ok(!privacy.includes("when recognition is not available on device"));
+  assert.ok(privacy.includes("scheduled for deletion 24 hours after delivery"));
+  assert.ok(privacy.includes("scheduled for deletion at the end of a seven-day"));
+  assert.ok(privacy.includes("Recurring cleanup removes due results"));
+  assert.ok(privacy.includes("content-free deletion and revoked-session"));
+  assert.ok(privacy.includes("safeguards for up to 24 hours solely"));
+  assert.ok(privacy.includes("up to 90 days"));
+  assert.ok(privacy.includes("account-scoped Coach results"));
+  assert.ok(privacy.includes("Google"));
+  assert.ok(privacy.includes("Support and inquiry messages"));
+  assert.ok(privacy.includes("flagged inputs and outputs may be retained for up to two"));
+  assert.ok(privacy.includes("reset your AI"));
+  assert.ok(privacy.includes("asks for consent again before sending another request"));
+  assert.ok(support.includes('href="/trendi/privacy"'));
+  assert.ok(support.includes("Coach results and"));
+  assert.ok(support.includes("safeguards may remain for"));
+  assert.ok(sitemap.includes('\"/trendi/privacy\"'));
+  assert.ok(sitemap.includes('\"/trendi/support\"'));
+  assert.ok(brandIntro.includes('pathname === "/trendi/privacy"'));
+  assert.ok(brandIntro.includes('pathname === "/trendi/support"'));
 });
 
 test("decorative animation layers cannot intercept pointer events or a11y", async () => {
