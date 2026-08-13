@@ -195,7 +195,7 @@ export const products = [
   },
   {
     title: "Trendi",
-    status: "Internal Product · Working Demo",
+    status: "Internal Product · iPhone Release in Preparation",
     audience: "Creators moving from idea to usable script",
     body: "A focused creator workflow for shaping a rough thought into clear words to say on camera.",
     capabilities: ["Structured creative workflow", "Responsive product UI", "User-state flow", "Product prototyping"],

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { preload } from "react-dom";
 
 const ASSET = "/brand/koinophobia-labs-koi.webp";
@@ -30,18 +31,24 @@ const ASSET_WAIT_CAP_MS = 1400;
 const FAILSAFE_MS = 6000;
 
 export default function BrandIntro() {
+  const pathname = usePathname();
+  const skipForImmediateAccess =
+    pathname === "/trendi/privacy" || pathname === "/trendi/support";
   const [phase, setPhase] = useState<Phase>("boot");
   const imgRef = useRef<HTMLImageElement>(null);
   const startedRef = useRef(false);
 
-  preload(ASSET, {
-    as: "image",
-    imageSrcSet: SRCSET,
-    imageSizes: SIZES,
-    fetchPriority: "high",
-  });
+  if (!skipForImmediateAccess) {
+    preload(ASSET, {
+      as: "image",
+      imageSrcSet: SRCSET,
+      imageSizes: SIZES,
+      fetchPriority: "high",
+    });
+  }
 
   useEffect(() => {
+    if (skipForImmediateAccess) return;
     const timers: number[] = [];
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -84,9 +91,9 @@ export default function BrandIntro() {
       img?.removeEventListener("error", skip);
       startedRef.current = false;
     };
-  }, []);
+  }, [skipForImmediateAccess]);
 
-  if (phase === "done") return null;
+  if (skipForImmediateAccess || phase === "done") return null;
 
   return (
     <div className="brand-intro" data-phase={phase} aria-hidden="true">
