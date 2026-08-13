@@ -132,6 +132,12 @@ export default function TrendiPrivacyPage() {
             inquiry messages sent to the contact address on these pages.
           </li>
         </ul>
+        <p>
+          Koinophobia Labs confirms that every third party with whom Trendi shares
+          user data provides the same or equal protection of user data described in
+          this policy and required by Apple&apos;s App Review Guidelines. Trendi uses
+          each provider only for the purposes described above.
+        </p>
       </section>
 
       <section>

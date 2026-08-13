@@ -153,6 +153,9 @@ test("Trendi privacy and support routes are publication-ready and discoverable",
 
   assert.ok(privacy.includes('canonical: "/trendi/privacy"'));
   assert.ok(privacy.includes("Anthropic"));
+  assert.ok(privacy.includes("every third party with whom Trendi shares"));
+  assert.ok(privacy.includes("provides the same or equal protection of user data"));
+  assert.ok(privacy.includes("required by Apple&apos;s App Review Guidelines"));
   assert.ok(privacy.includes("on device or send it to Apple for recognition"));
   assert.ok(!privacy.includes("when recognition is not available on device"));
   assert.ok(privacy.includes("scheduled for deletion 24 hours after delivery"));
