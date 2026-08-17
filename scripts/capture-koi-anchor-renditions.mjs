@@ -117,8 +117,8 @@ const assertCenteredAnchor = async (mode) => {
     return {
       centerX: ringRect.left + ringRect.width / 2,
       centerY: ringRect.top + ringRect.height / 2,
-      viewportX: window.innerWidth / 2,
-      viewportY: window.innerHeight / 2,
+      viewportX: document.documentElement.clientWidth / 2,
+      viewportY: document.documentElement.clientHeight / 2,
       copyOpacity: Number.parseFloat(copyStyle.opacity),
       copyTransform: copyStyle.transform,
       companionDisplay: companion ? getComputedStyle(companion).display : 'absent',
@@ -128,10 +128,10 @@ const assertCenteredAnchor = async (mode) => {
 
   if (!state) throw new Error(`${mode}: anchor state unavailable`);
   if (Math.abs(state.centerX - state.viewportX) > 4) {
-    throw new Error(`${mode}: koi anchor is not horizontally centered`);
+    throw new Error(`${mode}: koi anchor is not horizontally centered: ${JSON.stringify(state)}`);
   }
   if (Math.abs(state.centerY - state.viewportY) > 4) {
-    throw new Error(`${mode}: koi anchor is not vertically centered`);
+    throw new Error(`${mode}: koi anchor is not vertically centered: ${JSON.stringify(state)}`);
   }
   if (state.copyOpacity < 0.45 || state.copyTransform === "none") {
     throw new Error(`${mode}: anchored copy is not visibly following the koi`);
