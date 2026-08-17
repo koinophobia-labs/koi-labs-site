@@ -17,14 +17,19 @@ export default function KoiDepthPass() {
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const connection = (navigator as NavigatorWithConnection).connection;
 
-    if (reducedMotion.matches || connection?.saveData) {
-      setHost(null);
-      return;
-    }
+    const chooseHost = () => {
+      const connection = (navigator as NavigatorWithConnection).connection;
+      setHost(
+        reducedMotion.matches || connection?.saveData
+          ? null
+          : document.querySelector<HTMLElement>(".studio-site--koi"),
+      );
+    };
 
-    setHost(document.querySelector<HTMLElement>(".studio-site--koi"));
+    chooseHost();
+    reducedMotion.addEventListener("change", chooseHost);
+    return () => reducedMotion.removeEventListener("change", chooseHost);
   }, [pathname]);
 
   useEffect(() => {
@@ -87,7 +92,6 @@ export default function KoiDepthPass() {
         muted
         playsInline
         preload="auto"
-        poster="/brand/koinophobia-labs-koi.webp"
         tabIndex={-1}
       >
         <source src={SINGLE_KOI_SRC} type="video/mp4" />
