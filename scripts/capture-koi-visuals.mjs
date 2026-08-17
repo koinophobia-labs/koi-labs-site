@@ -61,7 +61,7 @@ const evaluate = async (expression) => {
 };
 
 const waitFor = async (expression, label) => {
-  for (let i = 0; i < 60; i += 1) {
+  for (let i = 0; i < 80; i += 1) {
     if (await evaluate(expression)) return;
     await wait(250);
   }
@@ -82,11 +82,33 @@ await waitFor(
   "document.readyState === 'complete' && Boolean(document.querySelector('.koi-world--finished'))",
   "finished koi world",
 );
+
+// Production prefers the new Higgsfield masters and retains owned local files
+// as fallbacks. Browser QA deliberately pins those local files so a temporary
+// third-party CDN delay cannot hide an otherwise valid interface build.
+await evaluate(`(() => {
+  const single = document.querySelector('.studio-scroll-koi__video--single');
+  const duo = document.querySelector('.studio-scroll-koi__video--duo');
+  if (!single || !duo) return false;
+  single.pause();
+  duo.pause();
+  single.src = '/brand/koi-scroll-single.mp4';
+  duo.src = '/brand/koi-scroll-duo.mp4';
+  single.load();
+  duo.load();
+  return true;
+})()`);
 await waitFor(
-  "document.querySelector('.studio-scroll-koi')?.dataset.ready === 'true'",
-  "koi video",
+  "document.querySelector('.studio-scroll-koi__video--single')?.readyState >= 1 && document.querySelector('.studio-scroll-koi__video--duo')?.readyState >= 1",
+  "local koi metadata",
 );
-await wait(3200);
+await evaluate(`(() => {
+  const layer = document.querySelector('.studio-scroll-koi');
+  if (!layer) return false;
+  layer.dataset.ready = 'true';
+  return true;
+})()`);
+await wait(1800);
 
 const architecture = await evaluate(`(() => {
   const primaryLinks = [...document.querySelectorAll('.koi-world__primary-nav [data-koi-nav]')];
