@@ -2,6 +2,18 @@
    The moving fragments still arrive and depart with the koi, but the active
    destination locks into a predictable side of the viewport for reading. */
 
+/* The koi still owns the black-water world, while the destination plane stays
+   above the synchronized foreground pass. This prevents close-up fish frames
+   from swallowing Products or Contact without flattening the 3D composition. */
+.koi-world--finished > main {
+  position: relative;
+  z-index: 5;
+}
+
+.koi-world--finished .studio-koi-depth-pass {
+  z-index: 3;
+}
+
 .koi-world--finished .koi-follow-cluster {
   left: auto;
   right: auto;
