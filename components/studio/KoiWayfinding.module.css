@@ -1,0 +1,391 @@
+.wayfinder {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  z-index: 46;
+  min-height: 44px;
+  padding: 5px 7px 5px 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 999px;
+  background: rgba(4, 4, 7, .76);
+  box-shadow:
+    0 18px 55px -34px rgba(0, 0, 0, .96),
+    inset 0 1px 0 rgba(255, 255, 255, .035);
+  backdrop-filter: blur(18px) saturate(1.08);
+  transform: translateX(-50%);
+}
+
+.eyebrow {
+  color: rgba(246, 243, 248, .5);
+  font: 600 8px/1 var(--font-mono), monospace;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.link {
+  min-height: 32px;
+  padding: 0 10px;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: rgba(246, 243, 248, .56);
+  transition:
+    color .18s ease,
+    border-color .18s ease,
+    background .18s ease,
+    transform .18s ease;
+}
+
+.link > span {
+  color: rgba(199, 168, 246, .68);
+  font: 600 8px/1 var(--font-mono), monospace;
+  letter-spacing: .08em;
+}
+
+.link > b {
+  font: 600 9px/1 var(--font-mono), monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.link > small {
+  display: none;
+}
+
+.link:hover,
+.link:focus-visible,
+.link[aria-current="true"] {
+  color: #fff;
+  border-color: rgba(125, 227, 233, .22);
+  background: rgba(125, 227, 233, .065);
+}
+
+.link[aria-current="true"] {
+  box-shadow:
+    inset 0 0 22px rgba(125, 227, 233, .035),
+    0 0 18px rgba(125, 227, 233, .055);
+}
+
+.link:hover {
+  transform: translateY(-1px);
+}
+
+/* The permanent map is the safety rail. The koi still drives the journey,
+   but every destination remains findable at a glance. */
+:global(.koi-world--finished .koi-world__rail) {
+  right: 22px;
+  width: 158px;
+  padding: 36px 14px 14px;
+  gap: 5px;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 18px;
+  background: linear-gradient(
+    145deg,
+    rgba(5, 5, 8, .78),
+    rgba(3, 3, 5, .58)
+  );
+  box-shadow:
+    0 24px 70px -42px rgba(0, 0, 0, .98),
+    inset 0 1px 0 rgba(255, 255, 255, .025);
+  backdrop-filter: blur(16px) saturate(1.04);
+}
+
+:global(.koi-world--finished .koi-world__rail)::after {
+  content: "Section map";
+  position: absolute;
+  top: 13px;
+  left: 15px;
+  color: rgba(246, 243, 248, .42);
+  font: 600 8px/1 var(--font-mono), monospace;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+:global(.koi-world--finished .koi-world__rail)::before {
+  top: 42px;
+  right: 13px;
+  bottom: 16px;
+  background: rgba(255, 255, 255, .12);
+}
+
+:global(.koi-world--finished .koi-world__rail a) {
+  min-height: 34px;
+  padding-left: 5px;
+  color: rgba(246, 243, 248, .56);
+}
+
+:global(.koi-world--finished .koi-world__rail a span) {
+  color: rgba(199, 168, 246, .68);
+}
+
+:global(.koi-world--finished .koi-world__rail a b) {
+  opacity: .62;
+  transform: none;
+  font-weight: 600;
+}
+
+:global(.koi-world--finished .koi-world__rail a:hover b),
+:global(.koi-world--finished .koi-world__rail a:focus-visible b),
+:global(.koi-world--finished .koi-world__rail a[aria-current="true"] b) {
+  opacity: 1;
+  transform: none;
+}
+
+/* Each active destination gets a quiet reading field that travels to the same
+   resting coordinate as the information. This preserves the cinematic water
+   while making the site unmistakably usable. */
+:global(.koi-world--finished .koi-follow-cluster) {
+  isolation: isolate;
+  width: min(520px, 43vw);
+}
+
+:global(.koi-world--finished .koi-follow-cluster--hero) {
+  width: min(610px, 49vw);
+}
+
+:global(.koi-world--finished .koi-follow-cluster--start) {
+  width: min(580px, 48vw);
+}
+
+:global(.koi-world--finished .koi-follow-cluster)::before {
+  inset: -28px -30px;
+  border: 1px solid rgba(255, 255, 255, .095);
+  border-radius: 18px;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(8, 8, 12, .9),
+      rgba(4, 4, 7, .74) 62%,
+      rgba(3, 3, 5, .48)
+    );
+  box-shadow:
+    0 28px 90px -48px rgba(0, 0, 0, .98),
+    inset 0 1px 0 rgba(255, 255, 255, .035),
+    0 0 46px rgba(125, 227, 233, .025);
+  opacity: var(--koi-reading-opacity, 0);
+  filter: none;
+  transform: translate3d(
+    var(--koi-reading-x, 0px),
+    var(--koi-reading-y, 0px),
+    0
+  );
+  transition:
+    opacity .18s linear,
+    border-color .22s ease,
+    box-shadow .22s ease;
+  backdrop-filter: blur(18px) saturate(1.08);
+}
+
+:global(.koi-world--finished .koi-follow-cluster)::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: -28px;
+  z-index: -1;
+  width: 82px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(199, 168, 246, .82),
+    rgba(125, 227, 233, .72),
+    transparent
+  );
+  opacity: var(--koi-reading-opacity, 0);
+  transform: translate3d(
+    var(--koi-reading-x, 0px),
+    var(--koi-reading-y, 0px),
+    0
+  );
+  box-shadow: 0 0 14px rgba(125, 227, 233, .2);
+  transition: opacity .18s linear;
+  pointer-events: none;
+}
+
+:global(.koi-world--finished [data-koi-side="left"] .koi-follow-cluster)::before {
+  border-left-color: rgba(125, 227, 233, .28);
+}
+
+:global(.koi-world--finished [data-koi-side="right"] .koi-follow-cluster)::before {
+  border-right-color: rgba(199, 168, 246, .3);
+}
+
+:global(.koi-world--finished [data-koi-side="center"] .koi-follow-cluster)::before {
+  border-top-color: rgba(125, 227, 233, .24);
+}
+
+:global(.koi-world--finished .koi-scene[data-koi-active="true"] .koi-follow-cluster)::before {
+  border-color: rgba(255, 255, 255, .13);
+  box-shadow:
+    0 32px 100px -50px rgba(0, 0, 0, 1),
+    inset 0 1px 0 rgba(255, 255, 255, .05),
+    0 0 54px rgba(125, 227, 233, .04);
+}
+
+:global(.koi-world--finished .koi-follow-cluster h1),
+:global(.koi-world--finished .koi-follow-cluster h2),
+:global(.koi-world--finished .koi-follow-cluster strong) {
+  color: rgba(255, 255, 255, .98);
+  text-shadow:
+    0 2px 24px rgba(0, 0, 0, .98),
+    0 0 18px rgba(125, 227, 233, .035);
+}
+
+:global(.koi-world--finished .koi-kicker) {
+  color: #d8bbff;
+  text-shadow:
+    0 2px 18px rgba(0, 0, 0, 1),
+    0 0 16px rgba(125, 227, 233, .16);
+}
+
+:global(.koi-world--finished .koi-scene__hero-copy > p:not(.koi-kicker)),
+:global(.koi-world--finished .koi-scene__side-copy > p:not(.koi-kicker)),
+:global(.koi-world--finished .koi-founder-note p),
+:global(.koi-world--finished .koi-portal > p:not(.koi-kicker)) {
+  color: rgba(232, 228, 236, .82);
+}
+
+:global(.koi-world--finished .koi-product-orbit),
+:global(.koi-world--finished .koi-service-current),
+:global(.koi-world--finished .koi-work-wake) {
+  border-top-color: rgba(255, 255, 255, .17);
+}
+
+:global(.koi-world--finished .koi-product-node),
+:global(.koi-world--finished .koi-service-current > a),
+:global(.koi-world--finished .koi-work-wake > a) {
+  min-height: 62px;
+  border-bottom-color: rgba(255, 255, 255, .145);
+}
+
+:global(.koi-world--finished .koi-product-node strong),
+:global(.koi-world--finished .koi-service-current strong),
+:global(.koi-world--finished .koi-work-wake strong) {
+  font-size: 14px;
+}
+
+:global(.koi-world--finished .koi-product-node small),
+:global(.koi-world--finished .koi-service-current small),
+:global(.koi-world--finished .koi-work-wake small) {
+  color: rgba(232, 228, 236, .68);
+}
+
+:global(.koi-world--finished .koi-actions a),
+:global(.koi-world--finished .koi-scene__edge-link),
+:global(.koi-world--finished .koi-founder-note > div:last-child > a) {
+  color: rgba(245, 242, 248, .94);
+}
+
+@media (max-width: 1180px) {
+  .wayfinder {
+    padding-left: 8px;
+  }
+
+  .eyebrow {
+    display: none;
+  }
+
+  .link {
+    padding-inline: 8px;
+  }
+
+  :global(.koi-world--finished .koi-world__rail) {
+    width: 142px;
+  }
+}
+
+@media (max-width: 980px) {
+  .wayfinder {
+    display: none;
+  }
+
+  :global(.koi-world--finished .koi-follow-cluster),
+  :global(.koi-world--finished .koi-follow-cluster--hero),
+  :global(.koi-world--finished .koi-follow-cluster--start) {
+    width: min(450px, 47vw);
+  }
+}
+
+@media (max-width: 760px) {
+  :global(.koi-world--finished .koi-world__rail) {
+    width: auto;
+    padding: 8px 10px;
+    gap: 5px;
+    border-radius: 999px;
+  }
+
+  :global(.koi-world--finished .koi-world__rail)::after {
+    display: none;
+  }
+
+  :global(.koi-world--finished .koi-world__rail)::before {
+    display: none;
+  }
+
+  :global(.koi-world--finished .koi-world__rail a) {
+    width: 34px;
+    min-height: 32px;
+    padding: 0;
+  }
+
+  :global(.koi-world--finished .koi-world__rail a b) {
+    display: none;
+  }
+
+  :global(.koi-world--finished .koi-world__rail a[aria-current="true"]) {
+    width: auto;
+    padding-inline: 10px;
+    gap: 7px;
+    border-radius: 999px;
+    background: rgba(125, 227, 233, .075);
+  }
+
+  :global(.koi-world--finished .koi-world__rail a[aria-current="true"] b) {
+    display: block;
+    opacity: 1;
+  }
+
+  :global(.koi-world--finished .koi-follow-cluster),
+  :global(.koi-world--finished .koi-follow-cluster--hero),
+  :global(.koi-world--finished .koi-follow-cluster--start) {
+    width: min(88vw, 470px);
+  }
+
+  :global(.koi-world--finished .koi-follow-cluster)::before {
+    inset: -20px -16px;
+    border-radius: 15px;
+    background:
+      linear-gradient(
+        160deg,
+        rgba(7, 7, 11, .92),
+        rgba(3, 3, 5, .78) 68%,
+        rgba(3, 3, 5, .58)
+      );
+  }
+
+  :global(.koi-world--finished .koi-follow-cluster)::after {
+    top: -20px;
+    width: 64px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link,
+  :global(.koi-world--finished .koi-follow-cluster)::before,
+  :global(.koi-world--finished .koi-follow-cluster)::after {
+    transition: none !important;
+  }
+}
