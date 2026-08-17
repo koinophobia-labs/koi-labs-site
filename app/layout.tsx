@@ -23,6 +23,7 @@ import "./founder-editorial.css";
 import "./product-worlds.css";
 import "./commercial.css";
 import "./koi-scroll.css";
+import "./koi-depth.css";
 import "./dev-system.css";
 import "./dev-home.css";
 import "./dev-product.css";
@@ -34,6 +35,7 @@ import "./connect-card.css";
 import "./resume-dev.css";
 import "./now-dev.css";
 import AnalyticsBridge from "@/components/studio/AnalyticsBridge";
+import KoiDepthPass from "@/components/studio/KoiDepthPass";
 import KoiCompanion from "@/components/companion/KoiCompanion";
 import "./koi-companion.css";
 
@@ -127,6 +129,7 @@ export default function RootLayout({
         <AnalyticsBridge />
         <Analytics />
         {children}
+        <KoiDepthPass />
         <KoiCompanion />
       </body>
     </html>
