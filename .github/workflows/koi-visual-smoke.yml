@@ -7,7 +7,9 @@ on:
       - app/layout.tsx
       - app/koi-scroll.css
       - app/koi-depth.css
+      - app/koi-finished.css
       - components/studio/ScrollKoiExperience.tsx
+      - components/studio/KoiNavigationMotion.tsx
       - components/studio/KoiDepthPass.tsx
       - public/brand/koi-scroll-single.mp4
       - public/brand/koi-scroll-duo.mp4
@@ -57,7 +59,7 @@ jobs:
           cat /tmp/koi-next.log
           exit 1
 
-      - name: Capture depth compositions
+      - name: Capture finished koi navigation
         shell: bash
         run: |
           set -euo pipefail
@@ -79,7 +81,7 @@ jobs:
       - name: Upload visual evidence
         uses: actions/upload-artifact@v4
         with:
-          name: koi-visual-smoke-${{ github.sha }}
+          name: final-koi-navigation-${{ github.sha }}
           path: artifacts/koi-visuals/*.png
           if-no-files-found: error
           retention-days: 14
