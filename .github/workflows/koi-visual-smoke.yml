@@ -8,6 +8,8 @@ on:
       - app/koi-scroll.css
       - app/koi-depth.css
       - app/koi-finished.css
+      - app/koi-wayfinding.css
+      - app/koi-navigation-clarity.css
       - components/studio/ScrollKoiExperience.tsx
       - components/studio/KoiNavigationMotion.tsx
       - components/studio/KoiDepthPass.tsx
