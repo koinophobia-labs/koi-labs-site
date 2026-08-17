@@ -19,11 +19,13 @@ type NavigatorWithConnection = Navigator & {
 type SceneCue = {
   position: number;
   normalizedTime: number;
+  scene: string;
 };
-
 type SceneTime = {
   time: number;
   ramping: boolean;
+  rampStrength: number;
+  scene: string;
 };
 
 function clamp(value: number, minimum = 0, maximum = 1) {
@@ -48,6 +50,7 @@ function collectSceneCues(root: HTMLElement) {
           rect.top +
           Math.min(rect.height * 0.5, window.innerHeight * 0.68),
         normalizedTime: clamp(frameSeconds / FALLBACK_DURATION_SECONDS),
+        scene: element.dataset.koiScene ?? "scene",
       };
     })
     .filter((cue): cue is SceneCue => cue !== null)
@@ -66,11 +69,18 @@ function mapScrollToSceneTime(
     return {
       time: (HERO_SETTLE_SECONDS / FALLBACK_DURATION_SECONDS) * duration,
       ramping: false,
+      rampStrength: 0,
+      scene: "hero",
     };
   }
 
   if (focusPosition <= cues[0].position) {
-    return { time: cues[0].normalizedTime * duration, ramping: false };
+    return {
+      time: cues[0].normalizedTime * duration,
+      ramping: false,
+      rampStrength: 0,
+      scene: cues[0].scene,
+    };
   }
 
   for (let index = 0; index < cues.length - 1; index += 1) {
@@ -82,10 +92,20 @@ function mapScrollToSceneTime(
     const localProgress = clamp((focusPosition - current.position) / span);
 
     if (localProgress <= RAMP_START) {
-      return { time: current.normalizedTime * duration, ramping: false };
+      return {
+        time: current.normalizedTime * duration,
+        ramping: false,
+        rampStrength: 0,
+        scene: current.scene,
+      };
     }
     if (localProgress >= RAMP_END) {
-      return { time: next.normalizedTime * duration, ramping: false };
+      return {
+        time: next.normalizedTime * duration,
+        ramping: false,
+        rampStrength: 0,
+        scene: next.scene,
+      };
     }
 
     const rampProgress =
@@ -95,12 +115,19 @@ function mapScrollToSceneTime(
       current.normalizedTime +
       (next.normalizedTime - current.normalizedTime) * eased;
 
-    return { time: normalizedTime * duration, ramping: true };
+    return {
+      time: normalizedTime * duration,
+      ramping: true,
+      rampStrength: Math.sin(Math.PI * rampProgress),
+      scene: rampProgress < 0.5 ? current.scene : next.scene,
+    };
   }
 
   return {
     time: cues[cues.length - 1].normalizedTime * duration,
     ramping: false,
+    rampStrength: 0,
+    scene: cues[cues.length - 1].scene,
   };
 }
 
@@ -114,6 +141,63 @@ function getDuoOpacity(section: HTMLElement) {
     (rect.bottom - viewportHeight * 0.12) / (viewportHeight * 0.62),
   );
   return smooth(entering) * smooth(leaving);
+}
+
+function setVisualVariables(
+  root: HTMLElement,
+  progress: number,
+  speedStrength: number,
+  rampStrength: number,
+  duoOpacity: number,
+) {
+  root.style.setProperty("--koi-scroll-progress", progress.toFixed(5));
+  root.style.setProperty(
+    "--koi-scroll-progress-percent",
+    `${(progress * 100).toFixed(3)}%`,
+  );
+  root.style.setProperty("--koi-scroll-speed", speedStrength.toFixed(4));
+  root.style.setProperty("--koi-ramp-strength", rampStrength.toFixed(4));
+  root.style.setProperty(
+    "--koi-video-scale",
+    (1.025 + speedStrength * 0.012).toFixed(5),
+  );
+  root.style.setProperty(
+    "--koi-video-brightness",
+    (0.55 + rampStrength * 0.08).toFixed(4),
+  );
+  root.style.setProperty(
+    "--koi-heading-position",
+    `${(28 + rampStrength * 42).toFixed(2)}%`,
+  );
+  root.style.setProperty(
+    "--koi-heading-glow",
+    `${(2 + rampStrength * 8).toFixed(2)}px`,
+  );
+  root.style.setProperty(
+    "--koi-heading-glow-alpha",
+    (0.02 + rampStrength * 0.14).toFixed(3),
+  );
+  root.style.setProperty(
+    "--koi-accent-glow",
+    `${(7 + rampStrength * 14).toFixed(2)}px`,
+  );
+  root.style.setProperty(
+    "--koi-accent-glow-alpha",
+    (0.08 + rampStrength * 0.42).toFixed(3),
+  );
+  root.style.setProperty(
+    "--koi-plate-opacity",
+    (0.46 + rampStrength * 0.12).toFixed(3),
+  );
+  root.style.setProperty("--koi-duo-opacity", duoOpacity.toFixed(4));
+  root.style.setProperty(
+    "--koi-single-opacity",
+    (0.73 - duoOpacity * 0.32).toFixed(4),
+  );
+  root.style.setProperty(
+    "--koi-duo-video-opacity",
+    (duoOpacity * 0.74).toFixed(4),
+  );
 }
 
 export default function ScrollKoiExperience() {
@@ -196,8 +280,11 @@ export default function ScrollKoiExperience() {
       }
     };
 
-    const resizeObserver = new ResizeObserver(refreshSceneCues);
-    resizeObserver.observe(root);
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(refreshSceneCues);
+    resizeObserver?.observe(root);
     window.addEventListener("resize", refreshSceneCues);
 
     const tick = (now: number) => {
@@ -214,12 +301,8 @@ export default function ScrollKoiExperience() {
       );
       const progress = clamp(scrollY / maxScroll);
       const focusPosition = scrollY + window.innerHeight * 0.5;
-
-      root.style.setProperty("--koi-scroll-progress", progress.toFixed(5));
-      root.style.setProperty(
-        "--koi-scroll-speed",
-        clamp(Math.abs(smoothedVelocity) / 2.2).toFixed(4),
-      );
+      const speedStrength = clamp(Math.abs(smoothedVelocity) / 2.2);
+      let rampStrength = 0;
 
       if (!hasScrolled && Math.abs(scrollY) > 4) {
         hasScrolled = true;
@@ -238,6 +321,7 @@ export default function ScrollKoiExperience() {
           currentTime = heroEnd;
           introComplete = true;
         }
+        root.dataset.koiScene = "hero";
         root.style.setProperty("--koi-ramping", "0");
       } else {
         if (!scrollInitialized) initializeScroll(focusPosition);
@@ -252,13 +336,14 @@ export default function ScrollKoiExperience() {
           duration,
         );
         const targetTime = mapped.time + continuityOffset;
+        rampStrength = mapped.rampStrength;
+        root.dataset.koiScene = mapped.scene;
         root.style.setProperty("--koi-ramping", mapped.ramping ? "1" : "0");
 
         const elapsedSeconds = elapsedMs / 1000;
-        const velocityStrength = clamp(Math.abs(smoothedVelocity) / 2.2);
         const response = mapped.ramping
-          ? 8 + velocityStrength * 24
-          : 5 + velocityStrength * 8;
+          ? 8 + speedStrength * 24
+          : 5 + speedStrength * 8;
         const catchUp = 1 - Math.exp(-response * elapsedSeconds);
         currentTime += (targetTime - currentTime) * catchUp;
         continuityOffset *= Math.exp(-3.2 * elapsedSeconds);
@@ -288,7 +373,13 @@ export default function ScrollKoiExperience() {
       }
 
       const duoOpacity = duoSection ? getDuoOpacity(duoSection) : 0;
-      root.style.setProperty("--koi-duo-opacity", duoOpacity.toFixed(4));
+      setVisualVariables(
+        root,
+        progress,
+        speedStrength,
+        rampStrength,
+        duoOpacity,
+      );
 
       lastScrollY = scrollY;
       lastFrameAt = now;
@@ -302,16 +393,29 @@ export default function ScrollKoiExperience() {
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
-      resizeObserver.disconnect();
+      resizeObserver?.disconnect();
       window.removeEventListener("resize", refreshSceneCues);
       single.removeEventListener("loadedmetadata", startHeroMotion);
       document.removeEventListener("visibilitychange", handleVisibility);
       single.pause();
       duo.pause();
+      delete root.dataset.koiScene;
       root.style.removeProperty("--koi-scroll-progress");
+      root.style.removeProperty("--koi-scroll-progress-percent");
       root.style.removeProperty("--koi-scroll-speed");
-      root.style.removeProperty("--koi-duo-opacity");
+      root.style.removeProperty("--koi-ramp-strength");
       root.style.removeProperty("--koi-ramping");
+      root.style.removeProperty("--koi-video-scale");
+      root.style.removeProperty("--koi-video-brightness");
+      root.style.removeProperty("--koi-heading-position");
+      root.style.removeProperty("--koi-heading-glow");
+      root.style.removeProperty("--koi-heading-glow-alpha");
+      root.style.removeProperty("--koi-accent-glow");
+      root.style.removeProperty("--koi-accent-glow-alpha");
+      root.style.removeProperty("--koi-plate-opacity");
+      root.style.removeProperty("--koi-duo-opacity");
+      root.style.removeProperty("--koi-single-opacity");
+      root.style.removeProperty("--koi-duo-video-opacity");
     };
   }, [motionMode]);
 
