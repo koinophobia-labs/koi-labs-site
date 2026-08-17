@@ -6,59 +6,6 @@ type NavigatorWithConnection = Navigator & {
   connection?: { saveData?: boolean };
 };
 
-type Chapter = {
-  number: string;
-  label: string;
-  description: string;
-  href: string;
-  scene: string;
-};
-
-const CHAPTERS: readonly Chapter[] = [
-  {
-    number: "00",
-    label: "Home",
-    description: "Studio overview",
-    href: "#enter",
-    scene: "hero",
-  },
-  {
-    number: "01",
-    label: "Products",
-    description: "Career Forge, Trendi, You Know Ball",
-    href: "#products",
-    scene: "products",
-  },
-  {
-    number: "02",
-    label: "Systems",
-    description: "Websites, AI workflows, automation",
-    href: "#systems",
-    scene: "systems",
-  },
-  {
-    number: "03",
-    label: "Work",
-    description: "Published concept builds",
-    href: "#work",
-    scene: "work",
-  },
-  {
-    number: "04",
-    label: "Founder",
-    description: "Blake Taylor",
-    href: "#founder",
-    scene: "founder",
-  },
-  {
-    number: "05",
-    label: "Start",
-    description: "Audit, concierge, or project intake",
-    href: "#start",
-    scene: "start",
-  },
-] as const;
-
 const HOLD_START = 0.18;
 const HOLD_END = 0.82;
 
@@ -129,10 +76,10 @@ export default function KoiNavigationMotion() {
         const mobile = viewportWidth <= 760;
         const restX = mobile
           ? 0
-          : direction * clamp(viewportWidth * 0.275, 280, 405);
+          : direction * clamp(viewportWidth * 0.235, 250, 340);
         const verticalRatio = Number.parseFloat(scene.dataset.koiY ?? "0");
         const restY = mobile
-          ? Math.min(viewportHeight * 0.24, 190)
+          ? Math.min(viewportHeight * 0.23, 180)
           : verticalRatio * viewportHeight;
         const parts = Array.from(
           scene.querySelectorAll<HTMLElement>("[data-koi-follow]"),
@@ -194,17 +141,14 @@ export default function KoiNavigationMotion() {
             blur = lerp(0, 5, amount);
           }
 
-          if (active && !staticMode) {
-            const essential = partIndex <= 1;
-            const activeFloor = essential ? 0.96 : partIndex <= 3 ? 0.82 : 0.7;
-            const lockStrength = essential ? 0.78 : 0.58;
-
-            opacity = Math.max(opacity, activeFloor);
+          if (active || staticMode) {
+            const lockStrength = staticMode ? 1 : 0.9;
+            opacity = 1;
             x = lerp(x, restX, lockStrength);
             y = lerp(y, restY + partIndex * 2, lockStrength);
             rotation = lerp(rotation, 0, lockStrength);
             scale = lerp(scale, 1, lockStrength);
-            blur = lerp(blur, 0, lockStrength);
+            blur = 0;
           }
 
           part.style.opacity = opacity.toFixed(4);
@@ -217,9 +161,10 @@ export default function KoiNavigationMotion() {
         });
       });
 
-      const activeSceneName =
-        scenes[activeSceneIndex]?.dataset.koiFollowScene ?? "hero";
+      const activeScene = scenes[activeSceneIndex] ?? null;
+      const activeSceneName = activeScene?.dataset.koiFollowScene ?? "hero";
       root.dataset.koiScene = activeSceneName;
+      root.dataset.koiLocation = activeSceneName;
       root.style.setProperty(
         "--koi-follow-speed",
         clamp(Math.abs(smoothedVelocity) / 2.2).toFixed(4),
@@ -252,6 +197,7 @@ export default function KoiNavigationMotion() {
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       delete root.dataset.koiScene;
+      delete root.dataset.koiLocation;
       root.style.removeProperty("--koi-follow-speed");
       scenes.forEach((scene) => {
         delete scene.dataset.koiActive;
@@ -263,24 +209,5 @@ export default function KoiNavigationMotion() {
     };
   }, []);
 
-  return (
-    <nav className="koi-wayfinder" aria-label="Koinophobia Labs site map">
-      <span className="koi-wayfinder__eyebrow">Explore the lab</span>
-      <div className="koi-wayfinder__links">
-        {CHAPTERS.map((chapter) => (
-          <a
-            className="koi-wayfinder__link"
-            href={chapter.href}
-            data-koi-nav={chapter.scene}
-            key={chapter.scene}
-            aria-current={chapter.scene === "hero" ? "true" : undefined}
-          >
-            <span>{chapter.number}</span>
-            <b>{chapter.label}</b>
-            <small>{chapter.description}</small>
-          </a>
-        ))}
-      </div>
-    </nav>
-  );
+  return null;
 }
