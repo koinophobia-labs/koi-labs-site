@@ -9,24 +9,21 @@ const DUO_KOI_SRC =
 
 const FALLBACK_DURATION_SECONDS = 12;
 const HERO_SETTLE_SECONDS = 2.65;
-
-/* The uneven slopes are intentional. Long, shallow spans let the koi hover
-   beside content. Short, steep spans accelerate through angle changes so the
-   film feels pulled by the visitor's scroll rather than chopped into clips. */
-const TIMELINE_CUES = [
-  { scroll: 0, normalizedTime: HERO_SETTLE_SECONDS / FALLBACK_DURATION_SECONDS },
-  { scroll: 0.1, normalizedTime: 3.05 / FALLBACK_DURATION_SECONDS },
-  { scroll: 0.17, normalizedTime: 4.95 / FALLBACK_DURATION_SECONDS },
-  { scroll: 0.38, normalizedTime: 6.2 / FALLBACK_DURATION_SECONDS },
-  { scroll: 0.58, normalizedTime: 6.95 / FALLBACK_DURATION_SECONDS },
-  { scroll: 0.66, normalizedTime: 8.9 / FALLBACK_DURATION_SECONDS },
-  { scroll: 0.84, normalizedTime: 10.6 / FALLBACK_DURATION_SECONDS },
-  { scroll: 1, normalizedTime: 11.85 / FALLBACK_DURATION_SECONDS },
-] as const;
+const RAMP_START = 0.32;
+const RAMP_END = 0.68;
 
 type MotionMode = "pending" | "video" | "static";
 type NavigatorWithConnection = Navigator & {
   connection?: { saveData?: boolean };
+};
+type SceneCue = {
+  position: number;
+  normalizedTime: number;
+};
+
+type SceneTime = {
+  time: number;
+  ramping: boolean;
 };
 
 function clamp(value: number, minimum = 0, maximum = 1) {
@@ -38,24 +35,73 @@ function smooth(value: number) {
   return bounded * bounded * (3 - 2 * bounded);
 }
 
-function mapScrollToVideoTime(progress: number, duration: number) {
-  const bounded = clamp(progress);
+function collectSceneCues(root: HTMLElement) {
+  return Array.from(root.querySelectorAll<HTMLElement>("[data-koi-frame]"))
+    .map((element): SceneCue | null => {
+      const frameSeconds = Number.parseFloat(element.dataset.koiFrame ?? "");
+      if (!Number.isFinite(frameSeconds)) return null;
 
-  for (let index = 0; index < TIMELINE_CUES.length - 1; index += 1) {
-    const current = TIMELINE_CUES[index];
-    const next = TIMELINE_CUES[index + 1];
-    if (bounded > next.scroll) continue;
+      const rect = element.getBoundingClientRect();
+      return {
+        position:
+          window.scrollY +
+          rect.top +
+          Math.min(rect.height * 0.5, window.innerHeight * 0.68),
+        normalizedTime: clamp(frameSeconds / FALLBACK_DURATION_SECONDS),
+      };
+    })
+    .filter((cue): cue is SceneCue => cue !== null)
+    .sort((left, right) => left.position - right.position);
+}
 
-    const span = next.scroll - current.scroll;
-    const localProgress = span === 0 ? 1 : (bounded - current.scroll) / span;
-    const eased = smooth(localProgress);
+/* Each content scene owns a real still frame. The first and final thirds of
+   the distance between scenes are stagnant reading zones. Only the middle
+   third advances the film, producing a deliberate speed ramp between plates. */
+function mapScrollToSceneTime(
+  focusPosition: number,
+  cues: SceneCue[],
+  duration: number,
+): SceneTime {
+  if (cues.length === 0) {
+    return {
+      time: (HERO_SETTLE_SECONDS / FALLBACK_DURATION_SECONDS) * duration,
+      ramping: false,
+    };
+  }
+
+  if (focusPosition <= cues[0].position) {
+    return { time: cues[0].normalizedTime * duration, ramping: false };
+  }
+
+  for (let index = 0; index < cues.length - 1; index += 1) {
+    const current = cues[index];
+    const next = cues[index + 1];
+    if (focusPosition > next.position) continue;
+
+    const span = Math.max(next.position - current.position, 1);
+    const localProgress = clamp((focusPosition - current.position) / span);
+
+    if (localProgress <= RAMP_START) {
+      return { time: current.normalizedTime * duration, ramping: false };
+    }
+    if (localProgress >= RAMP_END) {
+      return { time: next.normalizedTime * duration, ramping: false };
+    }
+
+    const rampProgress =
+      (localProgress - RAMP_START) / (RAMP_END - RAMP_START);
+    const eased = smooth(rampProgress);
     const normalizedTime =
       current.normalizedTime +
       (next.normalizedTime - current.normalizedTime) * eased;
-    return normalizedTime * duration;
+
+    return { time: normalizedTime * duration, ramping: true };
   }
 
-  return TIMELINE_CUES[TIMELINE_CUES.length - 1].normalizedTime * duration;
+  return {
+    time: cues[cues.length - 1].normalizedTime * duration,
+    ramping: false,
+  };
 }
 
 function getDuoOpacity(section: HTMLElement) {
@@ -81,7 +127,9 @@ export default function ScrollKoiExperience() {
 
     const chooseMode = () => {
       const connection = (navigator as NavigatorWithConnection).connection;
-      setMotionMode(reducedMotion.matches || connection?.saveData ? "static" : "video");
+      setMotionMode(
+        reducedMotion.matches || connection?.saveData ? "static" : "video",
+      );
     };
 
     chooseMode();
@@ -94,10 +142,11 @@ export default function ScrollKoiExperience() {
 
     const single = singleRef.current;
     const duo = duoRef.current;
-    const root = single?.closest<HTMLElement>(".studio-site--koi");
+    const root = single?.closest(".studio-site--koi") as HTMLElement | null;
     if (!single || !duo || !root) return;
 
     const duoSection = root.querySelector<HTMLElement>("[data-koi-duo]");
+    let sceneCues = collectSceneCues(root);
     let animationFrame = 0;
     let lastFrameAt = performance.now();
     let lastScrollY = window.scrollY;
@@ -114,6 +163,10 @@ export default function ScrollKoiExperience() {
         ? video.duration
         : FALLBACK_DURATION_SECONDS;
 
+    const refreshSceneCues = () => {
+      sceneCues = collectSceneCues(root);
+    };
+
     const startHeroMotion = () => {
       if (hasScrolled || introComplete || document.hidden) return;
       single.muted = true;
@@ -124,10 +177,11 @@ export default function ScrollKoiExperience() {
       });
     };
 
-    const initializeScroll = (progress: number) => {
+    const initializeScroll = (focusPosition: number) => {
       const duration = durationOf(single);
       currentTime = single.currentTime || 0;
-      continuityOffset = currentTime - mapScrollToVideoTime(progress, duration);
+      const mapped = mapScrollToSceneTime(focusPosition, sceneCues, duration);
+      continuityOffset = currentTime - mapped.time;
       scrollInitialized = true;
       single.pause();
       duo.pause();
@@ -142,6 +196,10 @@ export default function ScrollKoiExperience() {
       }
     };
 
+    const resizeObserver = new ResizeObserver(refreshSceneCues);
+    resizeObserver.observe(root);
+    window.addEventListener("resize", refreshSceneCues);
+
     const tick = (now: number) => {
       const elapsedMs = clamp(now - lastFrameAt, 1, 64);
       const scrollY = window.scrollY;
@@ -155,6 +213,7 @@ export default function ScrollKoiExperience() {
         document.documentElement.scrollHeight - window.innerHeight,
       );
       const progress = clamp(scrollY / maxScroll);
+      const focusPosition = scrollY + window.innerHeight * 0.5;
 
       root.style.setProperty("--koi-scroll-progress", progress.toFixed(5));
       root.style.setProperty(
@@ -164,33 +223,42 @@ export default function ScrollKoiExperience() {
 
       if (!hasScrolled && Math.abs(scrollY) > 4) {
         hasScrolled = true;
-        initializeScroll(progress);
+        initializeScroll(focusPosition);
       }
 
       if (!hasScrolled) {
         const duration = durationOf(single);
         const heroEnd = Math.min(HERO_SETTLE_SECONDS, duration - 0.08);
-        if (single.readyState >= HTMLMediaElement.HAVE_METADATA && single.currentTime >= heroEnd) {
+        if (
+          single.readyState >= HTMLMediaElement.HAVE_METADATA &&
+          single.currentTime >= heroEnd
+        ) {
           single.pause();
           single.currentTime = heroEnd;
           currentTime = heroEnd;
           introComplete = true;
         }
+        root.style.setProperty("--koi-ramping", "0");
       } else {
-        if (!scrollInitialized) initializeScroll(progress);
+        if (!scrollInitialized) initializeScroll(focusPosition);
 
         single.pause();
         duo.pause();
 
         const duration = durationOf(single);
-        const lookAhead = (smoothedVelocity * 150) / maxScroll;
-        const anticipatedProgress = clamp(progress + lookAhead);
-        const targetTime =
-          mapScrollToVideoTime(anticipatedProgress, duration) + continuityOffset;
+        const mapped = mapScrollToSceneTime(
+          focusPosition,
+          sceneCues,
+          duration,
+        );
+        const targetTime = mapped.time + continuityOffset;
+        root.style.setProperty("--koi-ramping", mapped.ramping ? "1" : "0");
 
         const elapsedSeconds = elapsedMs / 1000;
         const velocityStrength = clamp(Math.abs(smoothedVelocity) / 2.2);
-        const response = 5.5 + velocityStrength * 20;
+        const response = mapped.ramping
+          ? 8 + velocityStrength * 24
+          : 5 + velocityStrength * 8;
         const catchUp = 1 - Math.exp(-response * elapsedSeconds);
         currentTime += (targetTime - currentTime) * catchUp;
         continuityOffset *= Math.exp(-3.2 * elapsedSeconds);
@@ -234,6 +302,8 @@ export default function ScrollKoiExperience() {
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", refreshSceneCues);
       single.removeEventListener("loadedmetadata", startHeroMotion);
       document.removeEventListener("visibilitychange", handleVisibility);
       single.pause();
@@ -241,6 +311,7 @@ export default function ScrollKoiExperience() {
       root.style.removeProperty("--koi-scroll-progress");
       root.style.removeProperty("--koi-scroll-speed");
       root.style.removeProperty("--koi-duo-opacity");
+      root.style.removeProperty("--koi-ramping");
     };
   }, [motionMode]);
 
