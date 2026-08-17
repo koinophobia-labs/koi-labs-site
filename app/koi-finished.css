@@ -1,0 +1,615 @@
+/* Final Koinophobia Labs homepage.
+   The koi establishes each destination first; information follows in its wake,
+   settles for reading, then leaves with the fish. */
+
+.koi-world--finished {
+  --koi-follow-speed: 0;
+  --koi-idle-x: 0vw;
+  --koi-idle-y: 0vh;
+  --koi-idle-rotate: 0deg;
+  --koi-idle-scale: 0;
+  --koi-idle-light: 0;
+  --koi-depth-idle-x: 0vw;
+  --koi-depth-idle-y: 0vh;
+  --koi-depth-idle-rotate: 0deg;
+  --koi-depth-idle-scale: 0;
+  --koi-depth-base: .72;
+  --koi-depth-scale: 1.09;
+}
+
+.koi-world--finished .koi-scene {
+  position: relative;
+  min-height: 178svh;
+  padding: 0;
+  display: block;
+  isolation: auto;
+}
+
+.koi-world--finished .koi-scene::before {
+  display: none;
+}
+
+.koi-follow-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.koi-follow-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      transparent 0 25%,
+      rgba(1, 1, 2, .04) 48%,
+      rgba(1, 1, 2, .2) 74%,
+      rgba(1, 1, 2, .46) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(1, 1, 2, .25),
+      transparent 23% 77%,
+      rgba(1, 1, 2, .25)
+    );
+}
+
+.koi-follow-wake {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  width: min(42vw, 600px);
+  height: min(18vh, 150px);
+  border-top: 1px solid rgba(125, 227, 233, .16);
+  border-radius: 50%;
+  opacity: var(--koi-follow-wake-opacity, .12);
+  transform:
+    translate(-2%, -50%)
+    scaleX(var(--koi-follow-wake-direction, 1));
+  transform-origin: left center;
+  filter: drop-shadow(0 0 16px rgba(199, 168, 246, .08));
+  pointer-events: none;
+  transition: opacity .22s linear;
+}
+
+.koi-follow-cluster {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: min(480px, 42vw);
+  transform: translate(-50%, -50%);
+  color: var(--koi-pearl);
+  text-wrap: balance;
+}
+
+.koi-follow-cluster--hero {
+  width: min(590px, 48vw);
+}
+
+.koi-follow-cluster--start {
+  width: min(570px, 48vw);
+}
+
+.koi-follow-cluster::before {
+  content: "";
+  position: absolute;
+  inset: -48px -60px;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(1, 1, 2, .76),
+    rgba(1, 1, 2, .34) 55%,
+    transparent 78%
+  );
+  filter: blur(9px);
+}
+
+.koi-world--finished [data-koi-follow] {
+  will-change: transform, opacity, filter;
+}
+
+.koi-world--finished
+  .koi-scene:not([data-koi-active="true"])
+  .koi-follow-cluster {
+  pointer-events: none;
+}
+
+.koi-world--finished
+  .koi-scene[data-koi-active="true"]
+  .koi-follow-cluster {
+  pointer-events: auto;
+}
+
+/* The old page's section-specific positioning is replaced by one shared
+   motion coordinate system around the master koi. */
+.koi-world--finished .koi-scene__hero-copy,
+.koi-world--finished .koi-scene__center-label,
+.koi-world--finished .koi-scene__side-copy,
+.koi-world--finished .koi-scene__work-heading,
+.koi-world--finished .koi-founder-note,
+.koi-world--finished .koi-portal {
+  position: static;
+  inset: auto;
+  width: auto;
+  max-width: none;
+  margin: 0;
+}
+
+.koi-world--finished .koi-scene__hero-copy {
+  padding: 0;
+  background: none;
+}
+
+.koi-world--finished .koi-scene__hero-copy h1 {
+  max-width: 590px;
+  font-size: clamp(54px, 6vw, 88px);
+}
+
+.koi-world--finished .koi-scene__hero-copy > p:not(.koi-kicker),
+.koi-world--finished .koi-scene__side-copy > p:not(.koi-kicker),
+.koi-world--finished .koi-founder-note p,
+.koi-world--finished .koi-portal > p:not(.koi-kicker) {
+  max-width: 430px;
+  margin: 20px 0 0;
+  color: var(--koi-graphite);
+  font-size: clamp(15px, 1.25vw, 18px);
+  line-height: 1.68;
+}
+
+.koi-world--finished .koi-scene__center-label,
+.koi-world--finished .koi-scene__work-heading {
+  text-align: left;
+}
+
+.koi-world--finished .koi-scene__center-label h2,
+.koi-world--finished .koi-scene__side-copy h2,
+.koi-world--finished .koi-scene__work-heading h2,
+.koi-world--finished .koi-founder-note h2,
+.koi-world--finished .koi-portal h2 {
+  max-width: 500px;
+  font-size: clamp(42px, 4.8vw, 70px);
+  line-height: .94;
+}
+
+.koi-world--finished .koi-product-orbit,
+.koi-world--finished .koi-service-current,
+.koi-world--finished .koi-work-wake {
+  position: static;
+  inset: auto;
+  width: auto;
+  height: auto;
+  margin: 24px 0 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  border-top: 1px solid rgba(255, 255, 255, .1);
+  transform: none;
+}
+
+.koi-world--finished .koi-product-orbit::before,
+.koi-world--finished .koi-product-orbit::after,
+.koi-world--finished .koi-service-current::before,
+.koi-world--finished .koi-work-wake::before {
+  display: none;
+}
+
+.koi-world--finished .koi-product-node,
+.koi-world--finished .koi-service-current > a,
+.koi-world--finished .koi-work-wake > a {
+  position: relative;
+  inset: auto !important;
+  width: auto;
+  min-height: 58px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  transition:
+    padding .18s ease,
+    color .18s ease,
+    border-color .18s ease;
+}
+
+.koi-world--finished .koi-product-node:hover,
+.koi-world--finished .koi-service-current > a:hover,
+.koi-world--finished .koi-work-wake > a:hover {
+  padding-inline: 7px;
+  color: var(--koi-cyan);
+  border-bottom-color: rgba(125, 227, 233, .42);
+  transform: none;
+}
+
+.koi-world--finished .koi-product-node__number,
+.koi-world--finished .koi-service-current span,
+.koi-world--finished .koi-work-wake > a > span {
+  color: var(--koi-smoke);
+  font: 600 9px/1 var(--font-mono), monospace;
+}
+
+.koi-world--finished .koi-product-node strong,
+.koi-world--finished .koi-service-current strong,
+.koi-world--finished .koi-work-wake strong {
+  font: 600 13px/1.25 var(--font-sora), sans-serif;
+}
+
+.koi-world--finished .koi-product-node small,
+.koi-world--finished .koi-service-current small,
+.koi-world--finished .koi-work-wake small,
+.koi-world--finished .koi-work-wake b {
+  color: var(--koi-smoke);
+  font-size: 10px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.koi-world--finished .koi-product-node__status,
+.koi-world--finished .koi-work-wake b {
+  color: var(--koi-violet);
+  font: 600 9px/1.2 var(--font-mono), monospace;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.koi-world--finished .koi-scene__edge-link {
+  position: static;
+  inset: auto;
+  width: fit-content;
+  margin-top: 19px;
+  color: var(--koi-violet);
+  border-bottom: 1px solid rgba(199, 168, 246, .3);
+  padding-bottom: 5px;
+}
+
+.koi-world--finished .koi-founder-note {
+  padding: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 22px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.koi-world--finished .koi-founder-note__portrait {
+  width: 86px;
+  height: 86px;
+  border-color: rgba(255, 255, 255, .16);
+  box-shadow: 0 0 30px rgba(199, 168, 246, .11);
+}
+
+.koi-world--finished .koi-founder-note > div:last-child > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 20px;
+  color: var(--koi-violet);
+  border-bottom: 1px solid rgba(199, 168, 246, .3);
+  padding-bottom: 5px;
+  font: 600 10px/1.3 var(--font-mono), monospace;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.koi-world--finished .koi-portal {
+  aspect-ratio: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.koi-world--finished .koi-portal::before,
+.koi-world--finished .koi-portal::after {
+  display: none;
+}
+
+.koi-world--finished .koi-actions--center {
+  justify-content: flex-start;
+}
+
+.koi-world--finished .koi-scroll-cue {
+  left: 50%;
+  bottom: 30px;
+  z-index: 5;
+}
+
+.koi-world--finished .koi-world__footer {
+  left: clamp(20px, 3vw, 48px);
+  right: clamp(20px, 3vw, 48px);
+  bottom: 22px;
+  z-index: 5;
+}
+
+/* The fish stays visibly dimensional even during stagnant reading points.
+   Tiny source-frame oscillation supplies fin and water motion while this layer
+   adds a barely perceptible camera drift and highlight pulse. */
+.koi-world--finished .studio-scroll-koi__video {
+  filter:
+    grayscale(.24)
+    saturate(.82)
+    contrast(1.5)
+    brightness(calc(var(--koi-video-brightness) + var(--koi-idle-light)));
+  transform:
+    translate3d(var(--koi-idle-x), var(--koi-idle-y), 0)
+    rotate(var(--koi-idle-rotate))
+    scale(
+      calc(
+        var(--koi-video-scale) +
+        var(--koi-idle-scale) +
+        var(--koi-follow-speed) * .004
+      )
+    );
+  transform-origin: center;
+  transition: opacity .42s linear, filter .2s linear;
+}
+
+.koi-world--finished .studio-scroll-koi__poster {
+  opacity: .88;
+  filter: grayscale(.72) saturate(.42) contrast(1.36) brightness(.82);
+}
+
+.koi-world--finished .studio-scroll-koi__depth {
+  background:
+    radial-gradient(ellipse at 50% 49%, rgba(125, 227, 233, .145), transparent 31%),
+    radial-gradient(ellipse at 52% 52%, rgba(199, 168, 246, .105), transparent 42%),
+    radial-gradient(circle at 50% 52%, transparent 0 43%, rgba(1, 1, 2, .055) 69%, rgba(1, 1, 2, .42) 100%);
+  opacity: 1;
+}
+
+.koi-world--finished .studio-scroll-koi__vignette {
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      transparent 0 42%,
+      rgba(1, 1, 2, .035) 62%,
+      rgba(1, 1, 2, .3) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(1, 1, 2, .26),
+      transparent 18% 83%,
+      rgba(1, 1, 2, .44)
+    );
+}
+
+.koi-world--finished .studio-koi-depth-pass {
+  -webkit-mask-image: radial-gradient(
+    ellipse 64% 74% at var(--koi-depth-x) var(--koi-depth-y),
+    #000 0%,
+    #000 50%,
+    rgba(0, 0, 0, .78) 67%,
+    transparent 88%
+  );
+  mask-image: radial-gradient(
+    ellipse 64% 74% at var(--koi-depth-x) var(--koi-depth-y),
+    #000 0%,
+    #000 50%,
+    rgba(0, 0, 0, .78) 67%,
+    transparent 88%
+  );
+}
+
+.koi-world--finished .studio-koi-depth-pass__video {
+  opacity: 1;
+  filter: grayscale(.12) saturate(.94) contrast(1.64) brightness(1.34);
+  transform:
+    translate3d(
+      var(--koi-depth-idle-x),
+      calc(-1.15% + var(--koi-depth-idle-y)),
+      74px
+    )
+    rotate(var(--koi-depth-idle-rotate))
+    scale(calc(var(--koi-depth-scale) + var(--koi-depth-idle-scale)));
+}
+
+.koi-world--finished .studio-koi-depth-pass__glass {
+  opacity: .9;
+  animation: koiEdgeLightBreathe 5.6s ease-in-out infinite;
+}
+
+.koi-world--finished[data-koi-living="true"] .studio-koi-depth-pass__shadow {
+  opacity: .38;
+}
+
+.koi-world--finished[data-koi-scene="hero"] {
+  --koi-depth-base: .8;
+  --koi-depth-scale: 1.095;
+}
+
+.koi-world--finished[data-koi-scene="systems"] {
+  --koi-depth-base: .76;
+  --koi-depth-scale: 1.092;
+}
+
+.koi-world--finished[data-koi-scene="work"] {
+  --koi-depth-base: .72;
+  --koi-depth-scale: 1.088;
+}
+
+.koi-world--finished[data-koi-scene="founder"] {
+  --koi-depth-base: .84;
+  --koi-depth-scale: 1.1;
+}
+
+.koi-world--finished[data-koi-scene="start"] {
+  --koi-depth-base: .88;
+  --koi-depth-scale: 1.105;
+}
+
+.koi-world--finished[data-koi-scene="products"]
+  .studio-scroll-koi__video--duo {
+  filter:
+    grayscale(.18)
+    saturate(.9)
+    contrast(1.55)
+    brightness(calc(var(--koi-video-brightness) + .08));
+}
+
+@keyframes koiEdgeLightBreathe {
+  0%, 100% {
+    opacity: .84;
+    transform: translate3d(-.08%, .04%, 0) scale(.998);
+  }
+  50% {
+    opacity: .98;
+    transform: translate3d(.12%, -.08%, 0) scale(1.004);
+  }
+}
+
+@keyframes koiWakeBreathe {
+  0%, 100% {
+    opacity: .26;
+    filter: drop-shadow(0 0 12px rgba(199, 168, 246, .06));
+  }
+  50% {
+    opacity: var(--koi-follow-wake-opacity, .12);
+    filter: drop-shadow(0 0 20px rgba(125, 227, 233, .12));
+  }
+}
+
+.koi-world--finished
+  .koi-scene[data-koi-active="true"]
+  .koi-follow-wake {
+  animation: koiWakeBreathe 4.8s ease-in-out infinite;
+}
+
+.koi-world--finished[data-koi-scene="products"] {
+  --koi-depth-base: 0;
+}
+
+.koi-world--finished .koi-world__rail a[aria-current="true"] {
+  color: var(--koi-pearl);
+}
+
+.koi-world--finished .koi-world__rail a[aria-current="true"] b {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.koi-world--finished .koi-world__rail a[aria-current="true"]::after {
+  border-color: var(--koi-cyan);
+  box-shadow: 0 0 12px rgba(125, 227, 233, .58);
+  transform: scale(1.14);
+}
+
+@media (max-width: 980px) {
+  .koi-follow-cluster,
+  .koi-follow-cluster--hero,
+  .koi-follow-cluster--start {
+    width: min(430px, 46vw);
+  }
+}
+
+@media (max-width: 760px) {
+  .koi-world--finished .koi-scene {
+    min-height: 164svh;
+  }
+
+  .koi-follow-cluster,
+  .koi-follow-cluster--hero,
+  .koi-follow-cluster--start {
+    top: 50%;
+    width: min(88vw, 460px);
+  }
+
+  .koi-follow-cluster::before {
+    inset: -30px -20px;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(1, 1, 2, .82),
+      rgba(1, 1, 2, .48) 62%,
+      transparent 84%
+    );
+  }
+
+  .koi-follow-wake {
+    width: 54vw;
+  }
+
+  .koi-world--finished .koi-scene__hero-copy h1 {
+    font-size: clamp(46px, 13vw, 65px);
+  }
+
+  .koi-world--finished .koi-scene__center-label h2,
+  .koi-world--finished .koi-scene__side-copy h2,
+  .koi-world--finished .koi-scene__work-heading h2,
+  .koi-world--finished .koi-founder-note h2,
+  .koi-world--finished .koi-portal h2 {
+    font-size: clamp(38px, 11vw, 54px);
+  }
+
+  .koi-world--finished .koi-product-node,
+  .koi-world--finished .koi-service-current > a,
+  .koi-world--finished .koi-work-wake > a {
+    grid-template-columns: 26px minmax(0, 1fr) 16px;
+  }
+
+  .koi-world--finished .koi-product-node small,
+  .koi-world--finished .koi-service-current small,
+  .koi-world--finished .koi-work-wake small,
+  .koi-world--finished .koi-work-wake b,
+  .koi-world--finished .koi-product-node__status {
+    display: none;
+  }
+
+  .koi-world--finished .koi-founder-note {
+    grid-template-columns: 1fr;
+  }
+
+  .koi-world--finished .koi-founder-note__portrait {
+    width: 76px;
+    height: 76px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .koi-world--finished [data-koi-follow] {
+    transition: none !important;
+  }
+
+  .koi-follow-wake {
+    opacity: .12 !important;
+    animation: none !important;
+  }
+}
+
+@media print {
+  .koi-follow-stage {
+    position: relative;
+    height: auto;
+    min-height: 540px;
+  }
+
+  .koi-follow-cluster {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(760px, 90%);
+    margin: 70px auto;
+    transform: none;
+  }
+
+  .koi-world--finished [data-koi-follow] {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+  }
+}

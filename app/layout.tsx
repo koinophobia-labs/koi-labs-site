@@ -1,5 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, IBM_Plex_Mono, Inter, JetBrains_Mono, Newsreader, Sora } from "next/font/google";
+import {
+  Archivo,
+  IBM_Plex_Mono,
+  Inter,
+  JetBrains_Mono,
+  Newsreader,
+  Sora,
+} from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import BrandIntro from "@/components/brand/BrandIntro";
 import "./globals.css";
@@ -15,6 +22,12 @@ import "./brand-intro.css";
 import "./founder-editorial.css";
 import "./product-worlds.css";
 import "./commercial.css";
+import "./koi-scroll.css";
+import "./koi-depth.css";
+import "./koi-finished.css";
+import "./koi-wayfinding.css";
+import "./koi-navigation-clarity.css";
+import "./koi-navigation-final.css";
 import "./dev-system.css";
 import "./dev-home.css";
 import "./dev-product.css";
@@ -26,6 +39,7 @@ import "./connect-card.css";
 import "./resume-dev.css";
 import "./now-dev.css";
 import AnalyticsBridge from "@/components/studio/AnalyticsBridge";
+import KoiDepthPass from "@/components/studio/KoiDepthPass";
 import KoiCompanion from "@/components/companion/KoiCompanion";
 import "./koi-companion.css";
 
@@ -48,7 +62,10 @@ const jetbrains = JetBrains_Mono({
 });
 
 const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"] });
-const newsreader = Newsreader({ variable: "--font-newsreader", subsets: ["latin"] });
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+});
 const ibmPlexMono = IBM_Plex_Mono({
   variable: "--font-ibm-plex-mono",
   subsets: ["latin"],
@@ -74,7 +91,9 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/brand/koi-emblem.svg", type: "image/svg+xml" }],
     shortcut: ["/brand/koi-emblem.svg"],
-    apple: [{ url: "/brand/apple-icon", type: "image/png", sizes: "256x256" }],
+    apple: [
+      { url: "/brand/apple-icon", type: "image/png", sizes: "256x256" },
+    ],
   },
   openGraph: {
     type: "website",
@@ -114,6 +133,7 @@ export default function RootLayout({
         <AnalyticsBridge />
         <Analytics />
         {children}
+        <KoiDepthPass />
         <KoiCompanion />
       </body>
     </html>

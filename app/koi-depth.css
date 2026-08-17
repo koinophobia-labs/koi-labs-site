@@ -1,0 +1,181 @@
+/* A synchronized foreground pass lets the koi's illuminated body cross the
+   interface plane. The black water disappears under screen blending, leaving
+   the fish to feel physically closer than the typography and controls. */
+.studio-site--koi {
+  --koi-depth-x: 52%;
+  --koi-depth-y: 48%;
+  --koi-depth-base: .56;
+  --koi-depth-scale: 1.07;
+}
+
+.studio-koi-depth-pass {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: max(var(--koi-depth-base), var(--koi-ramp-strength));
+  perspective: 900px;
+  transform-style: preserve-3d;
+  transform-origin: var(--koi-depth-x) var(--koi-depth-y);
+  -webkit-mask-image: radial-gradient(
+    ellipse 58% 68% at var(--koi-depth-x) var(--koi-depth-y),
+    #000 0%,
+    #000 46%,
+    rgba(0, 0, 0, .72) 61%,
+    transparent 82%
+  );
+  mask-image: radial-gradient(
+    ellipse 58% 68% at var(--koi-depth-x) var(--koi-depth-y),
+    #000 0%,
+    #000 46%,
+    rgba(0, 0, 0, .72) 61%,
+    transparent 82%
+  );
+  contain: strict;
+  transition: opacity .2s linear;
+}
+
+.studio-scroll-koi:not([data-ready="true"]) ~ .studio-koi-depth-pass {
+  opacity: 0;
+}
+
+.studio-koi-depth-pass__video,
+.studio-koi-depth-pass__shadow,
+.studio-koi-depth-pass__glass {
+  position: absolute;
+  inset: 0;
+}
+
+.studio-koi-depth-pass__video {
+  inset: -2%;
+  width: 104%;
+  height: 104%;
+  object-fit: cover;
+  object-position: center;
+  mix-blend-mode: screen;
+  filter:
+    grayscale(.62)
+    saturate(.3)
+    contrast(1.8)
+    brightness(1.46)
+    opacity(.4);
+  transform: translate3d(0, -1.4%, 62px) scale(var(--koi-depth-scale));
+  transform-origin: var(--koi-depth-x) var(--koi-depth-y);
+  will-change: transform, filter;
+}
+
+.studio-koi-depth-pass__shadow {
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 31% 14% at var(--koi-depth-x) calc(var(--koi-depth-y) + 17%),
+    rgba(0, 0, 0, .88),
+    rgba(0, 0, 0, .3) 45%,
+    transparent 76%
+  );
+  opacity: .22;
+  transform: translate3d(0, 2.4%, 0) scale(.96);
+  mix-blend-mode: multiply;
+}
+
+.studio-koi-depth-pass__glass {
+  background:
+    radial-gradient(
+      ellipse 34% 42% at var(--koi-depth-x) var(--koi-depth-y),
+      rgba(255, 255, 255, .09),
+      rgba(125, 227, 233, .07) 25%,
+      rgba(199, 168, 246, .04) 44%,
+      transparent 72%
+    ),
+    linear-gradient(
+      112deg,
+      transparent 34%,
+      rgba(255, 255, 255, .034) 49%,
+      transparent 63%
+    );
+  mix-blend-mode: screen;
+  opacity: .8;
+}
+
+.studio-site--koi[data-koi-scene="hero"] {
+  --koi-depth-x: 55%;
+  --koi-depth-y: 45%;
+  --koi-depth-base: .68;
+  --koi-depth-scale: 1.075;
+}
+
+/* The two-koi reveal remains a pure pair. */
+.studio-site--koi[data-koi-scene="products"] .studio-koi-depth-pass {
+  opacity: 0;
+}
+
+.studio-site--koi[data-koi-scene="systems"] {
+  --koi-depth-x: 49%;
+  --koi-depth-y: 47%;
+  --koi-depth-base: .66;
+  --koi-depth-scale: 1.075;
+}
+
+.studio-site--koi[data-koi-scene="work"] {
+  --koi-depth-x: 51%;
+  --koi-depth-y: 48%;
+  --koi-depth-base: .62;
+  --koi-depth-scale: 1.07;
+}
+
+.studio-site--koi[data-koi-scene="founder"] {
+  --koi-depth-x: 46%;
+  --koi-depth-y: 49%;
+  --koi-depth-base: .74;
+  --koi-depth-scale: 1.085;
+}
+
+.studio-site--koi[data-koi-scene="start"] {
+  --koi-depth-x: 50%;
+  --koi-depth-y: 50%;
+  --koi-depth-base: .78;
+  --koi-depth-scale: 1.09;
+}
+
+@media (max-width: 760px) {
+  .studio-koi-depth-pass {
+    -webkit-mask-image: radial-gradient(
+      ellipse 68% 60% at var(--koi-depth-x) var(--koi-depth-y),
+      #000 0%,
+      #000 38%,
+      rgba(0, 0, 0, .62) 56%,
+      transparent 78%
+    );
+    mask-image: radial-gradient(
+      ellipse 68% 60% at var(--koi-depth-x) var(--koi-depth-y),
+      #000 0%,
+      #000 38%,
+      rgba(0, 0, 0, .62) 56%,
+      transparent 78%
+    );
+  }
+
+  .studio-koi-depth-pass__video {
+    inset: -7%;
+    width: 114%;
+    height: 114%;
+    object-position: 58% center;
+    filter:
+      grayscale(.7)
+      saturate(.24)
+      contrast(1.7)
+      brightness(1.38)
+      opacity(.28);
+    transform: translate3d(0, -1%, 34px) scale(1.045);
+  }
+
+  .studio-koi-depth-pass__shadow {
+    opacity: .12;
+  }
+}
+
+@media (prefers-reduced-motion: reduce), print {
+  .studio-koi-depth-pass {
+    display: none !important;
+  }
+}

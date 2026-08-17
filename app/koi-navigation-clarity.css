@@ -1,0 +1,429 @@
+/* Navigation clarity pass.
+   The koi remains the cinematic guide, but the visitor always has a visible
+   map, a named destination, and a readable information plane. */
+
+body:has(.koi-world--finished) {
+  scroll-padding-top: 88px;
+}
+
+.koi-world--finished .koi-wayfinder,
+.koi-world--finished .koi-world__rail {
+  display: none !important;
+}
+
+.koi-world--finished .koi-world__header {
+  top: 12px;
+  left: 16px;
+  right: 16px;
+  min-height: 58px;
+  padding: 7px 8px 7px 16px;
+  display: grid;
+  grid-template-columns: minmax(160px, auto) minmax(0, 1fr) minmax(150px, auto);
+  align-items: center;
+  gap: 18px;
+  border: 1px solid rgba(255, 255, 255, .11);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(8, 8, 12, .9), rgba(3, 3, 6, .76)),
+    rgba(3, 3, 5, .82);
+  box-shadow:
+    0 24px 70px -44px rgba(0, 0, 0, 1),
+    inset 0 1px 0 rgba(255, 255, 255, .04);
+  backdrop-filter: blur(20px) saturate(1.08);
+  pointer-events: auto;
+}
+
+.koi-world--finished .koi-world__brand {
+  justify-self: start;
+  min-width: 0;
+}
+
+.koi-world__primary-nav {
+  justify-self: center;
+  min-width: 0;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid rgba(255, 255, 255, .065);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .28);
+}
+
+.koi-world__primary-nav a {
+  position: relative;
+  min-height: 34px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: rgba(229, 225, 234, .7);
+  font: 600 9px/1 var(--font-mono), monospace;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition:
+    color .18s ease,
+    border-color .18s ease,
+    background .18s ease,
+    box-shadow .18s ease,
+    transform .18s ease;
+}
+
+.koi-world__primary-nav a::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin-right: 7px;
+  border: 1px solid rgba(199, 168, 246, .54);
+  border-radius: 50%;
+  background: transparent;
+  transition:
+    border-color .18s ease,
+    background .18s ease,
+    box-shadow .18s ease;
+}
+
+.koi-world__primary-nav a:hover,
+.koi-world__primary-nav a:focus-visible,
+.koi-world__primary-nav a[aria-current="true"] {
+  color: #fff;
+  border-color: rgba(125, 227, 233, .22);
+  background: rgba(125, 227, 233, .075);
+}
+
+.koi-world__primary-nav a[aria-current="true"] {
+  box-shadow:
+    inset 0 0 22px rgba(125, 227, 233, .045),
+    0 0 18px rgba(125, 227, 233, .07);
+}
+
+.koi-world__primary-nav a[aria-current="true"]::before {
+  border-color: var(--koi-cyan);
+  background: var(--koi-cyan);
+  box-shadow: 0 0 10px rgba(125, 227, 233, .7);
+}
+
+.koi-world__primary-nav a:hover {
+  transform: translateY(-1px);
+}
+
+.koi-world--finished .koi-world__header-cta {
+  justify-self: end;
+  min-height: 38px;
+  padding: 0 10px;
+}
+
+/* The foreground koi still pops out of the black water, but readable interface
+   content now occupies the plane directly above it. */
+.koi-world--finished > main {
+  z-index: auto;
+}
+
+.koi-world--finished .koi-follow-stage {
+  z-index: 4;
+}
+
+.koi-world--finished .koi-follow-cluster {
+  z-index: 6;
+  width: min(500px, 39vw);
+}
+
+.koi-world--finished .koi-follow-cluster--hero {
+  width: min(560px, 44vw);
+}
+
+.koi-world--finished .koi-follow-cluster--start {
+  width: min(520px, 42vw);
+}
+
+.koi-world--finished .koi-scene__center-label {
+  transform: none;
+}
+
+.koi-world--finished
+  [data-koi-follow-scene="products"]
+  .koi-follow-cluster {
+  top: 57%;
+  width: min(460px, 36vw);
+}
+
+.koi-world--finished
+  [data-koi-follow-scene="products"]
+  .koi-scene__center-label h2 {
+  font-size: clamp(34px, 3.4vw, 52px);
+}
+
+.koi-world--finished
+  [data-koi-follow-scene="products"]
+  .koi-product-node {
+  min-height: 56px;
+}
+
+.koi-world--finished .koi-follow-cluster::before {
+  inset: -24px -26px;
+  border: 1px solid rgba(255, 255, 255, .15);
+  border-radius: 16px;
+  background:
+    linear-gradient(
+      140deg,
+      rgba(9, 9, 13, .95),
+      rgba(5, 5, 8, .9) 58%,
+      rgba(2, 2, 4, .82)
+    );
+  box-shadow:
+    0 32px 100px -48px rgba(0, 0, 0, 1),
+    inset 0 1px 0 rgba(255, 255, 255, .055),
+    0 0 54px rgba(125, 227, 233, .045);
+  backdrop-filter: blur(22px) saturate(1.06);
+}
+
+.koi-world--finished .koi-follow-cluster::after {
+  top: -24px;
+  width: 92px;
+  height: 2px;
+}
+
+.koi-world--finished
+  .koi-scene[data-koi-active="true"]
+  [data-koi-follow] {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+.koi-world--finished
+  .koi-scene[data-koi-active="true"]
+  .koi-follow-cluster::before {
+  border-color: rgba(255, 255, 255, .19);
+  box-shadow:
+    0 34px 110px -50px rgba(0, 0, 0, 1),
+    inset 0 1px 0 rgba(255, 255, 255, .07),
+    0 0 60px rgba(125, 227, 233, .055);
+}
+
+.koi-section-marker {
+  min-height: 30px;
+  margin: 0 0 18px;
+  padding: 0 0 12px;
+  display: grid;
+  grid-template-columns: 30px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, .12);
+  color: rgba(238, 234, 242, .8);
+}
+
+.koi-section-marker > span {
+  color: var(--koi-cyan);
+  font: 600 9px/1 var(--font-mono), monospace;
+  letter-spacing: .08em;
+}
+
+.koi-section-marker > strong {
+  color: #fff;
+  font: 650 11px/1 var(--font-sora), sans-serif;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.koi-section-marker > small {
+  justify-self: end;
+  overflow: hidden;
+  color: rgba(221, 216, 226, .62);
+  font: 500 9px/1.25 var(--font-mono), monospace;
+  letter-spacing: .035em;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.koi-world--finished .koi-scene__hero-copy h1 {
+  max-width: 520px;
+  color: #fff;
+  font-size: clamp(48px, 5.2vw, 76px);
+  text-shadow:
+    0 3px 30px rgba(0, 0, 0, 1),
+    0 0 18px rgba(125, 227, 233, .035);
+}
+
+.koi-world--finished .koi-scene__center-label h2,
+.koi-world--finished .koi-scene__side-copy h2,
+.koi-world--finished .koi-scene__work-heading h2,
+.koi-world--finished .koi-founder-note h2,
+.koi-world--finished .koi-portal h2 {
+  max-width: 470px;
+  color: #fff;
+  font-size: clamp(38px, 4vw, 60px);
+  text-shadow:
+    0 3px 28px rgba(0, 0, 0, 1),
+    0 0 16px rgba(125, 227, 233, .035);
+}
+
+.koi-world--finished .koi-scene__hero-copy > p:not(.koi-kicker),
+.koi-world--finished .koi-scene__side-copy > p:not(.koi-kicker),
+.koi-world--finished .koi-founder-note p,
+.koi-world--finished .koi-portal > p:not(.koi-kicker) {
+  color: rgba(239, 235, 242, .9);
+}
+
+.koi-world--finished .koi-product-node,
+.koi-world--finished .koi-service-current > a,
+.koi-world--finished .koi-work-wake > a {
+  min-height: 64px;
+  color: rgba(250, 248, 251, .94);
+}
+
+.koi-world--finished .koi-product-node small,
+.koi-world--finished .koi-service-current small,
+.koi-world--finished .koi-work-wake small,
+.koi-world--finished .koi-work-wake b {
+  color: rgba(225, 220, 229, .72);
+}
+
+.koi-world--finished .koi-actions a,
+.koi-world--finished .koi-scene__edge-link,
+.koi-world--finished .koi-founder-note > div:last-child > a {
+  color: #fff;
+}
+
+@media (max-width: 1180px) {
+  .koi-world--finished .koi-world__header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .koi-world__primary-nav a {
+    padding-inline: 9px;
+    font-size: 8px;
+  }
+
+  .koi-world--finished .koi-follow-cluster,
+  .koi-world--finished .koi-follow-cluster--hero,
+  .koi-world--finished .koi-follow-cluster--start {
+    width: min(470px, 42vw);
+  }
+}
+
+@media (max-width: 980px) {
+  body:has(.koi-world--finished) {
+    scroll-padding-top: 76px;
+    padding-bottom: 72px;
+  }
+
+  .koi-world--finished .koi-world__header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .koi-world__primary-nav {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 52;
+    max-width: none;
+    padding: 6px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    border-color: rgba(255, 255, 255, .13);
+    background: rgba(4, 4, 7, .9);
+    box-shadow: 0 20px 60px -32px rgba(0, 0, 0, 1);
+    scrollbar-width: none;
+    backdrop-filter: blur(20px) saturate(1.08);
+  }
+
+  .koi-world__primary-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .koi-world__primary-nav a {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding-inline: 11px;
+    font-size: 8px;
+  }
+
+  .koi-world--finished .koi-follow-cluster,
+  .koi-world--finished .koi-follow-cluster--hero,
+  .koi-world--finished .koi-follow-cluster--start,
+  .koi-world--finished
+    [data-koi-follow-scene="products"]
+    .koi-follow-cluster {
+    top: 50%;
+    width: min(88vw, 500px);
+  }
+
+  .studio-scroll-koi__progress {
+    bottom: 84px;
+  }
+}
+
+@media (max-width: 760px) {
+  .koi-world--finished .koi-world__header {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    min-height: 52px;
+    padding: 6px 7px 6px 12px;
+    border-radius: 14px;
+  }
+
+  .koi-world--finished .koi-world__brand {
+    font-size: 9px;
+    letter-spacing: .13em;
+  }
+
+  .koi-world--finished .koi-world__header-cta {
+    padding-inline: 7px;
+    font-size: 9px;
+  }
+
+  .koi-world--finished .koi-follow-cluster,
+  .koi-world--finished .koi-follow-cluster--hero,
+  .koi-world--finished .koi-follow-cluster--start {
+    top: 48%;
+    width: min(90vw, 480px);
+  }
+
+  .koi-world--finished .koi-follow-cluster::before {
+    inset: -18px -14px;
+    border-radius: 14px;
+    background:
+      linear-gradient(
+        155deg,
+        rgba(9, 9, 13, .96),
+        rgba(4, 4, 7, .92) 65%,
+        rgba(2, 2, 4, .86)
+      );
+  }
+
+  .koi-section-marker {
+    grid-template-columns: 26px auto;
+  }
+
+  .koi-section-marker > small {
+    display: none;
+  }
+
+  .koi-world--finished .koi-scene__hero-copy h1 {
+    font-size: clamp(42px, 12vw, 60px);
+  }
+
+  .koi-world--finished .koi-scene__center-label h2,
+  .koi-world--finished .koi-scene__side-copy h2,
+  .koi-world--finished .koi-scene__work-heading h2,
+  .koi-world--finished .koi-founder-note h2,
+  .koi-world--finished .koi-portal h2 {
+    font-size: clamp(34px, 10vw, 50px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .koi-world__primary-nav a,
+  .koi-world--finished .koi-follow-cluster::before,
+  .koi-world--finished .koi-follow-cluster::after {
+    transition: none !important;
+  }
+}

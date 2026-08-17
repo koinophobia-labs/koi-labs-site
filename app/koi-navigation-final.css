@@ -1,0 +1,132 @@
+/* Final placement pass.
+   The moving fragments still arrive and depart with the koi, but the active
+   destination locks into a predictable side of the viewport for reading. */
+
+/* The koi still owns the black-water world, while the destination plane stays
+   above the synchronized foreground pass. This prevents close-up fish frames
+   from swallowing Products or Contact without flattening the 3D composition. */
+.koi-world--finished > main {
+  position: relative;
+  z-index: 5;
+}
+
+.koi-world--finished .studio-koi-depth-pass {
+  z-index: 3;
+}
+
+.koi-world--finished .koi-follow-cluster {
+  position: fixed;
+  left: auto;
+  right: auto;
+  top: 52%;
+  z-index: 40;
+  max-height: calc(100svh - 126px);
+  transform: translateY(-50%);
+}
+
+.koi-world--finished
+  .koi-scene:not([data-koi-active="true"])
+  .koi-follow-cluster {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.koi-world--finished [data-koi-side="left"] .koi-follow-cluster {
+  left: clamp(42px, 5.4vw, 86px);
+  right: auto;
+}
+
+.koi-world--finished [data-koi-side="right"] .koi-follow-cluster {
+  left: auto;
+  right: clamp(42px, 5.4vw, 86px);
+}
+
+.koi-world--finished [data-koi-side="center"] .koi-follow-cluster {
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+}
+
+.koi-world--finished [data-koi-follow-scene="products"] .koi-follow-cluster {
+  top: 53%;
+  width: min(470px, 37vw);
+}
+
+.koi-world--finished [data-koi-follow-scene="start"] .koi-follow-cluster {
+  top: 53%;
+  width: min(520px, 41vw);
+}
+
+/* The panel and its active contents share one stable coordinate system.
+   Inline fragment transforms remain available only during entry and exit. */
+.koi-world--finished .koi-follow-cluster::before,
+.koi-world--finished .koi-follow-cluster::after {
+  transform: none;
+}
+
+.koi-world--finished
+  .koi-scene[data-koi-active="true"]
+  .koi-follow-cluster
+  [data-koi-follow] {
+  opacity: 1 !important;
+  filter: none !important;
+  transform: translate3d(0, 0, 0) !important;
+}
+
+.koi-world--finished
+  .koi-scene[data-koi-active="true"]
+  .koi-follow-cluster {
+  visibility: visible;
+  opacity: 1;
+}
+
+.koi-world--finished
+  .koi-scene[data-koi-active="true"]
+  .koi-follow-cluster::before,
+.koi-world--finished
+  .koi-scene[data-koi-active="true"]
+  .koi-follow-cluster::after {
+  opacity: 1;
+}
+
+.koi-world--finished [data-koi-follow-scene="products"] .koi-section-marker,
+.koi-world--finished [data-koi-follow-scene="start"] .koi-section-marker {
+  margin-bottom: 14px;
+}
+
+.koi-world--finished [data-koi-follow-scene="products"] .koi-product-orbit {
+  margin-top: 18px;
+}
+
+.koi-world--finished [data-koi-follow-scene="products"] .koi-product-node {
+  min-height: 54px;
+}
+
+.koi-world--finished [data-koi-follow-scene="start"] .koi-actions {
+  margin-top: 24px;
+}
+
+@media (max-width: 980px) {
+  .koi-world--finished .koi-follow-cluster,
+  .koi-world--finished [data-koi-side="left"] .koi-follow-cluster,
+  .koi-world--finished [data-koi-side="right"] .koi-follow-cluster,
+  .koi-world--finished [data-koi-side="center"] .koi-follow-cluster,
+  .koi-world--finished [data-koi-follow-scene="products"] .koi-follow-cluster,
+  .koi-world--finished [data-koi-follow-scene="start"] .koi-follow-cluster {
+    left: 50%;
+    right: auto;
+    top: 49%;
+    width: min(88vw, 500px);
+    max-height: calc(100svh - 156px);
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (max-width: 760px) {
+  .koi-world--finished .koi-follow-cluster,
+  .koi-world--finished [data-koi-follow-scene="products"] .koi-follow-cluster,
+  .koi-world--finished [data-koi-follow-scene="start"] .koi-follow-cluster {
+    top: 47%;
+    width: min(90vw, 470px);
+  }
+}
