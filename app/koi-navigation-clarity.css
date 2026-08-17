@@ -140,6 +140,10 @@ body:has(.koi-world--finished) {
   width: min(520px, 42vw);
 }
 
+.koi-world--finished .koi-scene__center-label {
+  transform: none;
+}
+
 .koi-world--finished
   [data-koi-follow-scene="products"]
   .koi-follow-cluster {
