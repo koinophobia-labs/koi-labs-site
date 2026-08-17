@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import styles from "./KoiWayfinding.module.css";
 
 type NavigatorWithConnection = Navigator & {
   connection?: { saveData?: boolean };
@@ -265,15 +264,12 @@ export default function KoiNavigationMotion() {
   }, []);
 
   return (
-    <nav
-      className={`koi-wayfinder ${styles.wayfinder}`}
-      aria-label="Koinophobia Labs site map"
-    >
-      <span className={styles.eyebrow}>Explore the lab</span>
-      <div className={styles.links}>
+    <nav className="koi-wayfinder" aria-label="Koinophobia Labs site map">
+      <span className="koi-wayfinder__eyebrow">Explore the lab</span>
+      <div className="koi-wayfinder__links">
         {CHAPTERS.map((chapter) => (
           <a
-            className={`koi-wayfinder__link ${styles.link}`}
+            className="koi-wayfinder__link"
             href={chapter.href}
             data-koi-nav={chapter.scene}
             key={chapter.scene}
