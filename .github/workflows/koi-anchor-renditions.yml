@@ -1,0 +1,99 @@
+name: Koi Anchor Renditions
+
+on:
+  pull_request:
+    paths:
+      - app/koi-renditions/**
+      - app/koi-anchor-renditions.css
+      - app/layout.tsx
+      - components/studio/KoiAnchorRendition.tsx
+      - components/studio/ScrollKoiExperience.tsx
+      - components/studio/KoiDepthPass.tsx
+      - public/brand/koi-scroll-single.mp4
+      - public/brand/koi-scroll-duo.mp4
+      - scripts/capture-koi-anchor-renditions.mjs
+      - .github/workflows/koi-anchor-renditions.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: koi-anchor-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production site
+        run: npm run build
+
+      - name: Start production server
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOSTNAME=127.0.0.1 PORT=3000 npm run start > /tmp/koi-anchor-next.log 2>&1 &
+          echo $! > /tmp/koi-anchor-next.pid
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:3000/koi-renditions/orbit > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/koi-anchor-next.log
+          exit 1
+
+      - name: Capture orbit and wake renditions
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          "$CHROME_BIN" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --disable-dev-shm-usage \
+            --remote-debugging-port=9222 \
+            --user-data-dir=/tmp/koi-anchor-chrome \
+            about:blank \
+            > /tmp/koi-anchor-chrome.log 2>&1 &
+          echo $! > /tmp/koi-anchor-chrome.pid
+          node scripts/capture-koi-anchor-renditions.mjs
+          test "$(find artifacts/koi-anchor-renditions -name '*.png' | wc -l)" -eq 4
+
+      - name: Upload rendition evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: koi-anchor-renditions-${{ github.sha }}
+          path: artifacts/koi-anchor-renditions/*.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Print service logs on failure
+        if: failure()
+        shell: bash
+        run: |
+          cat /tmp/koi-anchor-next.log || true
+          cat /tmp/koi-anchor-chrome.log || true
+
+      - name: Stop local services
+        if: always()
+        shell: bash
+        run: |
+          test ! -f /tmp/koi-anchor-chrome.pid || kill "$(cat /tmp/koi-anchor-chrome.pid)" || true
+          test ! -f /tmp/koi-anchor-next.pid || kill "$(cat /tmp/koi-anchor-next.pid)" || true
