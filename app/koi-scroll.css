@@ -1,0 +1,402 @@
+/* Koinophobia Labs scroll film. The koi is the spatial spine of the page;
+   real HTML content sits in deliberately composed negative space above it. */
+body:has(.studio-site--koi) {
+  background: #020203;
+}
+
+.studio-site--koi {
+  --koi-scroll-progress: 0;
+  --koi-scroll-speed: 0;
+  --koi-duo-opacity: 0;
+  --koi-ramping: 0;
+  --koi-black: #020203;
+  --koi-ink: #f5f3f7;
+  --koi-graphite: #aaa5b0;
+  --koi-violet: #c3a2f4;
+  --koi-cyan: #7de8ed;
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+}
+
+.studio-site--koi > main,
+.studio-site--koi > .studio-footer,
+.studio-site--koi > script {
+  position: relative;
+  z-index: 2;
+}
+
+.studio-site--koi > .studio-nav {
+  z-index: 100;
+}
+
+.studio-scroll-koi {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--koi-black);
+  contain: strict;
+}
+
+.studio-scroll-koi__poster,
+.studio-scroll-koi__video,
+.studio-scroll-koi__depth,
+.studio-scroll-koi__vignette {
+  position: absolute;
+  inset: 0;
+}
+
+.studio-scroll-koi__poster {
+  inset: -3%;
+  background:
+    linear-gradient(90deg, rgba(2, 2, 3, .8), rgba(2, 2, 3, .2) 68%, rgba(2, 2, 3, .58)),
+    url("/brand/koinophobia-labs-koi.webp") center / cover no-repeat;
+  opacity: .54;
+  filter: grayscale(1) contrast(1.16) brightness(.52);
+  transform: scale(1.03);
+  transition: opacity .65s ease;
+}
+
+.studio-scroll-koi__video {
+  inset: -3%;
+  width: 106%;
+  height: 106%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0;
+  filter:
+    grayscale(.84)
+    saturate(.26)
+    contrast(1.22)
+    brightness(calc(.55 + var(--koi-ramping) * .08));
+  transform: scale(calc(1.025 + var(--koi-scroll-speed) * .012));
+  will-change: opacity, transform, filter;
+  transition: opacity .55s ease, filter .24s ease;
+}
+
+.studio-scroll-koi[data-ready="true"] .studio-scroll-koi__poster {
+  opacity: 0;
+}
+
+.studio-scroll-koi[data-ready="true"] .studio-scroll-koi__video--single {
+  opacity: calc(.73 - var(--koi-duo-opacity) * .32);
+}
+
+.studio-scroll-koi[data-ready="true"] .studio-scroll-koi__video--duo {
+  opacity: calc(var(--koi-duo-opacity) * .74);
+}
+
+.studio-scroll-koi[data-motion="static"] .studio-scroll-koi__poster,
+.studio-scroll-koi[data-motion="pending"] .studio-scroll-koi__poster {
+  opacity: .58;
+}
+
+.studio-scroll-koi__depth {
+  background:
+    radial-gradient(circle at 72% 28%, rgba(195, 162, 244, .1), transparent 28%),
+    radial-gradient(circle at 46% 70%, rgba(125, 232, 237, .08), transparent 36%),
+    linear-gradient(180deg, rgba(3, 3, 5, .06), rgba(2, 2, 3, .5));
+  mix-blend-mode: screen;
+}
+
+.studio-scroll-koi__vignette {
+  background:
+    radial-gradient(ellipse at center, transparent 18%, rgba(2, 2, 3, .14) 52%, rgba(2, 2, 3, .78) 100%),
+    linear-gradient(90deg, rgba(2, 2, 3, .9) 0%, rgba(2, 2, 3, .58) 38%, rgba(2, 2, 3, .14) 72%, rgba(2, 2, 3, .5) 100%),
+    linear-gradient(180deg, rgba(2, 2, 3, .35), transparent 22%, transparent 76%, rgba(2, 2, 3, .74));
+}
+
+.studio-scroll-koi__progress {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  width: 1px;
+  height: 132px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .12);
+  transform: translateY(-50%);
+}
+
+.studio-scroll-koi__progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(195, 162, 244, .94), rgba(125, 232, 237, .76));
+  box-shadow: 0 0 14px rgba(166, 108, 255, .7);
+  transform: scaleY(var(--koi-scroll-progress));
+  transform-origin: top;
+}
+
+/* Typography borrows the film's graphite body and violet/cyan edge light. */
+.studio-site--koi {
+  --studio-ink: var(--koi-ink);
+  --studio-dim: #bbb6c0;
+  --studio-muted: #938e99;
+  --studio-purple: #ad82e8;
+  --studio-purple-bright: var(--koi-violet);
+  --studio-cyan: var(--koi-cyan);
+}
+
+.studio-site--koi .studio-hero h1,
+.studio-site--koi .studio-section-intro h2,
+.studio-site--koi .studio-founder-copy h2,
+.studio-site--koi .studio-cta-band h2 {
+  color: transparent;
+  background: linear-gradient(108deg, #ffffff 5%, #dad6df 46%, var(--koi-violet) 76%, var(--koi-cyan) 100%);
+  background-size: 180% 100%;
+  background-position: calc(28% + var(--koi-ramping) * 42%) center;
+  -webkit-background-clip: text;
+  background-clip: text;
+  text-shadow: 0 0 calc(2px + var(--koi-ramping) * 8px) rgba(125, 232, 237, calc(.02 + var(--koi-ramping) * .14));
+}
+
+.studio-site--koi .studio-hero h1 span {
+  color: transparent;
+  background: linear-gradient(90deg, var(--koi-violet), var(--koi-cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.studio-site--koi .studio-eyebrow,
+.studio-site--koi .studio-system-label,
+.studio-site--koi .studio-product-status {
+  color: var(--koi-violet);
+  text-shadow: 0 0 calc(7px + var(--koi-ramping) * 14px) rgba(125, 232, 237, calc(.08 + var(--koi-ramping) * .42));
+}
+
+.studio-site--koi .studio-button {
+  background: linear-gradient(112deg, #ad82e8, #c5a5ef 62%, #8edee2);
+  box-shadow: 0 14px 38px -24px rgba(125, 232, 237, .72);
+}
+
+.studio-site--koi .studio-button--secondary {
+  color: var(--koi-ink);
+  background: rgba(3, 3, 5, .5);
+  border-color: rgba(195, 162, 244, .36);
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+}
+
+.studio-site--koi .studio-text-link {
+  color: var(--koi-violet);
+}
+
+/* The navigation is part of the water, not a separate chrome bar. */
+.studio-site--koi .studio-nav {
+  background: rgba(3, 3, 5, .7);
+  border-bottom-color: rgba(255, 255, 255, .09);
+  backdrop-filter: blur(18px) saturate(1.08);
+}
+
+.studio-site--koi .studio-nav::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: calc(var(--koi-scroll-progress) * 100%);
+  height: 1px;
+  background: linear-gradient(90deg, rgba(195, 162, 244, .5), rgba(125, 232, 237, .88));
+  box-shadow: 0 0 12px rgba(125, 232, 237, .42);
+}
+
+.studio-site--koi .studio-brand img {
+  filter: grayscale(1) brightness(1.2) drop-shadow(0 0 11px rgba(195, 162, 244, .38));
+}
+
+/* The opening film owns the viewport, with copy placed in its negative space. */
+.studio-site--koi .studio-hero {
+  min-height: calc(100svh - 72px);
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, rgba(3, 3, 5, .96) 0%, rgba(3, 3, 5, .74) 43%, rgba(3, 3, 5, .18) 74%, rgba(3, 3, 5, .4) 100%);
+}
+
+.studio-site--koi .studio-hero__system {
+  background: linear-gradient(150deg, rgba(17, 15, 22, .77), rgba(6, 6, 9, .54));
+  border-color: rgba(195, 162, 244, .24);
+  backdrop-filter: blur(10px) saturate(1.04);
+}
+
+.studio-site--koi .studio-system-node,
+.studio-site--koi .studio-problem-card,
+.studio-site--koi .studio-work-card,
+.studio-site--koi .studio-pricing-card,
+.studio-site--koi .studio-process-step,
+.studio-site--koi .studio-product-card,
+.studio-site--koi .studio-founder-facts div,
+.studio-site--koi .studio-cta-band {
+  background-color: rgba(11, 10, 14, .86);
+  border-color: rgba(208, 201, 214, .13);
+  box-shadow: 0 24px 70px -55px rgba(195, 162, 244, .54);
+  backdrop-filter: blur(8px);
+}
+
+.studio-site--koi .studio-trust {
+  background: rgba(4, 4, 6, .87);
+  backdrop-filter: blur(8px);
+}
+
+/* Every data-koi-frame section is a still composition. Its center owns a
+   frozen video frame; the transparent side is where the koi remains visible. */
+.studio-site--koi [data-koi-frame] {
+  min-height: 86svh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  border-top-color: rgba(255, 255, 255, .09);
+}
+
+.studio-site--koi [data-koi-frame]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: calc(.46 + var(--koi-ramping) * .12);
+  transition: opacity .2s linear;
+}
+
+.studio-site--koi [data-koi-side="left"]::before {
+  background: linear-gradient(90deg, rgba(3, 3, 5, .94) 0%, rgba(3, 3, 5, .76) 43%, rgba(3, 3, 5, .25) 72%, rgba(3, 3, 5, .58) 100%);
+}
+
+.studio-site--koi [data-koi-side="right"]::before {
+  background: linear-gradient(270deg, rgba(3, 3, 5, .94) 0%, rgba(3, 3, 5, .76) 43%, rgba(3, 3, 5, .25) 72%, rgba(3, 3, 5, .58) 100%);
+}
+
+.studio-site--koi [data-koi-frame] > .studio-container {
+  position: relative;
+  z-index: 1;
+}
+
+.studio-site--koi [data-koi-frame] .studio-section-intro {
+  width: min(720px, 72%);
+  margin-bottom: 42px;
+  padding: clamp(22px, 3vw, 34px);
+  border: 1px solid rgba(205, 199, 211, .13);
+  border-radius: 15px;
+  background: linear-gradient(145deg, rgba(8, 8, 11, .82), rgba(8, 8, 11, .54));
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, .035),
+    0 28px 80px -58px rgba(125, 232, 237, .55);
+  backdrop-filter: blur(11px) saturate(1.02);
+}
+
+.studio-site--koi [data-koi-side="right"] .studio-section-intro {
+  margin-left: auto;
+  text-align: right;
+}
+
+.studio-site--koi [data-koi-side="right"] .studio-section-intro > p:last-child {
+  margin-left: auto;
+}
+
+.studio-site--koi [data-koi-scene="work"],
+.studio-site--koi [data-koi-scene="process"],
+.studio-site--koi [data-koi-scene="return"] {
+  background: transparent;
+}
+
+.studio-site--koi [data-koi-duo] {
+  min-height: 106svh;
+}
+
+.studio-site--koi [data-koi-duo]::before {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(5, 5, 8, .08), rgba(4, 4, 6, .64) 72%),
+    linear-gradient(90deg, rgba(3, 3, 5, .78), rgba(3, 3, 5, .28) 50%, rgba(3, 3, 5, .76));
+}
+
+.studio-site--koi [data-koi-duo] .studio-section-intro {
+  margin-inline: auto;
+  text-align: center;
+  background: rgba(7, 7, 10, .68);
+}
+
+.studio-site--koi [data-koi-duo] .studio-section-intro > p:last-child {
+  margin-inline: auto;
+}
+
+.studio-site--koi .studio-footer {
+  background: rgba(4, 4, 6, .94);
+  backdrop-filter: blur(8px);
+}
+
+@media (max-width: 980px) {
+  .studio-scroll-koi__video {
+    object-position: 58% center;
+  }
+
+  .studio-site--koi [data-koi-frame] .studio-section-intro {
+    width: min(760px, 88%);
+  }
+}
+
+@media (max-width: 760px) {
+  .studio-scroll-koi__video {
+    inset: -7%;
+    width: 114%;
+    height: 114%;
+    object-position: 62% center;
+    filter: grayscale(.88) saturate(.24) contrast(1.22) brightness(.5);
+  }
+
+  .studio-scroll-koi__vignette {
+    background:
+      radial-gradient(ellipse at center, transparent 8%, rgba(2, 2, 3, .24) 46%, rgba(2, 2, 3, .82) 100%),
+      linear-gradient(180deg, rgba(2, 2, 3, .62), rgba(2, 2, 3, .2) 40%, rgba(2, 2, 3, .76));
+  }
+
+  .studio-scroll-koi__progress {
+    display: none;
+  }
+
+  .studio-site--koi .studio-hero {
+    min-height: calc(100svh - 64px);
+    background: linear-gradient(180deg, rgba(3, 3, 5, .82), rgba(3, 3, 5, .42) 46%, rgba(3, 3, 5, .86));
+  }
+
+  .studio-site--koi [data-koi-frame] {
+    min-height: 78svh;
+  }
+
+  .studio-site--koi [data-koi-frame]::before,
+  .studio-site--koi [data-koi-side="left"]::before,
+  .studio-site--koi [data-koi-side="right"]::before {
+    background: linear-gradient(180deg, rgba(3, 3, 5, .82), rgba(3, 3, 5, .5) 48%, rgba(3, 3, 5, .86));
+  }
+
+  .studio-site--koi [data-koi-frame] .studio-section-intro,
+  .studio-site--koi [data-koi-side="right"] .studio-section-intro {
+    width: 100%;
+    margin-left: 0;
+    text-align: left;
+  }
+
+  .studio-site--koi [data-koi-side="right"] .studio-section-intro > p:last-child {
+    margin-left: 0;
+  }
+
+  .studio-site--koi [data-koi-duo] .studio-section-intro {
+    text-align: left;
+  }
+
+  .studio-site--koi [data-koi-duo] .studio-section-intro > p:last-child {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-scroll-koi__poster,
+  .studio-scroll-koi__video,
+  .studio-scroll-koi__progress span,
+  .studio-site--koi .studio-nav::after {
+    transition: none !important;
+  }
+
+  .studio-scroll-koi__progress,
+  .studio-site--koi .studio-nav::after {
+    display: none;
+  }
+}
