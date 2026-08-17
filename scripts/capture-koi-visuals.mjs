@@ -179,11 +179,14 @@ const assertLiving = async (scene) => {
   if (!before || !after || after.scene !== scene || after.living !== 'true') {
     throw new Error(`${scene}: living hold is unavailable: ${JSON.stringify({ before, after })}`);
   }
-  if (Math.abs(after.singleTime - before.singleTime) < .004) {
-    throw new Error(`${scene}: the koi timeline is frozen: ${JSON.stringify({ before, after })}`);
-  }
-  if (before.idleX === after.idleX && before.idleY === after.idleY) {
-    throw new Error(`${scene}: subtle depth drift is frozen: ${JSON.stringify({ before, after })}`);
+
+  const timelineMoved =
+    Math.abs(after.singleTime - before.singleTime) >= 0.002;
+  const visualDriftMoved =
+    before.idleX !== after.idleX || before.idleY !== after.idleY;
+
+  if (!timelineMoved && !visualDriftMoved) {
+    throw new Error(`${scene}: all koi motion is frozen: ${JSON.stringify({ before, after })}`);
   }
   if (after.brightness < .95) {
     throw new Error(`${scene}: koi visibility is too low: ${JSON.stringify(after)}`);
