@@ -317,27 +317,49 @@ const go = async (scene) => {
   await wait(1500);
 };
 
-assertDepth("hero", await depthState(), true);
-assertFollow("hero", await followState());
-await assertLiving("hero");
-await capture("01-koi-world-hero");
+const verifyScene = async ({
+  scene,
+  captureName,
+  depthVisible,
+  scroll = true,
+}) => {
+  if (scroll) await go(scene);
+  assertDepth(scene, await depthState(), depthVisible);
+  assertFollow(scene, await followState());
+  await assertLiving(scene);
+  await capture(captureName);
+};
 
-await go("products");
-assertDepth("products", await depthState(), false);
-assertFollow("products", await followState());
-await assertLiving("products");
-await capture("02-product-constellation-two-koi");
-
-await go("systems");
-assertDepth("systems", await depthState(), true);
-assertFollow("systems", await followState());
-await assertLiving("systems");
-await capture("03-systems-follow-the-koi");
-
-await go("start");
-assertDepth("start", await depthState(), true);
-assertFollow("start", await followState());
-await assertLiving("start");
-await capture("04-final-koi-portal");
+await verifyScene({
+  scene: "hero",
+  captureName: "01-koi-world-hero",
+  depthVisible: true,
+  scroll: false,
+});
+await verifyScene({
+  scene: "products",
+  captureName: "02-product-constellation-two-koi",
+  depthVisible: false,
+});
+await verifyScene({
+  scene: "systems",
+  captureName: "03-systems-follow-the-koi",
+  depthVisible: true,
+});
+await verifyScene({
+  scene: "work",
+  captureName: "04-work-follows-the-koi",
+  depthVisible: true,
+});
+await verifyScene({
+  scene: "founder",
+  captureName: "05-founder-follows-the-koi",
+  depthVisible: true,
+});
+await verifyScene({
+  scene: "start",
+  captureName: "06-final-koi-contact",
+  depthVisible: true,
+});
 
 socket.close();
