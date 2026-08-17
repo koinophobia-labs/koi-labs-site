@@ -108,7 +108,11 @@ await evaluate(`(() => {
   layer.dataset.ready = 'true';
   return true;
 })()`);
-await wait(1800);
+await waitFor(
+  "document.querySelector('.koi-world--finished')?.dataset.koiLiving === 'true'",
+  "living hero hold",
+);
+await wait(650);
 
 const architecture = await evaluate(`(() => {
   const primaryLinks = [...document.querySelectorAll('.koi-world__primary-nav [data-koi-nav]')];
