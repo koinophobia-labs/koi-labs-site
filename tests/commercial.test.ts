@@ -87,12 +87,21 @@ test("products are explicitly internal and commercial guidance is complete", () 
 
 test("the studio homepage is composed around scroll-linked koi hold points", () => {
   const page = fs.readFileSync(path.join(root, "app/page.tsx"), "utf8");
+  const layout = fs.readFileSync(path.join(root, "app/layout.tsx"), "utf8");
   const motion = fs.readFileSync(
     path.join(root, "components/studio/ScrollKoiExperience.tsx"),
     "utf8",
   );
+  const depth = fs.readFileSync(
+    path.join(root, "components/studio/KoiDepthPass.tsx"),
+    "utf8",
+  );
   const styles = fs.readFileSync(
     path.join(root, "app/koi-scroll.css"),
+    "utf8",
+  );
+  const depthStyles = fs.readFileSync(
+    path.join(root, "app/koi-depth.css"),
     "utf8",
   );
 
@@ -134,4 +143,29 @@ test("the studio homepage is composed around scroll-linked koi hold points", () 
   assert.match(styles, /--koi-video-brightness/);
   assert.match(styles, /\[data-koi-side="right"\]/);
   assert.match(styles, /\[data-koi-duo\]/);
+
+  assert.match(layout, /import KoiDepthPass from/);
+  assert.match(layout, /import "\.\/koi-depth\.css"/);
+  assert.match(layout, /<KoiDepthPass \/>/);
+  assert.match(depth, /createPortal/);
+  assert.match(depth, /\.studio-scroll-koi__video--single/);
+  assert.match(depth, /prefers-reduced-motion: reduce/);
+  assert.match(depth, /connection\?\.saveData/);
+  assert.match(
+    depth,
+    /const SINGLE_KOI_SRC = "\/brand\/koi-scroll-single\.mp4"/,
+  );
+  assert.doesNotMatch(depth, /cloudfront|higgsfield/i);
+  assert.match(depth, /aria-hidden="true"/);
+  assert.match(depth, /\bmuted\b/);
+  assert.match(depth, /\bplaysInline\b/);
+
+  assert.match(depthStyles, /z-index: 3/);
+  assert.match(depthStyles, /mix-blend-mode: screen/);
+  assert.match(depthStyles, /-webkit-mask-image: radial-gradient/);
+  assert.match(depthStyles, /\[data-koi-scene="return"\]/);
+  assert.match(
+    depthStyles,
+    /\[data-koi-scene="products"\] \.studio-koi-depth-pass/,
+  );
 });
