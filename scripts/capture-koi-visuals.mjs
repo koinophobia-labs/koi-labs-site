@@ -224,9 +224,11 @@ const followState = () =>
     const heading = scene?.querySelector('h1, h2');
     const marker = scene?.querySelector('.koi-section-marker');
     const panelStyle = cluster ? getComputedStyle(cluster, '::before') : null;
+    const clusterStyle = cluster ? getComputedStyle(cluster) : null;
     const sceneStyle = scene ? getComputedStyle(scene) : null;
     const headingRect = heading?.getBoundingClientRect();
     const markerRect = marker?.getBoundingClientRect();
+    const clusterRect = cluster?.getBoundingClientRect();
     return {
       scene: scene?.dataset.koiFollowScene ?? null,
       count: parts.length,
@@ -237,6 +239,15 @@ const followState = () =>
       readingOpacity: sceneStyle ? Number.parseFloat(sceneStyle.getPropertyValue('--koi-reading-opacity')) : 0,
       panelBackground: panelStyle?.backgroundImage ?? 'none',
       panelBorder: panelStyle?.borderTopColor ?? 'transparent',
+      clusterOpacity: clusterStyle ? Number.parseFloat(clusterStyle.opacity) : 0,
+      clusterVisibility: clusterStyle?.visibility ?? 'hidden',
+      clusterDisplay: clusterStyle?.display ?? 'none',
+      clusterInViewport: clusterRect ? (
+        clusterRect.left >= 0 &&
+        clusterRect.right <= document.documentElement.clientWidth &&
+        clusterRect.top >= 72 &&
+        clusterRect.bottom <= document.documentElement.clientHeight
+      ) : false,
       stageZ: stage ? Number.parseFloat(getComputedStyle(stage).zIndex) : 0,
       activeMapLinks: document.querySelectorAll('.koi-world__primary-nav [aria-current="true"]').length,
       markerText: marker?.textContent?.replace(/\\s+/g, ' ').trim() ?? '',
@@ -268,11 +279,14 @@ const assertFollow = (scene, state) => {
   }
   if (
     state.visible < Math.min(5, state.count) ||
-    state.transforms < 2 ||
     state.headingOpacity < .95 ||
     state.readingOpacity < .9 ||
     state.panelBackground === 'none' ||
     state.panelBorder === 'rgba(0, 0, 0, 0)' ||
+    state.clusterOpacity < .95 ||
+    state.clusterVisibility === 'hidden' ||
+    state.clusterDisplay === 'none' ||
+    !state.clusterInViewport ||
     state.stageZ < 4 ||
     state.activeMapLinks !== 1 ||
     !state.markerVisible ||
