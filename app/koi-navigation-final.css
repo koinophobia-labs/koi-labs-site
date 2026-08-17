@@ -15,10 +15,20 @@
 }
 
 .koi-world--finished .koi-follow-cluster {
+  position: fixed;
   left: auto;
   right: auto;
   top: 52%;
+  z-index: 40;
+  max-height: calc(100svh - 126px);
   transform: translateY(-50%);
+}
+
+.koi-world--finished
+  .koi-scene:not([data-koi-active="true"])
+  .koi-follow-cluster {
+  visibility: hidden;
+  opacity: 0;
 }
 
 .koi-world--finished [data-koi-side="left"] .koi-follow-cluster {
@@ -107,6 +117,7 @@
     right: auto;
     top: 49%;
     width: min(88vw, 500px);
+    max-height: calc(100svh - 156px);
     transform: translate(-50%, -50%);
   }
 }
