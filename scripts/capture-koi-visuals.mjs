@@ -5,7 +5,9 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function pageTarget() {
   for (let i = 0; i < 40; i += 1) {
     try {
-      const targets = await fetch("http://127.0.0.1:9222/json/list").then((r) => r.json());
+      const targets = await fetch("http://127.0.0.1:9222/json/list").then((r) =>
+        r.json(),
+      );
       const page = targets.find((target) => target.type === "page");
       if (page?.webSocketDebuggerUrl) return page;
     } catch {}
@@ -30,18 +32,31 @@ socket.addEventListener("message", (event) => {
 
 await new Promise((resolve, reject) => {
   socket.addEventListener("open", resolve, { once: true });
-  socket.addEventListener("error", () => reject(new Error("DevTools socket failed")), { once: true });
+  socket.addEventListener(
+    "error",
+    () => reject(new Error("DevTools socket failed")),
+    { once: true },
+  );
 });
 
-const send = (method, params = {}) => new Promise((resolve, reject) => {
-  const id = ++nextId;
-  pending.set(id, { resolve, reject });
-  socket.send(JSON.stringify({ id, method, params }));
-});
+const send = (method, params = {}) =>
+  new Promise((resolve, reject) => {
+    const id = ++nextId;
+    pending.set(id, { resolve, reject });
+    socket.send(JSON.stringify({ id, method, params }));
+  });
 
 const evaluate = async (expression) => {
-  const response = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
-  if (response.exceptionDetails) throw new Error(response.exceptionDetails.text ?? "Browser evaluation failed");
+  const response = await send("Runtime.evaluate", {
+    expression,
+    returnByValue: true,
+    awaitPromise: true,
+  });
+  if (response.exceptionDetails) {
+    throw new Error(
+      response.exceptionDetails.text ?? "Browser evaluation failed",
+    );
+  }
   return response.result?.value;
 };
 
@@ -56,40 +71,139 @@ const waitFor = async (expression, label) => {
 fs.mkdirSync("artifacts/koi-visuals", { recursive: true });
 await send("Page.enable");
 await send("Runtime.enable");
-await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+await send("Emulation.setDeviceMetricsOverride", {
+  width: 1440,
+  height: 900,
+  deviceScaleFactor: 1,
+  mobile: false,
+});
 await send("Page.navigate", { url: "http://127.0.0.1:3000/" });
-await waitFor("document.readyState === 'complete' && Boolean(document.querySelector('.koi-world'))", "koi world");
-await waitFor("document.querySelector('.studio-scroll-koi')?.dataset.ready === 'true'", "koi video");
+await waitFor(
+  "document.readyState === 'complete' && Boolean(document.querySelector('.koi-world--finished'))",
+  "finished koi world",
+);
+await waitFor(
+  "document.querySelector('.studio-scroll-koi')?.dataset.ready === 'true'",
+  "koi video",
+);
 await wait(3200);
 
 const architecture = await evaluate(`(() => ({
   products: document.querySelectorAll('.koi-product-node').length,
   scenes: document.querySelectorAll('[data-koi-frame]').length,
+  followScenes: document.querySelectorAll('[data-koi-follow-scene]').length,
+  followParts: document.querySelectorAll('[data-koi-follow]').length,
   legacy: Boolean(document.querySelector('.studio-problem-grid, .studio-pricing-grid, .studio-product-grid, .studio-trust')),
   companion: document.querySelector('.koi-companion') ? getComputedStyle(document.querySelector('.koi-companion')).display : 'none',
   opacity: Number.parseFloat(getComputedStyle(document.querySelector('.studio-scroll-koi__video--single')).opacity),
+  brightness: Number.parseFloat(getComputedStyle(document.querySelector('.koi-world--finished')).getPropertyValue('--koi-video-brightness')),
+  living: document.querySelector('.koi-world--finished')?.dataset.koiLiving ?? 'false',
 }))()`);
-if (architecture.products !== 3 || architecture.scenes !== 6 || architecture.legacy || architecture.companion !== "none" || architecture.opacity < .7) {
-  throw new Error(`Invalid koi-world architecture: ${JSON.stringify(architecture)}`);
+if (
+  architecture.products !== 3 ||
+  architecture.scenes !== 6 ||
+  architecture.followScenes !== 6 ||
+  architecture.followParts < 24 ||
+  architecture.legacy ||
+  architecture.companion !== "none" ||
+  architecture.opacity < 0.9 ||
+  architecture.brightness < 0.95 ||
+  architecture.living !== "true"
+) {
+  throw new Error(`Invalid final koi architecture: ${JSON.stringify(architecture)}`);
 }
 
-const capture = async (name) => {
-  const image = await send("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
-  fs.writeFileSync(`artifacts/koi-visuals/${name}.png`, Buffer.from(image.data, "base64"));
+const livingState = () =>
+  evaluate(`(() => {
+    const root = document.querySelector('.koi-world--finished');
+    const single = document.querySelector('.studio-scroll-koi__video--single');
+    const duo = document.querySelector('.studio-scroll-koi__video--duo');
+    if (!root || !single || !duo) return null;
+    return {
+      scene: root.dataset.koiScene,
+      living: root.dataset.koiLiving,
+      singleTime: single.currentTime,
+      duoTime: duo.currentTime,
+      idleX: getComputedStyle(root).getPropertyValue('--koi-idle-x').trim(),
+      idleY: getComputedStyle(root).getPropertyValue('--koi-idle-y').trim(),
+      brightness: Number.parseFloat(getComputedStyle(root).getPropertyValue('--koi-video-brightness')),
+    };
+  })()`);
+
+const assertLiving = async (scene) => {
+  const before = await livingState();
+  await wait(420);
+  const after = await livingState();
+  if (!before || !after || after.scene !== scene || after.living !== 'true') {
+    throw new Error(`${scene}: living hold is unavailable: ${JSON.stringify({ before, after })}`);
+  }
+  if (Math.abs(after.singleTime - before.singleTime) < .008) {
+    throw new Error(`${scene}: the koi timeline is frozen: ${JSON.stringify({ before, after })}`);
+  }
+  if (before.idleX === after.idleX && before.idleY === after.idleY) {
+    throw new Error(`${scene}: subtle depth drift is frozen: ${JSON.stringify({ before, after })}`);
+  }
+  if (after.brightness < .95) {
+    throw new Error(`${scene}: koi visibility is too low: ${JSON.stringify(after)}`);
+  }
 };
 
-const depthState = () => evaluate(`(() => {
-  const root = document.querySelector('.studio-site--koi');
-  const depth = document.querySelector('.studio-koi-depth-pass');
-  if (!root || !depth) return null;
-  const style = getComputedStyle(depth);
-  return { scene: root.dataset.koiScene, opacity: Number.parseFloat(style.opacity), zIndex: style.zIndex };
-})()`);
+const capture = async (name) => {
+  const image = await send("Page.captureScreenshot", {
+    format: "png",
+    fromSurface: true,
+    captureBeyondViewport: false,
+  });
+  fs.writeFileSync(
+    `artifacts/koi-visuals/${name}.png`,
+    Buffer.from(image.data, "base64"),
+  );
+};
+
+const depthState = () =>
+  evaluate(`(() => {
+    const root = document.querySelector('.koi-world--finished');
+    const depth = document.querySelector('.studio-koi-depth-pass');
+    if (!root || !depth) return null;
+    const style = getComputedStyle(depth);
+    return {
+      scene: root.dataset.koiScene,
+      opacity: Number.parseFloat(style.opacity),
+      zIndex: style.zIndex,
+    };
+  })()`);
+
+const followState = () =>
+  evaluate(`(() => {
+    const scene = document.querySelector('[data-koi-active="true"]');
+    const parts = [...(scene?.querySelectorAll('[data-koi-follow]') ?? [])];
+    return {
+      scene: scene?.dataset.koiFollowScene ?? null,
+      count: parts.length,
+      visible: parts.filter((part) => Number.parseFloat(getComputedStyle(part).opacity) > .45).length,
+      transforms: new Set(parts.map((part) => getComputedStyle(part).transform)).size,
+    };
+  })()`);
 
 const assertDepth = (scene, state, visible) => {
-  if (!state || state.zIndex !== "3") throw new Error(`${scene}: invalid depth pass`);
-  if (visible && state.opacity < .05) throw new Error(`${scene}: depth pass is hidden`);
-  if (!visible && state.opacity > .01) throw new Error(`${scene}: depth pass should be hidden`);
+  if (!state || state.zIndex !== "3") {
+    throw new Error(`${scene}: invalid depth pass`);
+  }
+  if (visible && state.opacity < 0.05) {
+    throw new Error(`${scene}: depth pass is hidden`);
+  }
+  if (!visible && state.opacity > 0.01) {
+    throw new Error(`${scene}: depth pass should be hidden`);
+  }
+};
+
+const assertFollow = (scene, state) => {
+  if (!state || state.scene !== scene || state.count < 3) {
+    throw new Error(`${scene}: missing follow content: ${JSON.stringify(state)}`);
+  }
+  if (state.visible < 3 || state.transforms < 2) {
+    throw new Error(`${scene}: information is not visibly swimming with the koi: ${JSON.stringify(state)}`);
+  }
 };
 
 const go = async (scene) => {
@@ -101,20 +215,34 @@ const go = async (scene) => {
     return true;
   })()`);
   if (!found) throw new Error(`Missing scene: ${scene}`);
-  await waitFor(`document.querySelector('.studio-site--koi')?.dataset.koiScene === '${scene}'`, `${scene} activation`);
+  await waitFor(
+    `document.querySelector('.koi-world--finished')?.dataset.koiScene === '${scene}'`,
+    `${scene} activation`,
+  );
   await wait(1500);
 };
 
 assertDepth("hero", await depthState(), true);
+assertFollow("hero", await followState());
+await assertLiving("hero");
 await capture("01-koi-world-hero");
+
 await go("products");
 assertDepth("products", await depthState(), false);
+assertFollow("products", await followState());
+await assertLiving("products");
 await capture("02-product-constellation-two-koi");
+
 await go("systems");
 assertDepth("systems", await depthState(), true);
-await capture("03-systems-around-the-koi");
+assertFollow("systems", await followState());
+await assertLiving("systems");
+await capture("03-systems-follow-the-koi");
+
 await go("start");
 assertDepth("start", await depthState(), true);
-await capture("04-koi-portal");
+assertFollow("start", await followState());
+await assertLiving("start");
+await capture("04-final-koi-portal");
 
 socket.close();
