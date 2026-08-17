@@ -107,10 +107,27 @@ test("the studio homepage is composed around scroll-linked koi hold points", () 
   assert.match(motion, /Math\.sin\(Math\.PI \* rampProgress\)/);
   assert.match(motion, /prefers-reduced-motion: reduce/);
   assert.match(motion, /connection\?\.saveData/);
-  assert.match(motion, /SINGLE_KOI_SRC/);
-  assert.match(motion, /DUO_KOI_SRC/);
+  assert.match(
+    motion,
+    /const SINGLE_KOI_SRC = "\/brand\/koi-scroll-single\.mp4"/,
+  );
+  assert.match(
+    motion,
+    /const DUO_KOI_SRC = "\/brand\/koi-scroll-duo\.mp4"/,
+  );
+  assert.doesNotMatch(motion, /cloudfront|higgsfield/i);
   assert.ok((motion.match(/\bmuted\b/g) ?? []).length >= 2);
   assert.ok((motion.match(/\bplaysInline\b/g) ?? []).length >= 2);
+
+  assert.ok(
+    fs.existsSync(path.join(root, "public/brand/koi-scroll-single.mp4")),
+  );
+  assert.ok(
+    fs.existsSync(path.join(root, "public/brand/koi-scroll-duo.mp4")),
+  );
+  assert.ok(
+    fs.existsSync(path.join(root, "public/brand/koi-scroll-assets.sha256")),
+  );
 
   assert.match(styles, /body:has\(\.studio-site--koi\) \.brand-intro/);
   assert.match(styles, /--koi-heading-position/);
