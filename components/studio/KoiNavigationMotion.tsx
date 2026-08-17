@@ -51,7 +51,7 @@ export default function KoiNavigationMotion() {
       smoothedVelocity +=
         (velocity - smoothedVelocity) * clamp(elapsedMs / 90);
 
-      let activeScene: HTMLElement | null = null;
+      let activeSceneIndex = 0;
       let activeDistance = Number.POSITIVE_INFINITY;
 
       const sceneStates = scenes.map((scene, index) => {
@@ -63,14 +63,14 @@ export default function KoiNavigationMotion() {
 
         if (distance < activeDistance) {
           activeDistance = distance;
-          activeScene = scene;
+          activeSceneIndex = index;
         }
 
         return { scene, progress };
       });
 
       sceneStates.forEach(({ scene, progress }, sceneIndex) => {
-        const active = scene === activeScene;
+        const active = sceneIndex === activeSceneIndex;
         const side = scene.dataset.koiSide ?? "right";
         const direction = side === "left" ? -1 : side === "right" ? 1 : 0;
         const mobile = viewportWidth <= 760;
@@ -144,7 +144,8 @@ export default function KoiNavigationMotion() {
         });
       });
 
-      const activeSceneName = activeScene?.dataset.koiFollowScene ?? "hero";
+      const activeSceneName =
+        scenes[activeSceneIndex]?.dataset.koiFollowScene ?? "hero";
       root.dataset.koiScene = activeSceneName;
       root.style.setProperty(
         "--koi-follow-speed",
