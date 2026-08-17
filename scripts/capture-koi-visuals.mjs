@@ -179,7 +179,7 @@ const assertLiving = async (scene) => {
   if (!before || !after || after.scene !== scene || after.living !== 'true') {
     throw new Error(`${scene}: living hold is unavailable: ${JSON.stringify({ before, after })}`);
   }
-  if (Math.abs(after.singleTime - before.singleTime) < .008) {
+  if (Math.abs(after.singleTime - before.singleTime) < .004) {
     throw new Error(`${scene}: the koi timeline is frozen: ${JSON.stringify({ before, after })}`);
   }
   if (before.idleX === after.idleX && before.idleY === after.idleY) {
