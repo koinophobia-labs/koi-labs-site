@@ -45,6 +45,7 @@ export default function KoiNavigationMotion() {
     const render = (now: number) => {
       const viewportHeight = Math.max(window.innerHeight, 1);
       const viewportWidth = Math.max(window.innerWidth, 1);
+      const viewportFocus = viewportHeight * 0.5;
       const elapsedMs = clamp(now - lastFrameAt, 1, 64);
       const scrollDelta = window.scrollY - lastScrollY;
       const velocity = scrollDelta / elapsedMs;
@@ -59,7 +60,14 @@ export default function KoiNavigationMotion() {
         const travel = Math.max(rect.height - viewportHeight, 1);
         const rawProgress = clamp(-rect.top / travel);
         const progress = index === 0 ? 0.5 + rawProgress * 0.5 : rawProgress;
-        const distance = Math.abs(progress - 0.5);
+        const containsFocus =
+          rect.top <= viewportFocus && rect.bottom >= viewportFocus;
+        const distance = containsFocus
+          ? -1
+          : Math.min(
+              Math.abs(rect.top - viewportFocus),
+              Math.abs(rect.bottom - viewportFocus),
+            );
 
         if (distance < activeDistance) {
           activeDistance = distance;
