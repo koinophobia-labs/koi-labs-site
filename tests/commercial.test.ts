@@ -96,6 +96,10 @@ test("the final Labs homepage makes the koi navigation and carries information i
     path.join(root, "components/studio/KoiNavigationMotion.tsx"),
     "utf8",
   );
+  const wayfindingStyles = fs.readFileSync(
+    path.join(root, "components/studio/KoiWayfinding.module.css"),
+    "utf8",
+  );
   const depth = fs.readFileSync(
     path.join(root, "components/studio/KoiDepthPass.tsx"),
     "utf8",
@@ -161,21 +165,44 @@ test("the final Labs homepage makes the koi navigation and carries information i
   assert.match(motion, /connection\?\.saveData/);
   assert.match(motion, /9199e09c-1519-4fea-b7d8-c115f41cbe92/);
   assert.match(motion, /2b223e84-91ca-43e3-a741-f2002d009ccc/);
-  assert.match(motion, /SINGLE_KOI_FALLBACK = "\/brand\/koi-scroll-single\.mp4"/);
-  assert.match(motion, /DUO_KOI_FALLBACK = "\/brand\/koi-scroll-duo\.mp4"/);
+  assert.match(
+    motion,
+    /SINGLE_KOI_FALLBACK = "\/brand\/koi-scroll-single\.mp4"/,
+  );
+  assert.match(
+    motion,
+    /DUO_KOI_FALLBACK = "\/brand\/koi-scroll-duo\.mp4"/,
+  );
   assert.ok((motion.match(/\bmuted\b/g) ?? []).length >= 2);
   assert.ok((motion.match(/\bplaysInline\b/g) ?? []).length >= 2);
 
-  assert.match(navigationMotion, /const HOLD_START = 0\.27/);
-  assert.match(navigationMotion, /const HOLD_END = 0\.72/);
+  assert.match(navigationMotion, /const CHAPTERS/);
+  assert.equal((navigationMotion.match(/scene: "/g) ?? []).length, 6);
+  assert.match(navigationMotion, /Koinophobia Labs site map/);
+  assert.match(navigationMotion, /koi-wayfinder/);
+  assert.match(navigationMotion, /const HOLD_START = 0\.18/);
+  assert.match(navigationMotion, /const HOLD_END = 0\.82/);
   assert.match(navigationMotion, /\[data-koi-follow-scene\]/);
   assert.match(navigationMotion, /\[data-koi-follow\]/);
   assert.match(navigationMotion, /part\.style\.transform/);
   assert.match(navigationMotion, /part\.style\.filter/);
   assert.match(navigationMotion, /scene\.dataset\.koiActive/);
+  assert.match(navigationMotion, /scene\.dataset\.koiReadable/);
+  assert.match(navigationMotion, /--koi-reading-x/);
+  assert.match(navigationMotion, /--koi-reading-opacity/);
+  assert.match(navigationMotion, /const activeFloor = essential \? 0\.96/);
+  assert.match(navigationMotion, /Math\.max\(opacity, activeFloor\)/);
   assert.match(navigationMotion, /data-koi-nav/);
   assert.match(navigationMotion, /prefers-reduced-motion: reduce/);
   assert.match(navigationMotion, /connection\?\.saveData/);
+
+  assert.match(wayfindingStyles, /\.wayfinder/);
+  assert.match(wayfindingStyles, /Section map/);
+  assert.match(wayfindingStyles, /\.koi-follow-cluster/);
+  assert.match(wayfindingStyles, /--koi-reading-x/);
+  assert.match(wayfindingStyles, /--koi-reading-opacity/);
+  assert.match(wayfindingStyles, /backdrop-filter: blur\(18px\)/);
+  assert.match(wayfindingStyles, /aria-current="true"/);
 
   assert.ok(
     fs.existsSync(path.join(root, "public/brand/koi-scroll-single.mp4")),
@@ -213,7 +240,10 @@ test("the final Labs homepage makes the koi navigation and carries information i
   assert.match(depth, /prefers-reduced-motion: reduce/);
   assert.match(depth, /connection\?\.saveData/);
   assert.match(depth, /9199e09c-1519-4fea-b7d8-c115f41cbe92/);
-  assert.match(depth, /SINGLE_KOI_FALLBACK = "\/brand\/koi-scroll-single\.mp4"/);
+  assert.match(
+    depth,
+    /SINGLE_KOI_FALLBACK = "\/brand\/koi-scroll-single\.mp4"/,
+  );
   assert.match(depth, /aria-hidden="true"/);
   assert.match(depth, /\bmuted\b/);
   assert.match(depth, /\bplaysInline\b/);
