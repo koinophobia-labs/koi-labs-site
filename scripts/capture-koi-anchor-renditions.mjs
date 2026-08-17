@@ -83,7 +83,7 @@ await send("Emulation.setDeviceMetricsOverride", {
 const navigate = async (path, mode) => {
   await send("Page.navigate", { url: `http://127.0.0.1:3000${path}` });
   await waitFor(
-    `document.readyState === 'complete' && document.querySelector('[data-koi-anchor-mode="${mode}"]')`,
+    `document.readyState === 'complete' && Boolean(document.querySelector('[data-koi-anchor-mode="${mode}"]'))`,
     `${mode} rendition`,
   );
   await waitFor(
