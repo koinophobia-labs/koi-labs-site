@@ -2,10 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const SINGLE_KOI_SRC =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260817_153612_85fd7589-b5dd-421b-a56c-758edb9c0556.mp4";
-const DUO_KOI_SRC =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260817_153625_90275ee1-76df-4c9c-852d-035bde6ab43a.mp4";
+const SINGLE_KOI_SRC = "/brand/koi-scroll-single.mp4";
+const DUO_KOI_SRC = "/brand/koi-scroll-duo.mp4";
 
 const FALLBACK_DURATION_SECONDS = 12;
 const HERO_SETTLE_SECONDS = 2.65;
