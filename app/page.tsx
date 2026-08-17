@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
+import KoiNavigationMotion from "@/components/studio/KoiNavigationMotion";
 import ScrollKoiExperience from "@/components/studio/ScrollKoiExperience";
 import {
   products,
@@ -31,11 +32,11 @@ const schema = {
 };
 
 const chapters = [
-  ["01", "Products", "#products"],
-  ["02", "Systems", "#systems"],
-  ["03", "Work", "#work"],
-  ["04", "Founder", "#founder"],
-  ["05", "Start", "#start"],
+  ["01", "Products", "#products", "products"],
+  ["02", "Systems", "#systems", "systems"],
+  ["03", "Work", "#work", "work"],
+  ["04", "Founder", "#founder", "founder"],
+  ["05", "Start", "#start", "start"],
 ] as const;
 
 type DestinationLinkProps = {
@@ -43,6 +44,7 @@ type DestinationLinkProps = {
   className: string;
   children: ReactNode;
   ariaLabel?: string;
+  follow?: boolean;
 };
 
 function DestinationLink({
@@ -50,7 +52,10 @@ function DestinationLink({
   className,
   children,
   ariaLabel,
+  follow = false,
 }: DestinationLinkProps) {
+  const followProps = follow ? { "data-koi-follow": "true" } : {};
+
   if (/^https?:\/\//.test(href)) {
     return (
       <a
@@ -59,6 +64,7 @@ function DestinationLink({
         target="_blank"
         rel="noreferrer"
         aria-label={ariaLabel}
+        {...followProps}
       >
         {children}
       </a>
@@ -66,7 +72,12 @@ function DestinationLink({
   }
 
   return (
-    <Link className={className} href={href} aria-label={ariaLabel}>
+    <Link
+      className={className}
+      href={href}
+      aria-label={ariaLabel}
+      {...followProps}
+    >
       {children}
     </Link>
   );
@@ -74,11 +85,16 @@ function DestinationLink({
 
 export default function Home() {
   return (
-    <div className="studio-site studio-site--koi koi-world">
+    <div className="studio-site studio-site--koi koi-world koi-world--finished">
       <ScrollKoiExperience />
+      <KoiNavigationMotion />
 
       <header className="koi-world__header">
-        <Link className="koi-world__brand" href="/" aria-label="Koinophobia Labs home">
+        <Link
+          className="koi-world__brand"
+          href="#enter"
+          aria-label="Koinophobia Labs home"
+        >
           <span className="koi-world__brand-ring" aria-hidden="true" />
           <span>Koinophobia Labs</span>
         </Link>
@@ -88,8 +104,8 @@ export default function Home() {
       </header>
 
       <nav className="koi-world__rail" aria-label="Homepage chapters">
-        {chapters.map(([number, label, href]) => (
-          <a href={href} key={href}>
+        {chapters.map(([number, label, href, scene]) => (
+          <a href={href} key={href} data-koi-nav={scene}>
             <span>{number}</span>
             <b>{label}</b>
           </a>
@@ -100,167 +116,246 @@ export default function Home() {
         <section
           className="koi-scene koi-scene--hero"
           id="enter"
-          data-koi-frame="2.65"
+          data-koi-frame="2.0"
           data-koi-scene="hero"
+          data-koi-follow-scene="hero"
+          data-koi-side="left"
+          data-koi-y="0.04"
           aria-labelledby="koi-hero-title"
         >
-          <div className="koi-world__wordmark" aria-hidden="true">
-            <span>Koinophobia</span>
-            <span>Labs</span>
-          </div>
-
-          <div className="koi-scene__hero-copy">
-            <p className="koi-kicker">AI-native product studio · Chicago</p>
-            <h1 id="koi-hero-title">
-              Build what ordinary thinking would never reach.
-            </h1>
-            <p>
-              Products, digital experiences, and intelligent systems built from
-              first principles. The koi is not decoration. It is the path through
-              the lab.
-            </p>
-            <div className="koi-actions">
-              <a href="#products">
-                Enter the lab <ArrowDown size={16} aria-hidden="true" />
-              </a>
-              <Link href="/concierge?entry=home">
-                Bring us a problem <ArrowUpRight size={16} aria-hidden="true" />
-              </Link>
+          <div className="koi-follow-stage">
+            <div className="koi-follow-wake" aria-hidden="true" />
+            <div className="koi-world__wordmark" aria-hidden="true">
+              <span>Koinophobia</span>
+              <span>Labs</span>
             </div>
-          </div>
 
-          <a className="koi-scroll-cue" href="#products">
-            <span>Follow the koi</span>
-            <ArrowDown size={15} aria-hidden="true" />
-          </a>
+            <div className="koi-follow-cluster koi-follow-cluster--hero">
+              <div className="koi-scene__hero-copy">
+                <p className="koi-kicker" data-koi-follow>
+                  AI-native product studio · Chicago
+                </p>
+                <h1 id="koi-hero-title" data-koi-follow>
+                  Build what ordinary thinking would never reach.
+                </h1>
+                <p data-koi-follow>
+                  Products, digital experiences, and intelligent systems built
+                  from first principles. The koi moves first. The lab follows.
+                </p>
+                <div className="koi-actions" data-koi-follow>
+                  <a href="#products">
+                    Follow the koi <ArrowDown size={16} aria-hidden="true" />
+                  </a>
+                  <Link href="/concierge?entry=home">
+                    Bring us a problem{" "}
+                    <ArrowUpRight size={16} aria-hidden="true" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <a className="koi-scroll-cue" href="#products">
+              <span>Information follows the koi</span>
+              <ArrowDown size={15} aria-hidden="true" />
+            </a>
+          </div>
         </section>
 
         <section
           className="koi-scene koi-scene--products"
           id="products"
-          data-koi-frame="3.65"
+          data-koi-frame="4.8"
           data-koi-scene="products"
+          data-koi-follow-scene="products"
+          data-koi-side="left"
+          data-koi-y="-0.03"
           data-koi-duo="true"
           aria-labelledby="koi-products-title"
         >
-          <div className="koi-scene__center-label">
-            <p className="koi-kicker">Inside the lab</p>
-            <h2 id="koi-products-title">Three products orbiting one studio.</h2>
-          </div>
+          <div className="koi-follow-stage">
+            <div className="koi-follow-wake" aria-hidden="true" />
+            <div className="koi-follow-cluster">
+              <div className="koi-scene__center-label">
+                <p className="koi-kicker" data-koi-follow>
+                  Inside the lab
+                </p>
+                <h2 id="koi-products-title" data-koi-follow>
+                  Three products moving inside one current.
+                </h2>
+              </div>
 
-          <div className="koi-product-orbit">
-            {products.map((product, index) => (
-              <DestinationLink
-                className={`koi-product-node koi-product-node--${index + 1}`}
-                href={product.href}
-                key={product.title}
-                ariaLabel={`${product.cta}: ${product.title}`}
+              <div className="koi-product-orbit">
+                {products.map((product, index) => (
+                  <DestinationLink
+                    className={`koi-product-node koi-product-node--${index + 1}`}
+                    href={product.href}
+                    key={product.title}
+                    ariaLabel={`${product.cta}: ${product.title}`}
+                    follow
+                  >
+                    <span className="koi-product-node__number">
+                      0{index + 1}
+                    </span>
+                    <strong>{product.title}</strong>
+                    <small>{product.audience}</small>
+                    <span className="koi-product-node__status">
+                      {product.status.replace("Internal Product · ", "")}
+                    </span>
+                    <ArrowUpRight size={17} aria-hidden="true" />
+                  </DestinationLink>
+                ))}
+              </div>
+
+              <Link
+                className="koi-scene__edge-link"
+                href="/products"
+                data-koi-follow
               >
-                <span className="koi-product-node__number">0{index + 1}</span>
-                <strong>{product.title}</strong>
-                <small>{product.audience}</small>
-                <span className="koi-product-node__status">
-                  {product.status.replace("Internal Product · ", "")}
-                </span>
-                <ArrowUpRight size={17} aria-hidden="true" />
-              </DestinationLink>
-            ))}
+                Product universe{" "}
+                <ArrowUpRight size={15} aria-hidden="true" />
+              </Link>
+            </div>
           </div>
-
-          <Link className="koi-scene__edge-link" href="/products">
-            Product universe <ArrowUpRight size={15} aria-hidden="true" />
-          </Link>
         </section>
 
         <section
           className="koi-scene koi-scene--systems"
           id="systems"
-          data-koi-frame="5.85"
+          data-koi-frame="7.1"
           data-koi-scene="systems"
+          data-koi-follow-scene="systems"
+          data-koi-side="right"
+          data-koi-y="-0.04"
           aria-labelledby="koi-systems-title"
         >
-          <div className="koi-scene__side-copy">
-            <p className="koi-kicker">Systems around the product</p>
-            <h2 id="koi-systems-title">The visible experience is only the surface.</h2>
-            <p>
-              Koinophobia Labs also builds the intake, routing, automation, and
-              operating logic underneath it.
-            </p>
-          </div>
+          <div className="koi-follow-stage">
+            <div className="koi-follow-wake" aria-hidden="true" />
+            <div className="koi-follow-cluster">
+              <div className="koi-scene__side-copy">
+                <p className="koi-kicker" data-koi-follow>
+                  Systems around the product
+                </p>
+                <h2 id="koi-systems-title" data-koi-follow>
+                  The visible experience is only the surface.
+                </h2>
+                <p data-koi-follow>
+                  Koinophobia Labs builds the intake, routing, automation, and
+                  operating logic underneath the interface.
+                </p>
+              </div>
 
-          <div className="koi-service-current" aria-label="Koinophobia Labs services">
-            {serviceOffers.slice(0, 4).map((offer, index) => (
-              <Link href={offer.href} key={offer.slug}>
-                <span>0{index + 1}</span>
-                <strong>{offer.title}</strong>
-                <small>{offer.price}</small>
-                <ArrowUpRight size={16} aria-hidden="true" />
-              </Link>
-            ))}
+              <div
+                className="koi-service-current"
+                aria-label="Koinophobia Labs services"
+              >
+                {serviceOffers.slice(0, 4).map((offer, index) => (
+                  <Link href={offer.href} key={offer.slug} data-koi-follow>
+                    <span>0{index + 1}</span>
+                    <strong>{offer.title}</strong>
+                    <small>{offer.price}</small>
+                    <ArrowUpRight size={16} aria-hidden="true" />
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
         <section
           className="koi-scene koi-scene--work"
           id="work"
-          data-koi-frame="7.65"
+          data-koi-frame="9.35"
           data-koi-scene="work"
+          data-koi-follow-scene="work"
+          data-koi-side="left"
+          data-koi-y="0.02"
           aria-labelledby="koi-work-title"
         >
-          <div className="koi-scene__work-heading">
-            <p className="koi-kicker">Built in public · labeled honestly</p>
-            <h2 id="koi-work-title">Proof leaves a wake.</h2>
-          </div>
+          <div className="koi-follow-stage">
+            <div className="koi-follow-wake" aria-hidden="true" />
+            <div className="koi-follow-cluster">
+              <div className="koi-scene__work-heading">
+                <p className="koi-kicker" data-koi-follow>
+                  Built in public · labeled honestly
+                </p>
+                <h2 id="koi-work-title" data-koi-follow>
+                  Proof leaves a wake.
+                </h2>
+              </div>
 
-          <div className="koi-work-wake">
-            {workProjects.slice(0, 3).map((project, index) => (
+              <div className="koi-work-wake">
+                {workProjects.slice(0, 3).map((project, index) => (
+                  <Link
+                    href={project.previewUrl ?? `/work/${project.slug}`}
+                    key={project.slug}
+                    data-koi-follow
+                  >
+                    <span>0{index + 1}</span>
+                    <div>
+                      <strong>{project.title}</strong>
+                      <small>{project.businessType}</small>
+                    </div>
+                    <b>{project.statusLabel}</b>
+                    <ArrowUpRight size={16} aria-hidden="true" />
+                  </Link>
+                ))}
+              </div>
+
               <Link
-                href={project.previewUrl ?? `/work/${project.slug}`}
-                key={project.slug}
+                className="koi-scene__edge-link"
+                href="/work"
+                data-koi-follow
               >
-                <span>0{index + 1}</span>
-                <div>
-                  <strong>{project.title}</strong>
-                  <small>{project.businessType}</small>
-                </div>
-                <b>{project.statusLabel}</b>
-                <ArrowUpRight size={16} aria-hidden="true" />
+                Enter the work archive{" "}
+                <ArrowUpRight size={15} aria-hidden="true" />
               </Link>
-            ))}
+            </div>
           </div>
-
-          <Link className="koi-scene__edge-link" href="/work">
-            Enter the work archive <ArrowUpRight size={15} aria-hidden="true" />
-          </Link>
         </section>
 
         <section
           className="koi-scene koi-scene--founder"
           id="founder"
-          data-koi-frame="9.55"
+          data-koi-frame="11.7"
           data-koi-scene="founder"
+          data-koi-follow-scene="founder"
+          data-koi-side="right"
+          data-koi-y="0.03"
           aria-labelledby="koi-founder-title"
         >
-          <div className="koi-founder-note">
-            <div className="koi-founder-note__portrait">
-              <Image
-                src="/blake-portrait.jpg"
-                alt="Blake Taylor, founder of Koinophobia Labs"
-                fill
-                sizes="120px"
-              />
-            </div>
-            <div>
-              <p className="koi-kicker">Founder-led by design</p>
-              <h2 id="koi-founder-title">One studio. One builder. No agency maze.</h2>
-              <p>
-                Blake Taylor scopes, designs, builds, tests, and ships the work.
-                The person making the promise is the person responsible for the
-                result.
-              </p>
-              <Link href="/about">
-                Meet the founder <ArrowUpRight size={15} aria-hidden="true" />
-              </Link>
+          <div className="koi-follow-stage">
+            <div className="koi-follow-wake" aria-hidden="true" />
+            <div className="koi-follow-cluster">
+              <div className="koi-founder-note">
+                <div
+                  className="koi-founder-note__portrait"
+                  data-koi-follow
+                >
+                  <Image
+                    src="/blake-portrait.jpg"
+                    alt="Blake Taylor, founder of Koinophobia Labs"
+                    fill
+                    sizes="120px"
+                  />
+                </div>
+                <div>
+                  <p className="koi-kicker" data-koi-follow>
+                    Founder-led by design
+                  </p>
+                  <h2 id="koi-founder-title" data-koi-follow>
+                    One studio. One builder. No agency maze.
+                  </h2>
+                  <p data-koi-follow>
+                    Blake Taylor scopes, designs, builds, tests, and ships the
+                    work. The person making the promise is responsible for the
+                    result.
+                  </p>
+                  <Link href="/about" data-koi-follow>
+                    Meet the founder{" "}
+                    <ArrowUpRight size={15} aria-hidden="true" />
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -268,35 +363,51 @@ export default function Home() {
         <section
           className="koi-scene koi-scene--start"
           id="start"
-          data-koi-frame="11.65"
+          data-koi-frame="14.15"
           data-koi-scene="start"
+          data-koi-follow-scene="start"
+          data-koi-side="center"
+          data-koi-y="0.23"
           aria-labelledby="koi-start-title"
         >
-          <div className="koi-portal">
-            <p className="koi-kicker">The next orbit starts here</p>
-            <h2 id="koi-start-title">Bring the problem. We will build the system.</h2>
-            <p>
-              Start with a focused audit, use the concierge to find the right
-              path, or send the project directly.
-            </p>
-            <div className="koi-actions koi-actions--center">
-              <Link href="/audit">Start with an audit</Link>
-              <Link href="/intake">
-                Start a project <ArrowUpRight size={16} aria-hidden="true" />
-              </Link>
+          <div className="koi-follow-stage">
+            <div className="koi-follow-wake" aria-hidden="true" />
+            <div className="koi-follow-cluster koi-follow-cluster--start">
+              <div className="koi-portal">
+                <p className="koi-kicker" data-koi-follow>
+                  The next orbit starts here
+                </p>
+                <h2 id="koi-start-title" data-koi-follow>
+                  Bring the problem. We will build the system.
+                </h2>
+                <p data-koi-follow>
+                  Start with a focused audit, use the concierge to find the
+                  right path, or send the project directly.
+                </p>
+                <div
+                  className="koi-actions koi-actions--center"
+                  data-koi-follow
+                >
+                  <Link href="/audit">Start with an audit</Link>
+                  <Link href="/intake">
+                    Start a project{" "}
+                    <ArrowUpRight size={16} aria-hidden="true" />
+                  </Link>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <footer className="koi-world__footer">
-            <span>Koinophobia Labs · Chicago</span>
-            <nav aria-label="Footer navigation">
-              <Link href="/services">Services</Link>
-              <Link href="/products">Products</Link>
-              <Link href="/work">Work</Link>
-              <Link href="/about">About</Link>
-            </nav>
-            <span>Fear ordinary.</span>
-          </footer>
+            <footer className="koi-world__footer">
+              <span>Koinophobia Labs · Chicago</span>
+              <nav aria-label="Footer navigation">
+                <Link href="/services">Services</Link>
+                <Link href="/products">Products</Link>
+                <Link href="/work">Work</Link>
+                <Link href="/about">About</Link>
+              </nav>
+              <span>Fear ordinary.</span>
+            </footer>
+          </div>
         </section>
       </main>
 
