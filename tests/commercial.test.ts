@@ -85,7 +85,7 @@ test("products are explicitly internal and commercial guidance is complete", () 
   assert.ok(faqs.length >= 13);
 });
 
-test("the final Labs homepage makes the koi navigation and carries information in its wake", () => {
+test("the final Labs homepage keeps the koi cinematic while making every destination obvious", () => {
   const page = fs.readFileSync(path.join(root, "app/page.tsx"), "utf8");
   const layout = fs.readFileSync(path.join(root, "app/layout.tsx"), "utf8");
   const motion = fs.readFileSync(
@@ -96,10 +96,6 @@ test("the final Labs homepage makes the koi navigation and carries information i
     path.join(root, "components/studio/KoiNavigationMotion.tsx"),
     "utf8",
   );
-  const wayfindingStyles = fs.readFileSync(
-    path.join(root, "app/koi-wayfinding.css"),
-    "utf8",
-  );
   const depth = fs.readFileSync(
     path.join(root, "components/studio/KoiDepthPass.tsx"),
     "utf8",
@@ -107,6 +103,10 @@ test("the final Labs homepage makes the koi navigation and carries information i
   const styles = fs.readFileSync(path.join(root, "app/koi-scroll.css"), "utf8");
   const finalStyles = fs.readFileSync(
     path.join(root, "app/koi-finished.css"),
+    "utf8",
+  );
+  const clarityStyles = fs.readFileSync(
+    path.join(root, "app/koi-navigation-clarity.css"),
     "utf8",
   );
   const depthStyles = fs.readFileSync(
@@ -122,7 +122,19 @@ test("the final Labs homepage makes the koi navigation and carries information i
   assert.match(page, /<KoiNavigationMotion \/>/);
   assert.equal((page.match(/data-koi-frame=/g) ?? []).length, 6);
   assert.equal((page.match(/data-koi-follow-scene=/g) ?? []).length, 6);
-  assert.ok((page.match(/data-koi-follow/g) ?? []).length >= 24);
+  assert.ok((page.match(/data-koi-follow/g) ?? []).length >= 30);
+  assert.equal((page.match(/className="koi-section-marker"/g) ?? []).length, 1);
+  assert.match(page, /function SectionMarker/);
+  assert.equal((page.match(/<SectionMarker/g) ?? []).length, 6);
+  assert.match(page, /className="koi-world__primary-nav"/);
+  assert.equal((page.match(/data-koi-nav=\{scene\}/g) ?? []).length, 1);
+  assert.match(page, /\["Home", "#enter", "hero"/);
+  assert.match(page, /\["Products", "#products", "products"/);
+  assert.match(page, /\["Services", "#systems", "systems"/);
+  assert.match(page, /\["Work", "#work", "work"/);
+  assert.match(page, /\["About", "#founder", "founder"/);
+  assert.match(page, /\["Contact", "#start", "start"/);
+  assert.doesNotMatch(page, /className="koi-world__rail"/);
   assert.match(page, /data-koi-frame="2\.0"/);
   assert.match(page, /data-koi-frame="14\.15"/);
   assert.match(
@@ -176,10 +188,8 @@ test("the final Labs homepage makes the koi navigation and carries information i
   assert.ok((motion.match(/\bmuted\b/g) ?? []).length >= 2);
   assert.ok((motion.match(/\bplaysInline\b/g) ?? []).length >= 2);
 
-  assert.match(navigationMotion, /const CHAPTERS/);
-  assert.equal((navigationMotion.match(/scene: "/g) ?? []).length, 6);
-  assert.match(navigationMotion, /Koinophobia Labs site map/);
-  assert.match(navigationMotion, /koi-wayfinder/);
+  assert.doesNotMatch(navigationMotion, /const CHAPTERS/);
+  assert.doesNotMatch(navigationMotion, /koi-wayfinder/);
   assert.match(navigationMotion, /const HOLD_START = 0\.18/);
   assert.match(navigationMotion, /const HOLD_END = 0\.82/);
   assert.match(navigationMotion, /\[data-koi-follow-scene\]/);
@@ -190,20 +200,24 @@ test("the final Labs homepage makes the koi navigation and carries information i
   assert.match(navigationMotion, /scene\.dataset\.koiReadable/);
   assert.match(navigationMotion, /--koi-reading-x/);
   assert.match(navigationMotion, /--koi-reading-opacity/);
-  assert.match(navigationMotion, /const activeFloor = essential \? 0\.96/);
-  assert.match(navigationMotion, /Math\.max\(opacity, activeFloor\)/);
+  assert.match(navigationMotion, /const lockStrength = staticMode \? 1 : 0\.9/);
+  assert.match(navigationMotion, /opacity = 1/);
+  assert.match(navigationMotion, /clamp\(viewportWidth \* 0\.235, 250, 340\)/);
   assert.match(navigationMotion, /data-koi-nav/);
+  assert.match(navigationMotion, /dataset\.koiLocation/);
+  assert.match(navigationMotion, /return null/);
   assert.match(navigationMotion, /prefers-reduced-motion: reduce/);
   assert.match(navigationMotion, /connection\?\.saveData/);
 
-  assert.match(wayfindingStyles, /\.koi-wayfinder/);
-  assert.match(wayfindingStyles, /Section map/);
-  assert.match(wayfindingStyles, /\.koi-follow-cluster/);
-  assert.match(wayfindingStyles, /--koi-reading-x/);
-  assert.match(wayfindingStyles, /--koi-reading-opacity/);
-  assert.match(wayfindingStyles, /backdrop-filter: blur\(18px\)/);
-  assert.match(wayfindingStyles, /aria-current="true"/);
-  assert.match(layout, /import "\.\/koi-wayfinding\.css"/);
+  assert.match(layout, /import "\.\/koi-navigation-clarity\.css"/);
+  assert.match(clarityStyles, /\.koi-world__primary-nav/);
+  assert.match(clarityStyles, /\.koi-section-marker/);
+  assert.match(clarityStyles, /\.koi-follow-stage[\s\S]*z-index: 4/);
+  assert.match(clarityStyles, /\.koi-follow-cluster[\s\S]*z-index: 6/);
+  assert.match(clarityStyles, /data-koi-active="true"[\s\S]*opacity: 1 !important/);
+  assert.match(clarityStyles, /\.koi-world__rail[\s\S]*display: none !important/);
+  assert.match(clarityStyles, /backdrop-filter: blur\(22px\)/);
+  assert.match(clarityStyles, /aria-current="true"/);
 
   assert.ok(
     fs.existsSync(path.join(root, "public/brand/koi-scroll-single.mp4")),
