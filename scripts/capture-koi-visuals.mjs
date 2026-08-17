@@ -89,17 +89,20 @@ await waitFor(
 await wait(3200);
 
 const architecture = await evaluate(`(() => {
-  const railLabels = [...document.querySelectorAll('.koi-world__rail b')];
+  const primaryLinks = [...document.querySelectorAll('.koi-world__primary-nav [data-koi-nav]')];
   return {
     products: document.querySelectorAll('.koi-product-node').length,
     scenes: document.querySelectorAll('[data-koi-frame]').length,
     followScenes: document.querySelectorAll('[data-koi-follow-scene]').length,
     followParts: document.querySelectorAll('[data-koi-follow]').length,
-    wayfinderLinks: document.querySelectorAll('.koi-wayfinder [data-koi-nav]').length,
-    visibleRailLabels: railLabels.filter((label) => {
-      const style = getComputedStyle(label);
-      return style.display !== 'none' && Number.parseFloat(style.opacity) > .5;
+    sectionMarkers: document.querySelectorAll('.koi-section-marker').length,
+    primaryNavLinks: primaryLinks.length,
+    visiblePrimaryNavLinks: primaryLinks.filter((link) => {
+      const style = getComputedStyle(link);
+      return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity) > .8;
     }).length,
+    oldRail: Boolean(document.querySelector('.koi-world__rail')),
+    oldWayfinder: Boolean(document.querySelector('.koi-wayfinder')),
     legacy: Boolean(document.querySelector('.studio-problem-grid, .studio-pricing-grid, .studio-product-grid, .studio-trust')),
     companion: document.querySelector('.koi-companion') ? getComputedStyle(document.querySelector('.koi-companion')).display : 'none',
     opacity: Number.parseFloat(getComputedStyle(document.querySelector('.studio-scroll-koi__video--single')).opacity),
@@ -111,9 +114,12 @@ if (
   architecture.products !== 3 ||
   architecture.scenes !== 6 ||
   architecture.followScenes !== 6 ||
-  architecture.followParts < 24 ||
-  architecture.wayfinderLinks !== 6 ||
-  architecture.visibleRailLabels !== 5 ||
+  architecture.followParts < 30 ||
+  architecture.sectionMarkers !== 6 ||
+  architecture.primaryNavLinks !== 6 ||
+  architecture.visiblePrimaryNavLinks !== 6 ||
+  architecture.oldRail ||
+  architecture.oldWayfinder ||
   architecture.legacy ||
   architecture.companion !== "none" ||
   architecture.opacity < 0.9 ||
@@ -179,7 +185,7 @@ const depthState = () =>
     return {
       scene: root.dataset.koiScene,
       opacity: Number.parseFloat(style.opacity),
-      zIndex: style.zIndex,
+      zIndex: Number.parseFloat(style.zIndex),
     };
   })()`);
 
@@ -188,24 +194,39 @@ const followState = () =>
     const scene = document.querySelector('[data-koi-active="true"]');
     const parts = [...(scene?.querySelectorAll('[data-koi-follow]') ?? [])];
     const cluster = scene?.querySelector('.koi-follow-cluster');
+    const stage = scene?.querySelector('.koi-follow-stage');
     const heading = scene?.querySelector('h1, h2');
+    const marker = scene?.querySelector('.koi-section-marker');
     const panelStyle = cluster ? getComputedStyle(cluster, '::before') : null;
     const sceneStyle = scene ? getComputedStyle(scene) : null;
+    const headingRect = heading?.getBoundingClientRect();
+    const markerRect = marker?.getBoundingClientRect();
     return {
       scene: scene?.dataset.koiFollowScene ?? null,
       count: parts.length,
-      visible: parts.filter((part) => Number.parseFloat(getComputedStyle(part).opacity) > .65).length,
+      visible: parts.filter((part) => Number.parseFloat(getComputedStyle(part).opacity) > .9).length,
       transforms: new Set(parts.map((part) => getComputedStyle(part).transform)).size,
       headingOpacity: heading ? Number.parseFloat(getComputedStyle(heading).opacity) : 0,
+      headingColor: heading ? getComputedStyle(heading).color : '',
       readingOpacity: sceneStyle ? Number.parseFloat(sceneStyle.getPropertyValue('--koi-reading-opacity')) : 0,
       panelBackground: panelStyle?.backgroundImage ?? 'none',
-      activeMapLinks: document.querySelectorAll('.koi-wayfinder [aria-current="true"]').length,
+      panelBorder: panelStyle?.borderTopColor ?? 'transparent',
+      stageZ: stage ? Number.parseFloat(getComputedStyle(stage).zIndex) : 0,
+      activeMapLinks: document.querySelectorAll('.koi-world__primary-nav [aria-current="true"]').length,
+      markerText: marker?.textContent?.replace(/\\s+/g, ' ').trim() ?? '',
+      markerVisible: markerRect ? markerRect.width > 20 && markerRect.height > 12 : false,
+      headingInViewport: headingRect ? (
+        headingRect.left >= 0 &&
+        headingRect.right <= document.documentElement.clientWidth &&
+        headingRect.top >= 70 &&
+        headingRect.bottom <= document.documentElement.clientHeight
+      ) : false,
     };
   })()`);
 
 const assertDepth = (scene, state, visible) => {
-  if (!state || state.zIndex !== "3") {
-    throw new Error(`${scene}: invalid depth pass`);
+  if (!state || state.zIndex !== 3) {
+    throw new Error(`${scene}: invalid depth pass: ${JSON.stringify(state)}`);
   }
   if (visible && state.opacity < 0.05) {
     throw new Error(`${scene}: depth pass is hidden`);
@@ -216,18 +237,24 @@ const assertDepth = (scene, state, visible) => {
 };
 
 const assertFollow = (scene, state) => {
-  if (!state || state.scene !== scene || state.count < 3) {
+  if (!state || state.scene !== scene || state.count < 4) {
     throw new Error(`${scene}: missing follow content: ${JSON.stringify(state)}`);
   }
   if (
-    state.visible < Math.min(4, state.count) ||
+    state.visible < Math.min(5, state.count) ||
     state.transforms < 2 ||
-    state.headingOpacity < .9 ||
+    state.headingOpacity < .95 ||
     state.readingOpacity < .9 ||
     state.panelBackground === 'none' ||
-    state.activeMapLinks !== 1
+    state.panelBorder === 'rgba(0, 0, 0, 0)' ||
+    state.stageZ < 4 ||
+    state.activeMapLinks !== 1 ||
+    !state.markerVisible ||
+    !state.markerText ||
+    !state.headingInViewport ||
+    !state.headingColor.includes('255')
   ) {
-    throw new Error(`${scene}: information or wayfinding is not readable: ${JSON.stringify(state)}`);
+    throw new Error(`${scene}: information or navigation is not readable: ${JSON.stringify(state)}`);
   }
 };
 
