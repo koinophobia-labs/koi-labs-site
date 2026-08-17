@@ -20,6 +20,7 @@ test("koi anchor renditions preserve the fish as the shared visual anchor", () =
   assert.match(component, /The koi holds the center/);
   assert.match(component, /COPY ORBITS THE KOI/);
   assert.match(component, /COPY TRAILS THE KOI/);
+  assert.match(component, /KOI \/ ANCHOR/);
   assert.match(component, /const HOLD_START = 0\.34/);
   assert.match(component, /const HOLD_END = 0\.66/);
   assert.match(component, /orbitAngle/);
@@ -29,7 +30,6 @@ test("koi anchor renditions preserve the fish as the shared visual anchor", () =
   assert.match(styles, /\.koi-anchor--orbit \.koi-anchor__copy/);
   assert.match(styles, /\.koi-anchor--wake \[data-anchor-part\]/);
   assert.match(styles, /position: sticky/);
-  assert.match(styles, /KOI \/ ANCHOR/);
   assert.match(styles, /body:has\(\.koi-anchor\) > \.koi-companion/);
 });
 
