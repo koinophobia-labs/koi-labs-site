@@ -45,8 +45,10 @@ export default function KoiDepthPass() {
       const sourceVideo = host.querySelector<HTMLVideoElement>(
         ".studio-scroll-koi__video--single",
       );
+      const depthPassVisible = host.dataset.koiScene !== "products";
 
       if (
+        depthPassVisible &&
         document.visibilityState === "visible" &&
         sourceVideo &&
         sourceVideo.readyState >= sourceVideo.HAVE_METADATA &&
@@ -61,8 +63,8 @@ export default function KoiDepthPass() {
         );
 
         if (
-          now - lastSeekAt >= 30 &&
-          Math.abs(depthVideo.currentTime - targetTime) > 0.018
+          now - lastSeekAt >= 40 &&
+          Math.abs(depthVideo.currentTime - targetTime) > 0.022
         ) {
           depthVideo.currentTime = targetTime;
           lastSeekAt = now;
