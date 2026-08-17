@@ -7,8 +7,8 @@ const DUO_KOI_SRC = "/brand/koi-scroll-duo.mp4";
 
 const FALLBACK_DURATION_SECONDS = 12;
 const HERO_SETTLE_SECONDS = 2.65;
-const RAMP_START = 0.32;
-const RAMP_END = 0.68;
+const RAMP_START = 0.36;
+const RAMP_END = 0.64;
 
 type MotionMode = "pending" | "video" | "static";
 type NavigatorWithConnection = Navigator & {
@@ -55,9 +55,8 @@ function collectSceneCues(root: HTMLElement) {
     .sort((left, right) => left.position - right.position);
 }
 
-/* Each content scene owns a real still frame. The first and final thirds of
-   the distance between scenes are stagnant reading zones. Only the middle
-   third advances the film, producing a deliberate speed ramp between plates. */
+/* Every chapter owns a real still frame. Most of the distance between chapters
+   is deliberately stagnant; the middle slice becomes the speed ramp. */
 function mapScrollToSceneTime(
   focusPosition: number,
   cues: SceneCue[],
@@ -97,6 +96,7 @@ function mapScrollToSceneTime(
         scene: current.scene,
       };
     }
+
     if (localProgress >= RAMP_END) {
       return {
         time: next.normalizedTime * duration,
@@ -133,10 +133,10 @@ function getDuoOpacity(section: HTMLElement) {
   const rect = section.getBoundingClientRect();
   const viewportHeight = Math.max(window.innerHeight, 1);
   const entering = clamp(
-    (viewportHeight * 0.92 - rect.top) / (viewportHeight * 0.62),
+    (viewportHeight * 0.94 - rect.top) / (viewportHeight * 0.46),
   );
   const leaving = clamp(
-    (rect.bottom - viewportHeight * 0.12) / (viewportHeight * 0.62),
+    (rect.bottom - viewportHeight * 0.08) / (viewportHeight * 0.46),
   );
   return smooth(entering) * smooth(leaving);
 }
@@ -157,44 +157,20 @@ function setVisualVariables(
   root.style.setProperty("--koi-ramp-strength", rampStrength.toFixed(4));
   root.style.setProperty(
     "--koi-video-scale",
-    (1.025 + speedStrength * 0.012).toFixed(5),
+    (1.018 + speedStrength * 0.018).toFixed(5),
   );
   root.style.setProperty(
     "--koi-video-brightness",
-    (0.55 + rampStrength * 0.08).toFixed(4),
-  );
-  root.style.setProperty(
-    "--koi-heading-position",
-    `${(28 + rampStrength * 42).toFixed(2)}%`,
-  );
-  root.style.setProperty(
-    "--koi-heading-glow",
-    `${(2 + rampStrength * 8).toFixed(2)}px`,
-  );
-  root.style.setProperty(
-    "--koi-heading-glow-alpha",
-    (0.02 + rampStrength * 0.14).toFixed(3),
-  );
-  root.style.setProperty(
-    "--koi-accent-glow",
-    `${(7 + rampStrength * 14).toFixed(2)}px`,
-  );
-  root.style.setProperty(
-    "--koi-accent-glow-alpha",
-    (0.08 + rampStrength * 0.42).toFixed(3),
-  );
-  root.style.setProperty(
-    "--koi-plate-opacity",
-    (0.46 + rampStrength * 0.12).toFixed(3),
+    (0.74 + rampStrength * 0.12).toFixed(4),
   );
   root.style.setProperty("--koi-duo-opacity", duoOpacity.toFixed(4));
   root.style.setProperty(
     "--koi-single-opacity",
-    (0.73 - duoOpacity * 0.32).toFixed(4),
+    Math.max(0.035, 0.96 - duoOpacity * 0.925).toFixed(4),
   );
   root.style.setProperty(
     "--koi-duo-video-opacity",
-    (duoOpacity * 0.74).toFixed(4),
+    (duoOpacity * 0.96).toFixed(4),
   );
 }
 
@@ -254,8 +230,7 @@ export default function ScrollKoiExperience() {
       single.muted = true;
       single.playbackRate = 0.65;
       void single.play().catch(() => {
-        /* Autoplay can be denied by browser policy. Scroll scrubbing still
-           works because it does not depend on play(). */
+        /* Scroll scrubbing remains available when autoplay is denied. */
       });
     };
 
@@ -320,7 +295,7 @@ export default function ScrollKoiExperience() {
           introComplete = true;
         }
         root.dataset.koiScene = "hero";
-        root.style.setProperty("--koi-ramping", "0");
+        root.dataset.koiRamping = "false";
       } else {
         if (!scrollInitialized) initializeScroll(focusPosition);
 
@@ -336,11 +311,11 @@ export default function ScrollKoiExperience() {
         const targetTime = mapped.time + continuityOffset;
         rampStrength = mapped.rampStrength;
         root.dataset.koiScene = mapped.scene;
-        root.style.setProperty("--koi-ramping", mapped.ramping ? "1" : "0");
+        root.dataset.koiRamping = mapped.ramping ? "true" : "false";
 
         const elapsedSeconds = elapsedMs / 1000;
         const response = mapped.ramping
-          ? 8 + speedStrength * 24
+          ? 9 + speedStrength * 27
           : 5 + speedStrength * 8;
         const catchUp = 1 - Math.exp(-response * elapsedSeconds);
         currentTime += (targetTime - currentTime) * catchUp;
@@ -398,19 +373,13 @@ export default function ScrollKoiExperience() {
       single.pause();
       duo.pause();
       delete root.dataset.koiScene;
+      delete root.dataset.koiRamping;
       root.style.removeProperty("--koi-scroll-progress");
       root.style.removeProperty("--koi-scroll-progress-percent");
       root.style.removeProperty("--koi-scroll-speed");
       root.style.removeProperty("--koi-ramp-strength");
-      root.style.removeProperty("--koi-ramping");
       root.style.removeProperty("--koi-video-scale");
       root.style.removeProperty("--koi-video-brightness");
-      root.style.removeProperty("--koi-heading-position");
-      root.style.removeProperty("--koi-heading-glow");
-      root.style.removeProperty("--koi-heading-glow-alpha");
-      root.style.removeProperty("--koi-accent-glow");
-      root.style.removeProperty("--koi-accent-glow-alpha");
-      root.style.removeProperty("--koi-plate-opacity");
       root.style.removeProperty("--koi-duo-opacity");
       root.style.removeProperty("--koi-single-opacity");
       root.style.removeProperty("--koi-duo-video-opacity");
