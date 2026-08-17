@@ -31,12 +31,13 @@ const schema = {
     "A founder-led studio building AI-native products, websites, and business systems.",
 };
 
-const chapters = [
-  ["01", "Products", "#products", "products"],
-  ["02", "Systems", "#systems", "systems"],
-  ["03", "Work", "#work", "work"],
-  ["04", "Founder", "#founder", "founder"],
-  ["05", "Start", "#start", "start"],
+const primaryNavigation = [
+  ["Home", "#enter", "hero", "Studio overview"],
+  ["Products", "#products", "products", "Career Forge, Trendi, You Know Ball"],
+  ["Services", "#systems", "systems", "Websites, AI workflows, automation"],
+  ["Work", "#work", "work", "Published concept builds"],
+  ["About", "#founder", "founder", "Founder-led studio"],
+  ["Contact", "#start", "start", "Choose a starting point"],
 ] as const;
 
 type DestinationLinkProps = {
@@ -45,6 +46,12 @@ type DestinationLinkProps = {
   children: ReactNode;
   ariaLabel?: string;
   follow?: boolean;
+};
+
+type SectionMarkerProps = {
+  number: string;
+  label: string;
+  description: string;
 };
 
 function DestinationLink({
@@ -83,6 +90,16 @@ function DestinationLink({
   );
 }
 
+function SectionMarker({ number, label, description }: SectionMarkerProps) {
+  return (
+    <div className="koi-section-marker" data-koi-follow>
+      <span>{number}</span>
+      <strong>{label}</strong>
+      <small>{description}</small>
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <div className="studio-site studio-site--koi koi-world koi-world--finished">
@@ -98,19 +115,25 @@ export default function Home() {
           <span className="koi-world__brand-ring" aria-hidden="true" />
           <span>Koinophobia Labs</span>
         </Link>
+
+        <nav className="koi-world__primary-nav" aria-label="Primary navigation">
+          {primaryNavigation.map(([label, href, scene, description]) => (
+            <a
+              href={href}
+              data-koi-nav={scene}
+              aria-current={scene === "hero" ? "true" : undefined}
+              aria-label={`${label}: ${description}`}
+              key={scene}
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+
         <Link className="koi-world__header-cta" href="/intake">
           Start a project <ArrowUpRight size={15} aria-hidden="true" />
         </Link>
       </header>
-
-      <nav className="koi-world__rail" aria-label="Homepage chapters">
-        {chapters.map(([number, label, href, scene]) => (
-          <a href={href} key={href} data-koi-nav={scene}>
-            <span>{number}</span>
-            <b>{label}</b>
-          </a>
-        ))}
-      </nav>
 
       <main>
         <section
@@ -120,7 +143,7 @@ export default function Home() {
           data-koi-scene="hero"
           data-koi-follow-scene="hero"
           data-koi-side="left"
-          data-koi-y="0.04"
+          data-koi-y="0.03"
           aria-labelledby="koi-hero-title"
         >
           <div className="koi-follow-stage">
@@ -132,6 +155,11 @@ export default function Home() {
 
             <div className="koi-follow-cluster koi-follow-cluster--hero">
               <div className="koi-scene__hero-copy">
+                <SectionMarker
+                  number="00"
+                  label="Home"
+                  description="Studio overview"
+                />
                 <p className="koi-kicker" data-koi-follow>
                   AI-native product studio · Chicago
                 </p>
@@ -168,13 +196,18 @@ export default function Home() {
           data-koi-scene="products"
           data-koi-follow-scene="products"
           data-koi-side="left"
-          data-koi-y="-0.03"
+          data-koi-y="-0.02"
           data-koi-duo="true"
           aria-labelledby="koi-products-title"
         >
           <div className="koi-follow-stage">
             <div className="koi-follow-wake" aria-hidden="true" />
             <div className="koi-follow-cluster">
+              <SectionMarker
+                number="01"
+                label="Products"
+                description="Career Forge, Trendi, You Know Ball"
+              />
               <div className="koi-scene__center-label">
                 <p className="koi-kicker" data-koi-follow>
                   Inside the lab
@@ -225,12 +258,17 @@ export default function Home() {
           data-koi-scene="systems"
           data-koi-follow-scene="systems"
           data-koi-side="right"
-          data-koi-y="-0.04"
+          data-koi-y="-0.02"
           aria-labelledby="koi-systems-title"
         >
           <div className="koi-follow-stage">
             <div className="koi-follow-wake" aria-hidden="true" />
             <div className="koi-follow-cluster">
+              <SectionMarker
+                number="02"
+                label="Services"
+                description="Websites, AI workflows, automation"
+              />
               <div className="koi-scene__side-copy">
                 <p className="koi-kicker" data-koi-follow>
                   Systems around the product
@@ -274,6 +312,11 @@ export default function Home() {
           <div className="koi-follow-stage">
             <div className="koi-follow-wake" aria-hidden="true" />
             <div className="koi-follow-cluster">
+              <SectionMarker
+                number="03"
+                label="Work"
+                description="Concept builds and product proof"
+              />
               <div className="koi-scene__work-heading">
                 <p className="koi-kicker" data-koi-follow>
                   Built in public · labeled honestly
@@ -320,12 +363,17 @@ export default function Home() {
           data-koi-scene="founder"
           data-koi-follow-scene="founder"
           data-koi-side="right"
-          data-koi-y="0.03"
+          data-koi-y="0.02"
           aria-labelledby="koi-founder-title"
         >
           <div className="koi-follow-stage">
             <div className="koi-follow-wake" aria-hidden="true" />
             <div className="koi-follow-cluster">
+              <SectionMarker
+                number="04"
+                label="About"
+                description="Founder-led studio"
+              />
               <div className="koi-founder-note">
                 <div
                   className="koi-founder-note__portrait"
@@ -366,13 +414,18 @@ export default function Home() {
           data-koi-frame="14.15"
           data-koi-scene="start"
           data-koi-follow-scene="start"
-          data-koi-side="center"
-          data-koi-y="0.23"
+          data-koi-side="right"
+          data-koi-y="0.12"
           aria-labelledby="koi-start-title"
         >
           <div className="koi-follow-stage">
             <div className="koi-follow-wake" aria-hidden="true" />
             <div className="koi-follow-cluster koi-follow-cluster--start">
+              <SectionMarker
+                number="05"
+                label="Contact"
+                description="Choose a starting point"
+              />
               <div className="koi-portal">
                 <p className="koi-kicker" data-koi-follow>
                   The next orbit starts here
