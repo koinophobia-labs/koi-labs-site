@@ -88,22 +88,32 @@ await waitFor(
 );
 await wait(3200);
 
-const architecture = await evaluate(`(() => ({
-  products: document.querySelectorAll('.koi-product-node').length,
-  scenes: document.querySelectorAll('[data-koi-frame]').length,
-  followScenes: document.querySelectorAll('[data-koi-follow-scene]').length,
-  followParts: document.querySelectorAll('[data-koi-follow]').length,
-  legacy: Boolean(document.querySelector('.studio-problem-grid, .studio-pricing-grid, .studio-product-grid, .studio-trust')),
-  companion: document.querySelector('.koi-companion') ? getComputedStyle(document.querySelector('.koi-companion')).display : 'none',
-  opacity: Number.parseFloat(getComputedStyle(document.querySelector('.studio-scroll-koi__video--single')).opacity),
-  brightness: Number.parseFloat(getComputedStyle(document.querySelector('.koi-world--finished')).getPropertyValue('--koi-video-brightness')),
-  living: document.querySelector('.koi-world--finished')?.dataset.koiLiving ?? 'false',
-}))()`);
+const architecture = await evaluate(`(() => {
+  const railLabels = [...document.querySelectorAll('.koi-world__rail b')];
+  return {
+    products: document.querySelectorAll('.koi-product-node').length,
+    scenes: document.querySelectorAll('[data-koi-frame]').length,
+    followScenes: document.querySelectorAll('[data-koi-follow-scene]').length,
+    followParts: document.querySelectorAll('[data-koi-follow]').length,
+    wayfinderLinks: document.querySelectorAll('.koi-wayfinder [data-koi-nav]').length,
+    visibleRailLabels: railLabels.filter((label) => {
+      const style = getComputedStyle(label);
+      return style.display !== 'none' && Number.parseFloat(style.opacity) > .5;
+    }).length,
+    legacy: Boolean(document.querySelector('.studio-problem-grid, .studio-pricing-grid, .studio-product-grid, .studio-trust')),
+    companion: document.querySelector('.koi-companion') ? getComputedStyle(document.querySelector('.koi-companion')).display : 'none',
+    opacity: Number.parseFloat(getComputedStyle(document.querySelector('.studio-scroll-koi__video--single')).opacity),
+    brightness: Number.parseFloat(getComputedStyle(document.querySelector('.koi-world--finished')).getPropertyValue('--koi-video-brightness')),
+    living: document.querySelector('.koi-world--finished')?.dataset.koiLiving ?? 'false',
+  };
+})()`);
 if (
   architecture.products !== 3 ||
   architecture.scenes !== 6 ||
   architecture.followScenes !== 6 ||
   architecture.followParts < 24 ||
+  architecture.wayfinderLinks !== 6 ||
+  architecture.visibleRailLabels !== 5 ||
   architecture.legacy ||
   architecture.companion !== "none" ||
   architecture.opacity < 0.9 ||
@@ -177,11 +187,19 @@ const followState = () =>
   evaluate(`(() => {
     const scene = document.querySelector('[data-koi-active="true"]');
     const parts = [...(scene?.querySelectorAll('[data-koi-follow]') ?? [])];
+    const cluster = scene?.querySelector('.koi-follow-cluster');
+    const heading = scene?.querySelector('h1, h2');
+    const panelStyle = cluster ? getComputedStyle(cluster, '::before') : null;
+    const sceneStyle = scene ? getComputedStyle(scene) : null;
     return {
       scene: scene?.dataset.koiFollowScene ?? null,
       count: parts.length,
-      visible: parts.filter((part) => Number.parseFloat(getComputedStyle(part).opacity) > .45).length,
+      visible: parts.filter((part) => Number.parseFloat(getComputedStyle(part).opacity) > .65).length,
       transforms: new Set(parts.map((part) => getComputedStyle(part).transform)).size,
+      headingOpacity: heading ? Number.parseFloat(getComputedStyle(heading).opacity) : 0,
+      readingOpacity: sceneStyle ? Number.parseFloat(sceneStyle.getPropertyValue('--koi-reading-opacity')) : 0,
+      panelBackground: panelStyle?.backgroundImage ?? 'none',
+      activeMapLinks: document.querySelectorAll('.koi-wayfinder [aria-current="true"]').length,
     };
   })()`);
 
@@ -201,8 +219,15 @@ const assertFollow = (scene, state) => {
   if (!state || state.scene !== scene || state.count < 3) {
     throw new Error(`${scene}: missing follow content: ${JSON.stringify(state)}`);
   }
-  if (state.visible < 3 || state.transforms < 2) {
-    throw new Error(`${scene}: information is not visibly swimming with the koi: ${JSON.stringify(state)}`);
+  if (
+    state.visible < Math.min(4, state.count) ||
+    state.transforms < 2 ||
+    state.headingOpacity < .9 ||
+    state.readingOpacity < .9 ||
+    state.panelBackground === 'none' ||
+    state.activeMapLinks !== 1
+  ) {
+    throw new Error(`${scene}: information or wayfinding is not readable: ${JSON.stringify(state)}`);
   }
 };
 
