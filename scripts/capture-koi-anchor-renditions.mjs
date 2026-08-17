@@ -108,10 +108,11 @@ const capture = async (name) => {
 const assertCenteredAnchor = async (mode) => {
   const state = await evaluate(`(() => {
     const root = document.querySelector('[data-koi-anchor-mode="${mode}"]');
-    const ring = root?.querySelector('.koi-anchor__center');
-    const copy = root?.querySelector('[data-anchor-active="true"] .koi-anchor__copy');
+    const active = root?.querySelector('[data-anchor-active="true"]');
+    const ring = active?.querySelector('.koi-anchor__center');
+    const copy = active?.querySelector('.koi-anchor__copy');
     const companion = document.querySelector('.koi-companion');
-    if (!root || !ring || !copy) return null;
+    if (!root || !active || !ring || !copy) return null;
     const ringRect = ring.getBoundingClientRect();
     const copyStyle = getComputedStyle(copy);
     return {
