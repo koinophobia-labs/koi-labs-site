@@ -1,13 +1,67 @@
 "use client";
 
 import { useEffect } from "react";
+import styles from "./KoiWayfinding.module.css";
 
 type NavigatorWithConnection = Navigator & {
   connection?: { saveData?: boolean };
 };
 
-const HOLD_START = 0.27;
-const HOLD_END = 0.72;
+type Chapter = {
+  number: string;
+  label: string;
+  description: string;
+  href: string;
+  scene: string;
+};
+
+const CHAPTERS: readonly Chapter[] = [
+  {
+    number: "00",
+    label: "Home",
+    description: "Studio overview",
+    href: "#enter",
+    scene: "hero",
+  },
+  {
+    number: "01",
+    label: "Products",
+    description: "Career Forge, Trendi, You Know Ball",
+    href: "#products",
+    scene: "products",
+  },
+  {
+    number: "02",
+    label: "Systems",
+    description: "Websites, AI workflows, automation",
+    href: "#systems",
+    scene: "systems",
+  },
+  {
+    number: "03",
+    label: "Work",
+    description: "Published concept builds",
+    href: "#work",
+    scene: "work",
+  },
+  {
+    number: "04",
+    label: "Founder",
+    description: "Blake Taylor",
+    href: "#founder",
+    scene: "founder",
+  },
+  {
+    number: "05",
+    label: "Start",
+    description: "Audit, concierge, or project intake",
+    href: "#start",
+    scene: "start",
+  },
+] as const;
+
+const HOLD_START = 0.18;
+const HOLD_END = 0.82;
 
 function clamp(value: number, minimum = 0, maximum = 1) {
   return Math.min(maximum, Math.max(minimum, value));
@@ -76,7 +130,7 @@ export default function KoiNavigationMotion() {
         const mobile = viewportWidth <= 760;
         const restX = mobile
           ? 0
-          : direction * clamp(viewportWidth * 0.285, 290, 420);
+          : direction * clamp(viewportWidth * 0.275, 280, 405);
         const verticalRatio = Number.parseFloat(scene.dataset.koiY ?? "0");
         const restY = mobile
           ? Math.min(viewportHeight * 0.24, 190)
@@ -86,17 +140,24 @@ export default function KoiNavigationMotion() {
         );
 
         scene.dataset.koiActive = active ? "true" : "false";
+        scene.dataset.koiReadable = active ? "true" : "false";
         scene.style.setProperty(
           "--koi-follow-wake-direction",
           String(direction || (sceneIndex % 2 === 0 ? 1 : -1)),
         );
         scene.style.setProperty(
           "--koi-follow-wake-opacity",
-          active ? "0.34" : "0.07",
+          active ? "0.42" : "0.07",
+        );
+        scene.style.setProperty("--koi-reading-x", `${restX.toFixed(2)}px`);
+        scene.style.setProperty("--koi-reading-y", `${restY.toFixed(2)}px`);
+        scene.style.setProperty(
+          "--koi-reading-opacity",
+          active || staticMode ? "1" : "0",
         );
 
         parts.forEach((part, partIndex) => {
-          const lag = Math.min(partIndex * 0.032, 0.15);
+          const lag = Math.min(partIndex * 0.026, 0.12);
           const localProgress = staticMode
             ? 0.5
             : clamp((progress - lag) / Math.max(1 - lag, 0.01));
@@ -111,27 +172,40 @@ export default function KoiNavigationMotion() {
           if (!staticMode && localProgress < HOLD_START) {
             const amount = smooth(localProgress / HOLD_START);
             x = lerp(direction * 28, restX, amount);
-            y = lerp(92 + partIndex * 16, restY + partIndex * 2, amount);
+            y = lerp(62 + partIndex * 12, restY + partIndex * 2, amount);
             opacity = amount;
-            rotation = lerp(direction * -8, 0, amount);
-            scale = lerp(0.96, 1, amount);
-            blur = lerp(9, 0, amount);
+            rotation = lerp(direction * -7, 0, amount);
+            scale = lerp(0.97, 1, amount);
+            blur = lerp(7, 0, amount);
           } else if (!staticMode && localProgress > HOLD_END) {
             const amount = smooth(
               (localProgress - HOLD_END) / (1 - HOLD_END),
             );
             const departure =
               direction || (sceneIndex % 2 === 0 ? 1 : -1);
-            x = lerp(restX, restX - departure * 230, amount);
+            x = lerp(restX, restX - departure * 150, amount);
             y = lerp(
               restY + partIndex * 2,
-              restY - 110 - partIndex * 11,
+              restY - 72 - partIndex * 8,
               amount,
             );
             opacity = 1 - amount;
-            rotation = lerp(0, departure * -7, amount);
-            scale = lerp(1, 0.97, amount);
-            blur = lerp(0, 7, amount);
+            rotation = lerp(0, departure * -5, amount);
+            scale = lerp(1, 0.98, amount);
+            blur = lerp(0, 5, amount);
+          }
+
+          if (active && !staticMode) {
+            const essential = partIndex <= 1;
+            const activeFloor = essential ? 0.96 : partIndex <= 3 ? 0.82 : 0.7;
+            const lockStrength = essential ? 0.78 : 0.58;
+
+            opacity = Math.max(opacity, activeFloor);
+            x = lerp(x, restX, lockStrength);
+            y = lerp(y, restY + partIndex * 2, lockStrength);
+            rotation = lerp(rotation, 0, lockStrength);
+            scale = lerp(scale, 1, lockStrength);
+            blur = lerp(blur, 0, lockStrength);
           }
 
           part.style.opacity = opacity.toFixed(4);
@@ -154,7 +228,11 @@ export default function KoiNavigationMotion() {
 
       navigation.forEach((item) => {
         const current = item.dataset.koiNav === activeSceneName;
-        item.setAttribute("aria-current", current ? "true" : "false");
+        if (current) {
+          item.setAttribute("aria-current", "true");
+        } else {
+          item.removeAttribute("aria-current");
+        }
       });
 
       lastScrollY = window.scrollY;
@@ -176,8 +254,37 @@ export default function KoiNavigationMotion() {
       window.removeEventListener("resize", schedule);
       delete root.dataset.koiScene;
       root.style.removeProperty("--koi-follow-speed");
+      scenes.forEach((scene) => {
+        delete scene.dataset.koiActive;
+        delete scene.dataset.koiReadable;
+        scene.style.removeProperty("--koi-reading-x");
+        scene.style.removeProperty("--koi-reading-y");
+        scene.style.removeProperty("--koi-reading-opacity");
+      });
     };
   }, []);
 
-  return null;
+  return (
+    <nav
+      className={`koi-wayfinder ${styles.wayfinder}`}
+      aria-label="Koinophobia Labs site map"
+    >
+      <span className={styles.eyebrow}>Explore the lab</span>
+      <div className={styles.links}>
+        {CHAPTERS.map((chapter) => (
+          <a
+            className={`koi-wayfinder__link ${styles.link}`}
+            href={chapter.href}
+            data-koi-nav={chapter.scene}
+            key={chapter.scene}
+            aria-current={chapter.scene === "hero" ? "true" : undefined}
+          >
+            <span>{chapter.number}</span>
+            <b>{chapter.label}</b>
+            <small>{chapter.description}</small>
+          </a>
+        ))}
+      </div>
+    </nav>
+  );
 }
