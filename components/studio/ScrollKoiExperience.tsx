@@ -311,7 +311,7 @@ export default function ScrollKoiExperience() {
         const duration = durationOf(single);
         const heroEnd = Math.min(HERO_SETTLE_SECONDS, duration - 0.08);
         if (
-          single.readyState >= HTMLMediaElement.HAVE_METADATA &&
+          single.readyState >= single.HAVE_METADATA &&
           single.currentTime >= heroEnd
         ) {
           single.pause();
@@ -349,13 +349,13 @@ export default function ScrollKoiExperience() {
         const safeSingleTime = clamp(currentTime, 0, duration - 0.04);
         if (now - lastSeekAt >= 28) {
           if (
-            single.readyState >= HTMLMediaElement.HAVE_METADATA &&
+            single.readyState >= single.HAVE_METADATA &&
             Math.abs(single.currentTime - safeSingleTime) > 0.012
           ) {
             single.currentTime = safeSingleTime;
           }
 
-          if (duo.readyState >= HTMLMediaElement.HAVE_METADATA) {
+          if (duo.readyState >= duo.HAVE_METADATA) {
             const duoDuration = durationOf(duo);
             const synchronizedDuoTime = clamp(
               (safeSingleTime / duration) * duoDuration,
@@ -386,7 +386,7 @@ export default function ScrollKoiExperience() {
 
     single.addEventListener("loadedmetadata", startHeroMotion);
     document.addEventListener("visibilitychange", handleVisibility);
-    if (single.readyState >= HTMLMediaElement.HAVE_METADATA) startHeroMotion();
+    if (single.readyState >= single.HAVE_METADATA) startHeroMotion();
     animationFrame = window.requestAnimationFrame(tick);
 
     return () => {
@@ -444,7 +444,7 @@ export default function ScrollKoiExperience() {
             className="studio-scroll-koi__video studio-scroll-koi__video--duo"
             muted
             playsInline
-            preload="metadata"
+            preload="auto"
             poster="/brand/koinophobia-labs-koi.webp"
             tabIndex={-1}
           >
