@@ -97,7 +97,7 @@ test("the final Labs homepage makes the koi navigation and carries information i
     "utf8",
   );
   const wayfindingStyles = fs.readFileSync(
-    path.join(root, "components/studio/KoiWayfinding.module.css"),
+    path.join(root, "app/koi-wayfinding.css"),
     "utf8",
   );
   const depth = fs.readFileSync(
@@ -196,13 +196,14 @@ test("the final Labs homepage makes the koi navigation and carries information i
   assert.match(navigationMotion, /prefers-reduced-motion: reduce/);
   assert.match(navigationMotion, /connection\?\.saveData/);
 
-  assert.match(wayfindingStyles, /\.wayfinder/);
+  assert.match(wayfindingStyles, /\.koi-wayfinder/);
   assert.match(wayfindingStyles, /Section map/);
   assert.match(wayfindingStyles, /\.koi-follow-cluster/);
   assert.match(wayfindingStyles, /--koi-reading-x/);
   assert.match(wayfindingStyles, /--koi-reading-opacity/);
   assert.match(wayfindingStyles, /backdrop-filter: blur\(18px\)/);
   assert.match(wayfindingStyles, /aria-current="true"/);
+  assert.match(layout, /import "\.\/koi-wayfinding\.css"/);
 
   assert.ok(
     fs.existsSync(path.join(root, "public/brand/koi-scroll-single.mp4")),
