@@ -27,6 +27,7 @@ import "./koi-depth.css";
 import "./koi-finished.css";
 import "./koi-wayfinding.css";
 import "./koi-navigation-clarity.css";
+import "./koi-navigation-final.css";
 import "./dev-system.css";
 import "./dev-home.css";
 import "./dev-product.css";
