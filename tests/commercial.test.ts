@@ -92,6 +92,10 @@ test("the Labs homepage is a clean koi-led website with information following th
   );
   const finalStyles = fs.readFileSync(path.join(root, "app/koi-final.css"), "utf8");
   const depthStyles = fs.readFileSync(path.join(root, "app/koi-depth.css"), "utf8");
+  const tuneStyles = fs.readFileSync(
+    path.join(root, "app/koi-final-tune.css"),
+    "utf8",
+  );
 
   assert.match(page, /import KoiFinalHomepage from/);
   assert.match(page, /<KoiFinalHomepage \/>/);
@@ -131,9 +135,16 @@ test("the Labs homepage is a clean koi-led website with information following th
   );
 
   assert.match(motion, /const FALLBACK_DURATION_SECONDS = 15/);
-  assert.match(motion, /const HERO_SETTLE_SECONDS = 2\.35/);
+  assert.match(motion, /const HERO_SETTLE_SECONDS = 1\.75/);
   assert.match(motion, /const RAMP_START = 0\.36/);
   assert.match(motion, /const RAMP_END = 0\.64/);
+  assert.match(motion, /const DUO_WINDOW_START_SECONDS = 12/);
+  assert.match(motion, /const DUO_WINDOW_END_SECONDS = 14/);
+  assert.match(motion, /hero: 1\.75/);
+  assert.match(motion, /systems: 6\.9/);
+  assert.match(motion, /work: 9\.75/);
+  assert.match(motion, /start: 11/);
+  assert.match(motion, /getSectionProgress\(duoSection\)/);
   assert.match(motion, /Math\.sin\(Math\.PI \* rampProgress\)/);
   assert.match(motion, /9199e09c-1519-4fea-b7d8-c115f41cbe92/);
   assert.match(motion, /2b223e84-91ca-43e3-a741-f2002d009ccc/);
@@ -158,6 +169,7 @@ test("the Labs homepage is a clean koi-led website with information following th
   assert.doesNotMatch(finalStyles, /\.studio-problem-card|\.studio-pricing-card/);
 
   assert.match(layout, /import "\.\/koi-final\.css"/);
+  assert.match(layout, /import "\.\/koi-final-tune\.css"/);
   assert.match(layout, /import KoiDepthPass from/);
   assert.match(layout, /<KoiDepthPass \/>/);
   assert.match(depth, /createPortal/);
@@ -177,4 +189,10 @@ test("the Labs homepage is a clean koi-led website with information following th
     depthStyles,
     /data-koi-scene="products"\] \.studio-koi-depth-pass[\s\S]*opacity: 0/,
   );
+  assert.match(tuneStyles, /object-fit: contain/);
+  assert.match(tuneStyles, /\.koi-final \.studio-koi-depth-pass__video/);
+  assert.match(tuneStyles, /var\(--koi-video-scale\) \+ var\(--koi-scene-scale\)/);
+  assert.match(tuneStyles, /\.koi-final__copy--systems/);
+  assert.match(tuneStyles, /\.koi-final__copy--start/);
+  assert.match(tuneStyles, /\.koi-final__product--1/);
 });
