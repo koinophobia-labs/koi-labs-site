@@ -10,9 +10,19 @@ const SINGLE_KOI_FALLBACK = "/brand/koi-scroll-single.mp4";
 const DUO_KOI_FALLBACK = "/brand/koi-scroll-duo.mp4";
 
 const FALLBACK_DURATION_SECONDS = 15;
-const HERO_SETTLE_SECONDS = 2.35;
+const HERO_SETTLE_SECONDS = 1.75;
 const RAMP_START = 0.36;
 const RAMP_END = 0.64;
+const DUO_WINDOW_START_SECONDS = 12;
+const DUO_WINDOW_END_SECONDS = 14;
+
+const SCENE_FRAME_SECONDS: Record<string, number> = {
+  hero: 1.75,
+  products: 5.15,
+  systems: 6.9,
+  work: 9.75,
+  start: 11,
+};
 
 type MotionMode = "pending" | "video" | "static";
 type NavigatorWithConnection = Navigator & {
@@ -39,10 +49,18 @@ function smooth(value: number) {
   return bounded * bounded * (3 - 2 * bounded);
 }
 
+function getSectionProgress(section: HTMLElement) {
+  const rect = section.getBoundingClientRect();
+  const travel = Math.max(rect.height - window.innerHeight, 1);
+  return clamp(-rect.top / travel);
+}
+
 function collectSceneCues(root: HTMLElement) {
   return Array.from(root.querySelectorAll<HTMLElement>("[data-koi-frame]"))
     .map((element): SceneCue | null => {
-      const frameSeconds = Number.parseFloat(element.dataset.koiFrame ?? "");
+      const scene = element.dataset.koiScene ?? "scene";
+      const declaredFrame = Number.parseFloat(element.dataset.koiFrame ?? "");
+      const frameSeconds = SCENE_FRAME_SECONDS[scene] ?? declaredFrame;
       if (!Number.isFinite(frameSeconds)) return null;
 
       const rect = element.getBoundingClientRect();
@@ -52,7 +70,7 @@ function collectSceneCues(root: HTMLElement) {
           rect.top +
           Math.min(rect.height * 0.5, window.innerHeight * 0.68),
         normalizedTime: clamp(frameSeconds / FALLBACK_DURATION_SECONDS),
-        scene: element.dataset.koiScene ?? "scene",
+        scene,
       };
     })
     .filter((cue): cue is SceneCue => cue !== null)
@@ -336,13 +354,19 @@ export default function ScrollKoiExperience() {
 
           if (duo.readyState >= duo.HAVE_METADATA) {
             const duoDuration = durationOf(duo);
-            const synchronizedDuoTime = clamp(
-              (safeSingleTime / duration) * duoDuration,
+            const duoProgress = duoSection
+              ? smooth(getSectionProgress(duoSection))
+              : 0.5;
+            const duoSourceTime =
+              DUO_WINDOW_START_SECONDS +
+              (DUO_WINDOW_END_SECONDS - DUO_WINDOW_START_SECONDS) * duoProgress;
+            const safeDuoTime = clamp(
+              (duoSourceTime / FALLBACK_DURATION_SECONDS) * duoDuration,
               0,
               duoDuration - 0.04,
             );
-            if (Math.abs(duo.currentTime - synchronizedDuoTime) > 0.012) {
-              duo.currentTime = synchronizedDuoTime;
+            if (Math.abs(duo.currentTime - safeDuoTime) > 0.012) {
+              duo.currentTime = safeDuoTime;
             }
           }
           lastSeekAt = now;
