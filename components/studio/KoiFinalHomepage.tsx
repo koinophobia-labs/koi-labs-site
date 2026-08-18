@@ -242,16 +242,18 @@ function KoiFinalMotion() {
         });
       });
 
+      const selectedScene = activeScene as HTMLElement | null;
+
       scenes.forEach((scene) => {
-        scene.dataset.followActive = scene === activeScene ? "true" : "false";
+        scene.dataset.followActive = scene === selectedScene ? "true" : "false";
       });
 
-      if (activeScene) {
-        const activeName = activeScene.dataset.finalScene ?? "hero";
+      if (selectedScene) {
+        const activeName = selectedScene.dataset.finalScene ?? "hero";
         root.dataset.koiScene = activeName;
         if (activeName !== lastActiveScene) {
           lastActiveScene = activeName;
-          const activeLabel = activeScene.dataset.finalLabel ?? activeName;
+          const activeLabel = selectedScene.dataset.finalLabel ?? activeName;
           if (status) status.textContent = activeLabel;
           navLinks.forEach((link) => {
             link.dataset.active =
