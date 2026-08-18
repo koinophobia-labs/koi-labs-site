@@ -2,11 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const SINGLE_KOI_SRC = "/brand/koi-scroll-single.mp4";
-const DUO_KOI_SRC = "/brand/koi-scroll-duo.mp4";
+const SINGLE_KOI_SRC =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260818_021556_755ff0b5-7c99-4754-b9fb-b2fc88a7d886.mp4";
+const DUO_KOI_SRC =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260818_021623_92af66f0-5636-4d10-823e-8d6956fc666a.mp4";
+const SINGLE_KOI_FALLBACK = "/brand/koi-scroll-single.mp4";
+const DUO_KOI_FALLBACK = "/brand/koi-scroll-duo.mp4";
 
-const FALLBACK_DURATION_SECONDS = 12;
-const HERO_SETTLE_SECONDS = 2.65;
+const FALLBACK_DURATION_SECONDS = 15;
+const HERO_SETTLE_SECONDS = 2.35;
 const RAMP_START = 0.36;
 const RAMP_END = 0.64;
 
@@ -161,16 +165,16 @@ function setVisualVariables(
   );
   root.style.setProperty(
     "--koi-video-brightness",
-    (0.74 + rampStrength * 0.12).toFixed(4),
+    (0.8 + rampStrength * 0.1).toFixed(4),
   );
   root.style.setProperty("--koi-duo-opacity", duoOpacity.toFixed(4));
   root.style.setProperty(
     "--koi-single-opacity",
-    Math.max(0.035, 0.96 - duoOpacity * 0.925).toFixed(4),
+    Math.max(0.035, 0.98 - duoOpacity * 0.945).toFixed(4),
   );
   root.style.setProperty(
     "--koi-duo-video-opacity",
-    (duoOpacity * 0.96).toFixed(4),
+    (duoOpacity * 0.98).toFixed(4),
   );
 }
 
@@ -228,7 +232,7 @@ export default function ScrollKoiExperience() {
     const startHeroMotion = () => {
       if (hasScrolled || introComplete || document.hidden) return;
       single.muted = true;
-      single.playbackRate = 0.65;
+      single.playbackRate = 0.68;
       void single.play().catch(() => {
         /* Scroll scrubbing remains available when autoplay is denied. */
       });
@@ -407,6 +411,7 @@ export default function ScrollKoiExperience() {
             onCanPlay={() => setReady(true)}
           >
             <source src={SINGLE_KOI_SRC} type="video/mp4" />
+            <source src={SINGLE_KOI_FALLBACK} type="video/mp4" />
           </video>
           <video
             ref={duoRef}
@@ -418,6 +423,7 @@ export default function ScrollKoiExperience() {
             tabIndex={-1}
           >
             <source src={DUO_KOI_SRC} type="video/mp4" />
+            <source src={DUO_KOI_FALLBACK} type="video/mp4" />
           </video>
         </>
       ) : null}
