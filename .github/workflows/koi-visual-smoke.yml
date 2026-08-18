@@ -6,7 +6,9 @@ on:
       - app/page.tsx
       - app/layout.tsx
       - app/koi-scroll.css
+      - app/koi-final.css
       - app/koi-depth.css
+      - components/studio/KoiFinalHomepage.tsx
       - components/studio/ScrollKoiExperience.tsx
       - components/studio/KoiDepthPass.tsx
       - public/brand/koi-scroll-single.mp4
@@ -57,7 +59,7 @@ jobs:
           cat /tmp/koi-next.log
           exit 1
 
-      - name: Capture depth compositions
+      - name: Capture final koi compositions
         shell: bash
         run: |
           set -euo pipefail
