@@ -75,9 +75,13 @@ test("products are explicitly internal and commercial guidance is complete", () 
   assert.ok(faqs.length >= 13);
 });
 
-test("the Labs homepage is a new koi-first world, not the legacy commercial grid", () => {
+test("the Labs homepage is a clean koi-led website with information following the fish", () => {
   const page = fs.readFileSync(path.join(root, "app/page.tsx"), "utf8");
   const layout = fs.readFileSync(path.join(root, "app/layout.tsx"), "utf8");
+  const final = fs.readFileSync(
+    path.join(root, "components/studio/KoiFinalHomepage.tsx"),
+    "utf8",
+  );
   const motion = fs.readFileSync(
     path.join(root, "components/studio/ScrollKoiExperience.tsx"),
     "utf8",
@@ -86,38 +90,55 @@ test("the Labs homepage is a new koi-first world, not the legacy commercial grid
     path.join(root, "components/studio/KoiDepthPass.tsx"),
     "utf8",
   );
-  const styles = fs.readFileSync(path.join(root, "app/koi-scroll.css"), "utf8");
+  const finalStyles = fs.readFileSync(path.join(root, "app/koi-final.css"), "utf8");
   const depthStyles = fs.readFileSync(path.join(root, "app/koi-depth.css"), "utf8");
 
-  assert.match(page, /className="studio-site studio-site--koi koi-world"/);
-  assert.match(page, /<ScrollKoiExperience \/>/);
-  assert.equal((page.match(/data-koi-frame=/g) ?? []).length, 6);
-  assert.match(page, /data-koi-scene="products"[\s\S]*data-koi-duo="true"/);
-  assert.match(page, /className="koi-world__wordmark"/);
-  assert.match(page, /className="koi-product-orbit"/);
-  assert.match(page, /className="koi-service-current"/);
-  assert.match(page, /className="koi-work-wake"/);
-  assert.match(page, /className="koi-founder-note"/);
-  assert.match(page, /className="koi-portal"/);
+  assert.match(page, /import KoiFinalHomepage from/);
+  assert.match(page, /<KoiFinalHomepage \/>/);
+  assert.match(
+    final,
+    /className="studio-site studio-site--koi koi-world koi-final"/,
+  );
+  assert.match(final, /<ScrollKoiExperience \/>/);
+  assert.match(final, /<KoiFinalMotion \/>/);
+  assert.equal((final.match(/<FollowScene/g) ?? []).length, 5);
+  assert.match(final, /scene="products"[\s\S]*duo/);
+  assert.match(final, /className="koi-final__product-constellation"/);
+  assert.match(final, /className="koi-final__service-current"/);
+  assert.match(final, /className="koi-final__work-current"/);
+  assert.match(final, /className="koi-final__founder"/);
+  assert.match(final, /data-follow-part/);
+  assert.match(final, /const HOLD_START = 0\.3/);
+  assert.match(final, /const HOLD_END = 0\.7/);
+  assert.match(final, /part\.style\.transform/);
+  assert.match(final, /connection\?\.saveData/);
+  assert.match(final, /prefers-reduced-motion: reduce/);
+
+  const productsScene = final.indexOf('scene="products"');
+  const systemsScene = final.indexOf('scene="systems"');
+  const workScene = final.indexOf('scene="work"');
+  const startScene = final.indexOf('scene="start"');
+  assert.ok(productsScene > 0 && productsScene < systemsScene);
+  assert.ok(systemsScene < workScene && workScene < startScene);
 
   assert.doesNotMatch(
-    page,
+    final,
     /StudioNav|StudioFooter|PricingCard|ProcessStep|ProductCard|ProofItem|SectionIntro|WorkCard/,
   );
   assert.doesNotMatch(
-    page,
+    final,
     /studio-problem-grid|studio-pricing-grid|studio-product-grid|studio-trust|studio-hero__system/,
   );
 
+  assert.match(motion, /const FALLBACK_DURATION_SECONDS = 15/);
+  assert.match(motion, /const HERO_SETTLE_SECONDS = 2\.35/);
   assert.match(motion, /const RAMP_START = 0\.36/);
   assert.match(motion, /const RAMP_END = 0\.64/);
   assert.match(motion, /Math\.sin\(Math\.PI \* rampProgress\)/);
-  assert.match(motion, /prefers-reduced-motion: reduce/);
-  assert.match(motion, /connection\?\.saveData/);
-  assert.match(motion, /const SINGLE_KOI_SRC = "\/brand\/koi-scroll-single\.mp4"/);
-  assert.match(motion, /const DUO_KOI_SRC = "\/brand\/koi-scroll-duo\.mp4"/);
-  assert.match(motion, /0\.96 - duoOpacity \* 0\.925/);
-  assert.doesNotMatch(motion, /cloudfront|higgsfield/i);
+  assert.match(motion, /755ff0b5-7c99-4754-b9fb-b2fc88a7d886/);
+  assert.match(motion, /92af66f0-5636-4d10-823e-8d6956fc666a/);
+  assert.match(motion, /SINGLE_KOI_FALLBACK = "\/brand\/koi-scroll-single\.mp4"/);
+  assert.match(motion, /DUO_KOI_FALLBACK = "\/brand\/koi-scroll-duo\.mp4"/);
   assert.ok((motion.match(/\bmuted\b/g) ?? []).length >= 2);
   assert.ok((motion.match(/\bplaysInline\b/g) ?? []).length >= 2);
 
@@ -125,23 +146,23 @@ test("the Labs homepage is a new koi-first world, not the legacy commercial grid
   assert.ok(fs.existsSync(path.join(root, "public/brand/koi-scroll-duo.mp4")));
   assert.ok(fs.existsSync(path.join(root, "public/brand/koi-scroll-assets.sha256")));
 
-  assert.match(styles, /body:has\(\.koi-world\) > \.koi-companion/);
-  assert.match(styles, /\.koi-world__wordmark/);
-  assert.match(styles, /\.koi-product-orbit/);
-  assert.match(styles, /\.koi-service-current/);
-  assert.match(styles, /\.koi-work-wake/);
-  assert.match(styles, /\.koi-portal/);
-  assert.doesNotMatch(styles, /\.studio-problem-card|\.studio-pricing-card/);
+  assert.match(finalStyles, /body:has\(\.koi-final\) > \.koi-companion/);
+  assert.match(finalStyles, /\.koi-final__product-constellation/);
+  assert.match(finalStyles, /\.koi-final__service-current/);
+  assert.match(finalStyles, /\.koi-final__work-current/);
+  assert.match(finalStyles, /\.koi-final__founder/);
+  assert.match(finalStyles, /position: sticky/);
+  assert.match(finalStyles, /\.koi-final \.studio-koi-depth-pass/);
+  assert.doesNotMatch(finalStyles, /\.studio-problem-card|\.studio-pricing-card/);
 
+  assert.match(layout, /import "\.\/koi-final\.css"/);
   assert.match(layout, /import KoiDepthPass from/);
-  assert.match(layout, /import "\.\/koi-depth\.css"/);
   assert.match(layout, /<KoiDepthPass \/>/);
   assert.match(depth, /createPortal/);
-  assert.match(depth, /\.studio-scroll-koi__video--single/);
+  assert.match(depth, /755ff0b5-7c99-4754-b9fb-b2fc88a7d886/);
+  assert.match(depth, /SINGLE_KOI_FALLBACK = "\/brand\/koi-scroll-single\.mp4"/);
   assert.match(depth, /prefers-reduced-motion: reduce/);
   assert.match(depth, /connection\?\.saveData/);
-  assert.match(depth, /const SINGLE_KOI_SRC = "\/brand\/koi-scroll-single\.mp4"/);
-  assert.doesNotMatch(depth, /cloudfront|higgsfield/i);
   assert.match(depth, /aria-hidden="true"/);
   assert.match(depth, /\bmuted\b/);
   assert.match(depth, /\bplaysInline\b/);
@@ -149,9 +170,6 @@ test("the Labs homepage is a new koi-first world, not the legacy commercial grid
   assert.match(depthStyles, /z-index: 3/);
   assert.match(depthStyles, /mix-blend-mode: screen/);
   assert.match(depthStyles, /-webkit-mask-image: radial-gradient/);
-  assert.match(depthStyles, /data-koi-scene="systems"/);
-  assert.match(depthStyles, /data-koi-scene="founder"/);
-  assert.match(depthStyles, /data-koi-scene="start"/);
   assert.match(
     depthStyles,
     /data-koi-scene="products"\] \.studio-koi-depth-pass[\s\S]*opacity: 0/,
