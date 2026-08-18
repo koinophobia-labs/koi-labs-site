@@ -165,6 +165,7 @@
 
 .trendiPage_footer { display: flex; min-height: 110px; align-items: center; justify-content: space-between; gap: 24px; color: #9f8e9b; font: 500 10px var(--font-ibm-plex-mono), monospace; letter-spacing: .08em; text-transform: uppercase; }
 .trendiPage_footer p { margin: 0; }
+.trendiPage_footer nav { display: flex; flex-wrap: wrap; gap: 16px; }
 .trendiPage_footer a { color: #e9dce6; }
 
 @media (max-width: 900px) {

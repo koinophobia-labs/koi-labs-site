@@ -13,13 +13,13 @@ import TrendiCtaLink from "@/components/trendi/TrendiCtaLink";
 import TrendiHeroVisual from "@/components/trendi/TrendiHeroVisual";
 import TrendiMedia from "@/components/TrendiMedia";
 
-const betaHref =
-  "mailto:koinophobia999@gmail.com?subject=Trendi%20beta%20access&body=Hi%20Blake%2C%0A%0AI%27d%20like%20to%20ask%20about%20the%20Trendi%20beta.%0A%0AI%20create%3A%0AWhat%20I%27d%20like%20help%20recording%3A%0A";
+const inquiryHref =
+  "mailto:koinophobia999@gmail.com?subject=Trendi%20inquiry&body=Hi%20Blake%2C%0A%0AI%27d%20like%20to%20ask%20about%20Trendi.%0A%0AMy%20question%3A%0A";
 
 export const metadata: Metadata = {
-  title: "Trendi | Your AI Content Manager",
+  title: "Trendi | Your Content Coach",
   description:
-    "Trendi is your AI Content Manager. Type the thought, get words to say on camera—hooks, a recordable script, a caption, and a simple shot plan. In TestFlight beta.",
+    "Trendi is a content coach for iPhone. Type the thought and get one angle, three hook options, an editable script, a caption, and a simple shot plan.",
   alternates: { canonical: "https://koinophobialabs.com/trendi" },
   openGraph: {
     title: "Trendi | From messy thought to recordable words",
@@ -92,8 +92,8 @@ export default function TrendiPage() {
         <p className="trendiPage_navMark" aria-label="Trendi">
           TRENDI
         </p>
-        <a className="trendiPage_navCta" href={betaHref}>
-          Ask about beta <ArrowRight size={15} aria-hidden="true" />
+        <a className="trendiPage_navCta" href={inquiryHref}>
+          Ask about Trendi <ArrowRight size={15} aria-hidden="true" />
         </a>
       </header>
 
@@ -101,7 +101,7 @@ export default function TrendiPage() {
         <div className="trendiPage_heroGlow" aria-hidden="true" />
         <div className="trendiPage_heroCopy">
           <p className="trendiPage_eyebrow">
-            Trendi <span>TestFlight beta</span> Your AI Content Manager
+            Trendi <span>For iPhone</span> Your content coach
           </p>
           <p id="trendi-identity" className="trendiPage_identity" aria-hidden="true">TRENDI</p>
           <h1 id="trendi-title">
@@ -113,15 +113,15 @@ export default function TrendiPage() {
             start recording it.
           </p>
           <div className="trendiPage_actions">
-            <TrendiCtaLink id="trendi-hero-cta" className="trendiPage_primary" href={betaHref}>
-              Request beta access <ArrowRight size={17} aria-hidden="true" />
+            <TrendiCtaLink id="trendi-hero-cta" className="trendiPage_primary" href={inquiryHref}>
+              Ask about Trendi <ArrowRight size={17} aria-hidden="true" />
             </TrendiCtaLink>
             <a className="trendiPage_secondary" href="#real-product">
               Watch the real product <ArrowDown size={17} aria-hidden="true" />
             </a>
           </div>
           <p className="trendiPage_releaseNote">
-            Available through TestFlight. Not yet publicly released on the App Store.
+            The App Store release is in preparation. Email us with a Trendi question.
           </p>
         </div>
         <div className="trendiPage_heroSide">
@@ -144,7 +144,7 @@ export default function TrendiPage() {
           <div>
             <h2 id="real-product-title">Start messy. Leave with something sayable.</h2>
             <p>
-              This is the working TestFlight experience—not a concept render. Press play to
+              This is the working iPhone experience—not a concept render. Press play to
               see the real capture flow.
             </p>
           </div>
@@ -215,32 +215,36 @@ export default function TrendiPage() {
         <div>
           <h2 id="proof-title">Built past the pitch deck.</h2>
           <p>
-            Trendi is a working iPhone product in TestFlight beta. The interface and capture
+            Trendi is a working iPhone product. The interface and capture
             shown above come from the product itself.
           </p>
         </div>
         <ul aria-label="Trendi proof points">
           <li><strong>Real</strong><span>product capture</span></li>
-          <li><strong>Live</strong><span>TestFlight beta</span></li>
+          <li><strong>Platform</strong><span>iPhone</span></li>
           <li><strong>Focused</strong><span>one idea at a time</span></li>
         </ul>
       </section>
 
-      <section className="trendiPage_final" aria-labelledby="beta-title">
+      <section className="trendiPage_final" aria-labelledby="launch-title">
         <p className="trendiPage_finalMark" aria-hidden="true">TRENDI</p>
         <div className="trendiPage_finalInner">
-          <p className="trendiPage_eyebrow">Limited TestFlight beta</p>
-          <h2 id="beta-title">Have a thought worth recording?</h2>
+          <p className="trendiPage_eyebrow">Launching on iPhone</p>
+          <h2 id="launch-title">Have a thought worth recording?</h2>
           <p>Tell Blake what you create and where your ideas usually get stuck.</p>
-          <a className="trendiPage_primary" href={betaHref}>
-            Ask about beta <ArrowRight size={17} aria-hidden="true" />
+          <a className="trendiPage_primary" href={inquiryHref}>
+            Ask about Trendi <ArrowRight size={17} aria-hidden="true" />
           </a>
         </div>
       </section>
 
       <footer className="trendiPage_footer">
         <p>Trendi · A Koinophobia Labs product</p>
-        <Link href="/">Back to Koinophobia Labs</Link>
+        <nav aria-label="Trendi links">
+          <Link href="/trendi/privacy">Privacy</Link>
+          <Link href="/trendi/support">Support</Link>
+          <Link href="/">Koinophobia Labs</Link>
+        </nav>
       </footer>
     </main>
   );

@@ -1,0 +1,46 @@
+name: Verify Koi Motion Assets
+
+on:
+  pull_request:
+    paths:
+      - public/brand/koi-scroll-single.mp4
+      - public/brand/koi-scroll-duo.mp4
+      - public/brand/koi-scroll-assets.sha256
+      - components/studio/ScrollKoiExperience.tsx
+      - .github/workflows/localize-koi-assets.yml
+  push:
+    branches:
+      - main
+    paths:
+      - public/brand/koi-scroll-single.mp4
+      - public/brand/koi-scroll-duo.mp4
+      - public/brand/koi-scroll-assets.sha256
+      - components/studio/ScrollKoiExperience.tsx
+      - .github/workflows/localize-koi-assets.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify checksums and delivery size
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum --check public/brand/koi-scroll-assets.sha256
+          for asset in \
+            public/brand/koi-scroll-single.mp4 \
+            public/brand/koi-scroll-duo.mp4
+          do
+            test "$(file --brief --mime-type "$asset")" = "video/mp4"
+            bytes="$(stat -c%s "$asset")"
+            test "$bytes" -gt 100000
+            test "$bytes" -lt 5000000
+          done
