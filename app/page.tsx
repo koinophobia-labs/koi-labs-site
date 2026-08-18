@@ -147,27 +147,6 @@ export default function Home() {
                 </div>
               </div>
 
-              <dl className="kw__panel kw__proof-strip">
-                <div>
-                  <dt>Built for</dt>
-                  <dd>
-                    Owners and operators who need a working system, not a deck.
-                  </dd>
-                </div>
-                <div>
-                  <dt>Lowest-risk start</dt>
-                  <dd>
-                    Revenue Leak Audit — {studioConfig.auditPrice} flat,{" "}
-                    {studioConfig.auditTimeline}.
-                  </dd>
-                </div>
-                <div>
-                  <dt>How it works</dt>
-                  <dd>
-                    Scope and price are approved in writing before development begins.
-                  </dd>
-                </div>
-              </dl>
             </div>
             <a className="kw__cue" href="#products">
               Follow the koi <ArrowDown size={14} aria-hidden="true" />
@@ -191,9 +170,8 @@ export default function Home() {
                 Products the studio owns, ships, and answers for.
               </h2>
               <p>
-                Each one started as a problem worth solving properly. Status is
-                reported as it actually stands — nothing here is described as
-                further along than it is.
+                Status is reported as it actually stands. Nothing here is
+                described as further along than it is.
               </p>
 
               <div className="kw__constellation">
@@ -336,9 +314,8 @@ export default function Home() {
               </p>
               <h2 id="work-title">Proof leaves a wake.</h2>
               <p>
-                Published concept builds, labelled honestly. These are studio-built
-                demonstrations of positioning, structure, and intake — not client
-                case studies, and they carry no invented results.
+                Studio-built demonstrations of positioning, structure, and intake.
+                Not client case studies, and they carry no invented results.
               </p>
 
               <div className="kw__work-grid">
@@ -459,9 +436,6 @@ export default function Home() {
               </div>
 
               <div className="kw__actions" style={{ justifyContent: "center" }}>
-                <Link className="kw__btn kw__btn--primary" href="/intake">
-                  Start a project <ArrowRight size={16} aria-hidden="true" />
-                </Link>
                 <a className="kw__btn kw__btn--ghost" href="#enter">
                   Return to the beginning
                 </a>

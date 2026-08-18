@@ -1389,3 +1389,158 @@ body:has(.kw) > .koi-companion {
     --kw-line-soft: rgba(180, 214, 232, 0.28);
   }
 }
+
+/* ==========================================================================
+   Restaging — the koi is the subject, not the backdrop
+   The reading surfaces stop being cards. Copy sits directly in the water on
+   soft edgeless scrims, so nothing ever interrupts the journey with a border.
+   ========================================================================== */
+
+/* A scrim is a gradient with no edge. It buys legibility without drawing a box. */
+.dest--enter .dest__inner > div:first-child,
+.dest--products .dest__inner,
+.dest--systems .dest__inner,
+.dest--work .dest__inner,
+.dest--founder .dest__inner,
+.dest--start .dest__inner {
+  position: relative;
+}
+
+.dest__inner::before {
+  content: "";
+  position: absolute;
+  inset: -14% -10%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    72% 62% at var(--scrim-x, 26%) 50%,
+    rgba(2, 5, 9, 0.86) 0%,
+    rgba(2, 5, 9, 0.62) 38%,
+    rgba(2, 5, 9, 0.22) 64%,
+    transparent 84%
+  );
+}
+
+.dest--work .dest__inner,
+.dest--start .dest__inner {
+  --scrim-x: 50%;
+}
+
+.dest--enter .dest__inner {
+  --scrim-x: 22%;
+}
+
+/* Type carries its own legibility so it survives a bright fin passing behind. */
+.kw h1,
+.kw h2,
+.kw h3,
+.kw p,
+.kw li,
+.kw dd,
+.kw small,
+.kw strong,
+.kw b {
+  text-shadow: 0 1px 18px rgba(0, 0, 0, 0.92), 0 0 3px rgba(0, 0, 0, 0.7);
+}
+
+/* Panels dissolve. */
+.kw__panel,
+.kw__node,
+.kw__proof,
+.kw__path,
+.kw__service,
+.kw__audit,
+.kw__founder,
+.kw__proof-strip {
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.kw__audit::before,
+.kw__node::after {
+  display: none;
+}
+
+/* Products and work become markers in the water: a hairline, a label, and a
+   glow that answers the cursor. No card, no fill, no competing rectangle. */
+.kw__node,
+.kw__proof,
+.kw__path {
+  border-top: 1px solid var(--kw-line);
+  padding: 1rem 0.9rem 1.1rem 0;
+  transition: border-color 320ms ease, transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.kw__node:hover,
+.kw__node:focus-visible,
+.kw__proof:hover,
+.kw__proof:focus-visible,
+.kw__path:hover,
+.kw__path:focus-visible {
+  border-top-color: var(--kw-accent);
+  transform: translateY(-3px);
+}
+
+.kw__node-meta {
+  border-top: 0;
+  padding-top: 0.6rem;
+}
+
+/* The audit keeps weight — it is the commercial moment — but as a lit edge in
+   the water rather than a floating box. */
+.kw__audit {
+  border-left: 1px solid rgba(127, 216, 234, 0.5);
+  padding: 0.3rem 0 0.3rem 1.5rem;
+  box-shadow: -14px 0 44px -30px rgba(127, 216, 234, 0.9);
+}
+
+.kw__service {
+  border-top: 1px solid var(--kw-line-soft);
+  padding: 0.85rem 0;
+}
+
+.kw__service:hover,
+.kw__service:focus-visible {
+  border-top-color: var(--kw-accent);
+  transform: translateX(5px);
+}
+
+.kw__founder {
+  padding: 0;
+  gap: clamp(1.4rem, 3vw, 2.6rem);
+}
+
+.kw__proof-strip {
+  padding: 0;
+  border-top: 1px solid var(--kw-line-soft);
+  padding-top: 1.1rem;
+}
+
+@media (max-width: 860px) {
+  .dest__inner::before {
+    inset: -8% -12%;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(2, 5, 9, 0.55) 12%,
+      rgba(2, 5, 9, 0.85) 32%,
+      rgba(2, 5, 9, 0.9) 100%
+    );
+  }
+}
+
+/* The hero is now a single column of copy against open water on the right. */
+.dest--enter .dest__inner {
+  display: block;
+  max-width: min(46rem, 62%);
+}
+
+@media (max-width: 860px) {
+  .dest--enter .dest__inner {
+    max-width: 100%;
+  }
+}

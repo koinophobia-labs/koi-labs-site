@@ -119,7 +119,7 @@ import { mkdirSync } from 'node:fs';
 mkdirSync(OUT, { recursive: true });
 
 // Software GL keeps this runnable on CI boxes with no GPU.
-const browser = await chromium.launch({
+const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
   args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'],
 });
 const results = [];

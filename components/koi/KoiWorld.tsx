@@ -152,20 +152,17 @@ export default function KoiWorld() {
       video.dataset.koiClip = key;
       video.style.opacity = "0";
 
-      // If a segment cannot be fetched or decoded, fall back to the navigation
-      // master rather than leaving a hole in the journey. The koi keeps
-      // leading; only the choreography of that one beat is simplified.
+      // If a segment cannot be fetched or decoded, hold on THIS clip's own
+      // poster frame rather than swapping in a different clip. That preserves
+      // each destination's distinct angle in degraded mode — a decode failure
+      // must never collapse six camera angles into one. The poster is already
+      // set to this clip's still, so there is nothing more to swap; we only
+      // mark the element so the render loop treats it as a static frame and
+      // stops trying to play it.
       const fallback = () => {
         if (video.dataset.koiFallback === "true") return;
         video.dataset.koiFallback = "true";
-        const master = CLIPS[DESTINATIONS[0].clip];
-        const size = mobile ? "854" : "1280";
-        video.poster = master.poster;
-        const node = video.querySelector("source");
-        if (node) {
-          node.src = `/koi/${master.id}-${size}.mp4`;
-          video.load();
-        }
+        video.dataset.koiStatic = "true";
       };
       video.addEventListener("error", fallback);
       video.querySelector("source")?.addEventListener("error", fallback);
@@ -349,7 +346,7 @@ export default function KoiWorld() {
 
       const video = pool.get(mountedKey);
       let loopFade = 1;
-      if (video) {
+      if (video && video.dataset.koiStatic !== "true") {
         if (video.paused && video.readyState >= 2) {
           void video.play().catch(() => {
             /* Autoplay refusal is handled by the poster underneath. */
