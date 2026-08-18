@@ -1,0 +1,219 @@
+/* Final visual tuning after frame-by-frame motion review. The base film and
+   foreground pass share identical geometry, preventing a duplicated fish while
+   preserving a restrained edge-over-interface depth effect. */
+.koi-final {
+  --koi-scene-scale: 0;
+}
+
+.koi-final .studio-scroll-koi__video {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  transform: scale(calc(var(--koi-video-scale) + var(--koi-scene-scale)));
+}
+
+.koi-final[data-koi-scene="hero"] {
+  --koi-scene-scale: .055;
+}
+
+.koi-final[data-koi-scene="products"] {
+  --koi-scene-scale: -.055;
+}
+
+.koi-final[data-koi-scene="systems"] {
+  --koi-scene-scale: -.035;
+}
+
+.koi-final[data-koi-scene="work"],
+.koi-final[data-koi-scene="start"] {
+  --koi-scene-scale: .045;
+}
+
+.koi-final[data-koi-scene="products"] .studio-scroll-koi__video--duo {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter:
+    grayscale(.48)
+    saturate(.55)
+    contrast(1.2)
+    brightness(.78);
+}
+
+.koi-final .studio-koi-depth-pass {
+  opacity: clamp(
+    0,
+    calc(.12 + var(--koi-ramp-strength) * .08),
+    .22
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 45% 56% at var(--koi-depth-x) var(--koi-depth-y),
+    #000 0%,
+    #000 35%,
+    rgba(0, 0, 0, .48) 52%,
+    transparent 72%
+  );
+  mask-image: radial-gradient(
+    ellipse 45% 56% at var(--koi-depth-x) var(--koi-depth-y),
+    #000 0%,
+    #000 35%,
+    rgba(0, 0, 0, .48) 52%,
+    transparent 72%
+  );
+  transform-origin: center;
+}
+
+.koi-final .studio-koi-depth-pass__video {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  transform: scale(calc(var(--koi-video-scale) + var(--koi-scene-scale)));
+  transform-origin: center;
+  filter:
+    grayscale(.46)
+    saturate(.52)
+    contrast(1.36)
+    brightness(1.14)
+    opacity(.17);
+}
+
+.koi-final .studio-koi-depth-pass__shadow {
+  opacity: .08;
+}
+
+.koi-final .studio-koi-depth-pass__glass {
+  opacity: .28;
+}
+
+.koi-final[data-koi-scene="products"] .studio-koi-depth-pass {
+  opacity: 0;
+}
+
+/* Keep every headline inside the viewport at its stagnant reading point. */
+.koi-final__copy--systems {
+  top: 58%;
+  transform: translateY(-42%);
+}
+
+.koi-final__copy--systems h2 {
+  font-size: clamp(40px, 4.35vw, 65px);
+  line-height: .96;
+}
+
+.koi-final__copy--systems .koi-final__body {
+  margin-top: 15px;
+}
+
+.koi-final__copy--systems .koi-final__service-current {
+  margin-top: 19px;
+}
+
+.koi-final__copy--systems .koi-final__service-current a {
+  min-height: 61px;
+}
+
+.koi-final__copy--work {
+  top: 55%;
+  transform: translateY(-43%);
+}
+
+.koi-final__copy--work h2 {
+  font-size: clamp(44px, 4.8vw, 70px);
+}
+
+.koi-final__copy--start {
+  top: 59%;
+  transform: translateY(-37%);
+}
+
+.koi-final__copy--start h2 {
+  font-size: clamp(43px, 4.65vw, 70px);
+  line-height: .96;
+}
+
+.koi-final__copy--start .koi-final__body {
+  max-width: 500px;
+  margin-top: 16px;
+}
+
+.koi-final__copy--start .koi-final__actions {
+  margin-top: 20px;
+}
+
+.koi-final__founder {
+  bottom: 12vh;
+}
+
+/* The wide two-koi hold owns the center. Product labels remain clear at the
+   perimeter, with all three destinations visible at once. */
+.koi-final__products-heading {
+  top: 13%;
+  z-index: 7;
+}
+
+.koi-final__products-heading h2 {
+  font-size: clamp(42px, 4.65vw, 69px);
+}
+
+.koi-final__product-constellation {
+  z-index: 7;
+}
+
+.koi-final__product--1 {
+  top: 16%;
+  right: 6vw;
+}
+
+.koi-final__product--2 {
+  left: 18vw;
+  bottom: 12%;
+}
+
+.koi-final__product--3 {
+  right: 5vw;
+  bottom: 12%;
+}
+
+.koi-final__product article {
+  background: radial-gradient(
+    ellipse at 28% 50%,
+    rgba(1, 1, 2, .78),
+    rgba(1, 1, 2, .3) 62%,
+    transparent 88%
+  );
+}
+
+@media (max-width: 760px) {
+  .koi-final .studio-scroll-koi__video,
+  .koi-final .studio-koi-depth-pass__video {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 56% center;
+  }
+
+  .koi-final__copy--systems,
+  .koi-final__copy--work,
+  .koi-final__copy--start {
+    top: auto;
+    bottom: 9vh;
+    transform: none;
+  }
+
+  .koi-final__copy--systems h2,
+  .koi-final__copy--work h2,
+  .koi-final__copy--start h2 {
+    font-size: clamp(36px, 11vw, 52px);
+  }
+
+  .koi-final__products-heading {
+    top: 11%;
+  }
+}
