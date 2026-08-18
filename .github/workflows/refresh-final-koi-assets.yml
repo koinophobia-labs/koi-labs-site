@@ -6,6 +6,9 @@ on:
       - agent/koi-anchor-renditions
     paths:
       - .github/workflows/refresh-final-koi-assets.yml
+  pull_request:
+    paths:
+      - .github/workflows/refresh-final-koi-assets.yml
   workflow_dispatch:
 
 permissions:
