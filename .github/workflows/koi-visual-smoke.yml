@@ -6,13 +6,10 @@ on:
       - app/page.tsx
       - app/layout.tsx
       - app/koi-scroll.css
+      - app/koi-final.css
       - app/koi-depth.css
-      - app/koi-finished.css
-      - app/koi-wayfinding.css
-      - app/koi-navigation-clarity.css
-      - app/koi-navigation-final.css
+      - components/studio/KoiFinalHomepage.tsx
       - components/studio/ScrollKoiExperience.tsx
-      - components/studio/KoiNavigationMotion.tsx
       - components/studio/KoiDepthPass.tsx
       - public/brand/koi-scroll-single.mp4
       - public/brand/koi-scroll-duo.mp4
@@ -62,7 +59,7 @@ jobs:
           cat /tmp/koi-next.log
           exit 1
 
-      - name: Capture finished koi navigation
+      - name: Capture final koi compositions
         shell: bash
         run: |
           set -euo pipefail
@@ -79,12 +76,12 @@ jobs:
             > /tmp/koi-chrome.log 2>&1 &
           echo $! > /tmp/koi-chrome.pid
           node scripts/capture-koi-visuals.mjs
-          test "$(find artifacts/koi-visuals -name '*.png' | wc -l)" -eq 6
+          test "$(find artifacts/koi-visuals -name '*.png' | wc -l)" -eq 4
 
       - name: Upload visual evidence
         uses: actions/upload-artifact@v4
         with:
-          name: final-koi-navigation-${{ github.sha }}
+          name: koi-visual-smoke-${{ github.sha }}
           path: artifacts/koi-visuals/*.png
           if-no-files-found: error
           retention-days: 14

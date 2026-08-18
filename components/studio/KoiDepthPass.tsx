@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 
-const SINGLE_KOI_PRIMARY =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260817_180806_9199e09c-1519-4fea-b7d8-c115f41cbe92.mp4";
+const SINGLE_KOI_SRC =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260818_021556_755ff0b5-7c99-4754-b9fb-b2fc88a7d886.mp4";
 const SINGLE_KOI_FALLBACK = "/brand/koi-scroll-single.mp4";
 
 type NavigatorWithConnection = Navigator & {
@@ -25,7 +25,7 @@ export default function KoiDepthPass() {
       setHost(
         reducedMotion.matches || connection?.saveData
           ? null
-          : document.querySelector<HTMLElement>(".koi-world--finished"),
+          : document.querySelector<HTMLElement>(".studio-site--koi"),
       );
     };
 
@@ -56,22 +56,17 @@ export default function KoiDepthPass() {
         sourceVideo.readyState >= sourceVideo.HAVE_METADATA &&
         depthVideo.readyState >= depthVideo.HAVE_METADATA
       ) {
-        const sourceDuration = Number.isFinite(sourceVideo.duration)
-          ? sourceVideo.duration
-          : 15;
         const depthDuration = Number.isFinite(depthVideo.duration)
           ? depthVideo.duration
-          : sourceDuration;
-        const normalizedTime =
-          sourceDuration > 0 ? sourceVideo.currentTime / sourceDuration : 0;
+          : sourceVideo.duration;
         const targetTime = Math.min(
-          Math.max(normalizedTime * depthDuration, 0),
+          Math.max(sourceVideo.currentTime, 0),
           Math.max(depthDuration - 0.04, 0),
         );
 
         if (
-          now - lastSeekAt >= 32 &&
-          Math.abs(depthVideo.currentTime - targetTime) > 0.008
+          now - lastSeekAt >= 40 &&
+          Math.abs(depthVideo.currentTime - targetTime) > 0.022
         ) {
           depthVideo.currentTime = targetTime;
           lastSeekAt = now;
@@ -103,7 +98,7 @@ export default function KoiDepthPass() {
         preload="auto"
         tabIndex={-1}
       >
-        <source src={SINGLE_KOI_PRIMARY} type="video/mp4" />
+        <source src={SINGLE_KOI_SRC} type="video/mp4" />
         <source src={SINGLE_KOI_FALLBACK} type="video/mp4" />
       </video>
       <div className="studio-koi-depth-pass__glass" />

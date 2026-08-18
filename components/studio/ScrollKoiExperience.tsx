@@ -2,21 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const SINGLE_KOI_PRIMARY =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260817_180806_9199e09c-1519-4fea-b7d8-c115f41cbe92.mp4";
-const DUO_KOI_PRIMARY =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260817_180828_2b223e84-91ca-43e3-a741-f2002d009ccc.mp4";
+const SINGLE_KOI_SRC =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260818_021556_755ff0b5-7c99-4754-b9fb-b2fc88a7d886.mp4";
+const DUO_KOI_SRC =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260818_021623_92af66f0-5636-4d10-823e-8d6956fc666a.mp4";
 const SINGLE_KOI_FALLBACK = "/brand/koi-scroll-single.mp4";
 const DUO_KOI_FALLBACK = "/brand/koi-scroll-duo.mp4";
 
 const FALLBACK_DURATION_SECONDS = 15;
-const HERO_SETTLE_SECONDS = 2;
+const HERO_SETTLE_SECONDS = 2.35;
 const RAMP_START = 0.36;
 const RAMP_END = 0.64;
-const HOLD_MICRO_PERIOD_MS = 4100;
-const HOLD_MICRO_AMPLITUDE_SECONDS = 0.24;
-const HOLD_MICRO_SECONDARY_SECONDS = 0.065;
-const HOLD_SEEK_INTERVAL_MS = 36;
 
 type MotionMode = "pending" | "video" | "static";
 type NavigatorWithConnection = Navigator & {
@@ -43,49 +39,6 @@ function smooth(value: number) {
   return bounded * bounded * (3 - 2 * bounded);
 }
 
-function getLivingHoldOffset(now: number, strength: number) {
-  const phase =
-    ((now % HOLD_MICRO_PERIOD_MS) / HOLD_MICRO_PERIOD_MS) * Math.PI * 2;
-  return (
-    strength *
-    (Math.sin(phase) * HOLD_MICRO_AMPLITUDE_SECONDS +
-      Math.sin(phase * 0.47 + 0.9) * HOLD_MICRO_SECONDARY_SECONDS +
-      Math.sin(phase * 1.73 + 2.1) * 0.025)
-  );
-}
-
-function setIdleVisualVariables(
-  root: HTMLElement,
-  now: number,
-  strength: number,
-) {
-  const seconds = now / 1000;
-  const x = Math.sin(seconds * 0.61) * 0.14 * strength;
-  const y = Math.sin(seconds * 0.43 + 1.2) * 0.11 * strength;
-  const rotation = Math.sin(seconds * 0.31 + 0.4) * 0.055 * strength;
-  const scale =
-    (0.0042 + Math.sin(seconds * 0.52 + 0.7) * 0.0012) * strength;
-  const light =
-    (0.04 + (Math.sin(seconds * 0.49) + 1) * 0.006) * strength;
-
-  root.style.setProperty("--koi-idle-x", `${x.toFixed(3)}vw`);
-  root.style.setProperty("--koi-idle-y", `${y.toFixed(3)}vh`);
-  root.style.setProperty("--koi-idle-rotate", `${rotation.toFixed(4)}deg`);
-  root.style.setProperty("--koi-idle-scale", scale.toFixed(5));
-  root.style.setProperty("--koi-idle-light", light.toFixed(4));
-  root.style.setProperty("--koi-depth-idle-x", `${(x * 1.28).toFixed(3)}vw`);
-  root.style.setProperty("--koi-depth-idle-y", `${(y * 1.18).toFixed(3)}vh`);
-  root.style.setProperty(
-    "--koi-depth-idle-rotate",
-    `${(rotation * 0.42).toFixed(4)}deg`,
-  );
-  root.style.setProperty(
-    "--koi-depth-idle-scale",
-    (scale * 1.3).toFixed(5),
-  );
-  root.dataset.koiLiving = strength > 0.12 ? "true" : "false";
-}
-
 function collectSceneCues(root: HTMLElement) {
   return Array.from(root.querySelectorAll<HTMLElement>("[data-koi-frame]"))
     .map((element): SceneCue | null => {
@@ -106,6 +59,8 @@ function collectSceneCues(root: HTMLElement) {
     .sort((left, right) => left.position - right.position);
 }
 
+/* Every chapter owns a real still frame. Most of the distance between chapters
+   is deliberately stagnant; the middle slice becomes the speed ramp. */
 function mapScrollToSceneTime(
   focusPosition: number,
   cues: SceneCue[],
@@ -170,12 +125,11 @@ function mapScrollToSceneTime(
     };
   }
 
-  const finalCue = cues[cues.length - 1];
   return {
-    time: finalCue.normalizedTime * duration,
+    time: cues[cues.length - 1].normalizedTime * duration,
     ramping: false,
     rampStrength: 0,
-    scene: finalCue.scene,
+    scene: cues[cues.length - 1].scene,
   };
 }
 
@@ -197,8 +151,6 @@ function setVisualVariables(
   speedStrength: number,
   rampStrength: number,
   duoOpacity: number,
-  idleStrength: number,
-  now: number,
 ) {
   root.style.setProperty("--koi-scroll-progress", progress.toFixed(5));
   root.style.setProperty(
@@ -209,22 +161,21 @@ function setVisualVariables(
   root.style.setProperty("--koi-ramp-strength", rampStrength.toFixed(4));
   root.style.setProperty(
     "--koi-video-scale",
-    (1.045 + speedStrength * 0.014).toFixed(5),
+    (1.018 + speedStrength * 0.018).toFixed(5),
   );
   root.style.setProperty(
     "--koi-video-brightness",
-    (0.98 + rampStrength * 0.06 + idleStrength * 0.025).toFixed(4),
+    (0.8 + rampStrength * 0.1).toFixed(4),
   );
   root.style.setProperty("--koi-duo-opacity", duoOpacity.toFixed(4));
   root.style.setProperty(
     "--koi-single-opacity",
-    Math.max(0.035, 0.995 - duoOpacity * 0.96).toFixed(4),
+    Math.max(0.035, 0.98 - duoOpacity * 0.945).toFixed(4),
   );
   root.style.setProperty(
     "--koi-duo-video-opacity",
-    (duoOpacity * 0.995).toFixed(4),
+    (duoOpacity * 0.98).toFixed(4),
   );
-  setIdleVisualVariables(root, now, idleStrength);
 }
 
 export default function ScrollKoiExperience() {
@@ -268,7 +219,6 @@ export default function ScrollKoiExperience() {
     let hasScrolled = window.scrollY > 4;
     let scrollInitialized = false;
     let introComplete = false;
-    const introStartedAt = performance.now();
 
     const durationOf = (video: HTMLVideoElement) =>
       Number.isFinite(video.duration) && video.duration > 0
@@ -282,7 +232,7 @@ export default function ScrollKoiExperience() {
     const startHeroMotion = () => {
       if (hasScrolled || introComplete || document.hidden) return;
       single.muted = true;
-      single.playbackRate = 0.65;
+      single.playbackRate = 0.68;
       void single.play().catch(() => {
         /* Scroll scrubbing remains available when autoplay is denied. */
       });
@@ -330,7 +280,6 @@ export default function ScrollKoiExperience() {
       const focusPosition = scrollY + window.innerHeight * 0.5;
       const speedStrength = clamp(Math.abs(smoothedVelocity) / 2.2);
       let rampStrength = 0;
-      let idleStrength = 0;
 
       if (!hasScrolled && Math.abs(scrollY) > 4) {
         hasScrolled = true;
@@ -340,38 +289,15 @@ export default function ScrollKoiExperience() {
       if (!hasScrolled) {
         const duration = durationOf(single);
         const heroEnd = Math.min(HERO_SETTLE_SECONDS, duration - 0.08);
-        const autoplayTimedOut = now - introStartedAt > 3000;
         if (
           single.readyState >= single.HAVE_METADATA &&
-          (single.currentTime >= heroEnd || autoplayTimedOut)
+          single.currentTime >= heroEnd
         ) {
           single.pause();
           single.currentTime = heroEnd;
           currentTime = heroEnd;
           introComplete = true;
         }
-
-        if (introComplete) {
-          idleStrength = clamp(1 - speedStrength * 3.2);
-          const livingHeroTime = clamp(
-            heroEnd + getLivingHoldOffset(now, idleStrength),
-            Math.max(heroEnd - 0.24, 0),
-            Math.min(heroEnd + 0.24, duration - 0.04),
-          );
-          currentTime +=
-            (livingHeroTime - currentTime) *
-            (1 - Math.exp(-7.2 * (elapsedMs / 1000)));
-
-          if (
-            now - lastSeekAt >= HOLD_SEEK_INTERVAL_MS &&
-            single.readyState >= single.HAVE_METADATA &&
-            Math.abs(single.currentTime - currentTime) > 0.006
-          ) {
-            single.currentTime = currentTime;
-            lastSeekAt = now;
-          }
-        }
-
         root.dataset.koiScene = "hero";
         root.dataset.koiRamping = "false";
       } else {
@@ -386,13 +312,7 @@ export default function ScrollKoiExperience() {
           sceneCues,
           duration,
         );
-        idleStrength =
-          clamp(1 - mapped.rampStrength) *
-          clamp(1 - speedStrength * 3.2);
-        const targetTime =
-          mapped.time +
-          continuityOffset +
-          getLivingHoldOffset(now, idleStrength);
+        const targetTime = mapped.time + continuityOffset;
         rampStrength = mapped.rampStrength;
         root.dataset.koiScene = mapped.scene;
         root.dataset.koiRamping = mapped.ramping ? "true" : "false";
@@ -400,16 +320,16 @@ export default function ScrollKoiExperience() {
         const elapsedSeconds = elapsedMs / 1000;
         const response = mapped.ramping
           ? 9 + speedStrength * 27
-          : 7.2 + speedStrength * 8;
+          : 5 + speedStrength * 8;
         const catchUp = 1 - Math.exp(-response * elapsedSeconds);
         currentTime += (targetTime - currentTime) * catchUp;
         continuityOffset *= Math.exp(-3.2 * elapsedSeconds);
 
         const safeSingleTime = clamp(currentTime, 0, duration - 0.04);
-        if (now - lastSeekAt >= HOLD_SEEK_INTERVAL_MS) {
+        if (now - lastSeekAt >= 28) {
           if (
             single.readyState >= single.HAVE_METADATA &&
-            Math.abs(single.currentTime - safeSingleTime) > 0.006
+            Math.abs(single.currentTime - safeSingleTime) > 0.012
           ) {
             single.currentTime = safeSingleTime;
           }
@@ -421,7 +341,7 @@ export default function ScrollKoiExperience() {
               0,
               duoDuration - 0.04,
             );
-            if (Math.abs(duo.currentTime - synchronizedDuoTime) > 0.006) {
+            if (Math.abs(duo.currentTime - synchronizedDuoTime) > 0.012) {
               duo.currentTime = synchronizedDuoTime;
             }
           }
@@ -436,8 +356,6 @@ export default function ScrollKoiExperience() {
         speedStrength,
         rampStrength,
         duoOpacity,
-        idleStrength,
-        now,
       );
 
       lastScrollY = scrollY;
@@ -460,7 +378,6 @@ export default function ScrollKoiExperience() {
       duo.pause();
       delete root.dataset.koiScene;
       delete root.dataset.koiRamping;
-      delete root.dataset.koiLiving;
       root.style.removeProperty("--koi-scroll-progress");
       root.style.removeProperty("--koi-scroll-progress-percent");
       root.style.removeProperty("--koi-scroll-speed");
@@ -470,15 +387,6 @@ export default function ScrollKoiExperience() {
       root.style.removeProperty("--koi-duo-opacity");
       root.style.removeProperty("--koi-single-opacity");
       root.style.removeProperty("--koi-duo-video-opacity");
-      root.style.removeProperty("--koi-idle-x");
-      root.style.removeProperty("--koi-idle-y");
-      root.style.removeProperty("--koi-idle-rotate");
-      root.style.removeProperty("--koi-idle-scale");
-      root.style.removeProperty("--koi-idle-light");
-      root.style.removeProperty("--koi-depth-idle-x");
-      root.style.removeProperty("--koi-depth-idle-y");
-      root.style.removeProperty("--koi-depth-idle-rotate");
-      root.style.removeProperty("--koi-depth-idle-scale");
     };
   }, [motionMode]);
 
@@ -502,7 +410,7 @@ export default function ScrollKoiExperience() {
             tabIndex={-1}
             onCanPlay={() => setReady(true)}
           >
-            <source src={SINGLE_KOI_PRIMARY} type="video/mp4" />
+            <source src={SINGLE_KOI_SRC} type="video/mp4" />
             <source src={SINGLE_KOI_FALLBACK} type="video/mp4" />
           </video>
           <video
@@ -514,7 +422,7 @@ export default function ScrollKoiExperience() {
             poster="/brand/koinophobia-labs-koi.webp"
             tabIndex={-1}
           >
-            <source src={DUO_KOI_PRIMARY} type="video/mp4" />
+            <source src={DUO_KOI_SRC} type="video/mp4" />
             <source src={DUO_KOI_FALLBACK} type="video/mp4" />
           </video>
         </>
