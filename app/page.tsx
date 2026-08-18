@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, ArrowUpRight } from "lucide-react";
 import KoiWorld from "@/components/koi/KoiWorld";
+import WaterText from "@/components/koi/WaterText";
 import { DESTINATIONS } from "@/lib/koi/journey";
 import { LINKS } from "@/lib/links";
 import { products, serviceOffers, studioConfig, workProjects } from "@/lib/commercial";
@@ -79,6 +80,7 @@ export default function Home() {
       </a>
 
       <KoiWorld />
+      <WaterText />
 
       <header className="kw__masthead">
         <Link className="kw__brand" href="#enter" aria-label="Koinophobia Labs, home">

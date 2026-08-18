@@ -1544,3 +1544,164 @@ body:has(.kw) > .koi-companion {
     max-width: 100%;
   }
 }
+
+/* ==========================================================================
+   Words in the water — scroll-formed, then locked
+   Each word crosses its OWN threshold as the visitor scrolls in, so the line
+   assembles on a current under the reader's control. At the hold it locks:
+   fully formed, pinned, drift stilled, with a slight settle that confirms
+   stability. Scrolling on releases the words back into the water. Everything
+   is a pure function of --koi-reveal (0..1) the loop writes each frame, so
+   reverse scroll un-forms the words in exact step.
+   ========================================================================== */
+
+.kw-word {
+  display: inline-block;
+  white-space: pre;
+  will-change: transform, opacity, filter;
+
+  /* Per-word reveal: this word is "arrived" once the global reveal sweep
+     (--koi-reveal, scaled across all the words) passes its index. The 1.6
+     spread means a word fades through over a short window rather than snapping,
+     so the sweep reads as a current moving across the line, not a row of
+     switches. Clamped 0..1. */
+  --arrive: clamp(
+    0,
+    calc((var(--koi-reveal, 1) * (var(--words, 1) + 2) - var(--w, 0)) * 0.62),
+    1
+  );
+
+  opacity: var(--arrive);
+  transform: translate3d(
+    calc((1 - var(--arrive)) * -0.35em),
+    calc((1 - var(--arrive)) * 0.9em),
+    0
+  );
+  filter: blur(calc((1 - var(--arrive)) * 6px));
+}
+
+/* Light in the water catches the headings — a cool caustic sheen that only
+   plays while the words are forming and locking, then rests. */
+.dest__inner h1 .kw-word,
+.dest__inner h2 .kw-word {
+  background-image: linear-gradient(
+    100deg,
+    #eef4f7 0%, #eef4f7 40%, #cfeef8 47%,
+    #ffffff 50%, #cfeef8 53%, #eef4f7 60%, #eef4f7 100%
+  );
+  background-size: 260% 100%;
+  background-position: calc(120% - var(--arrive) * 150%) 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* THE LOCK. When the destination reaches its reading hold the words settle
+   into place — a single small, quick stabilising motion (a few px up and a
+   hair of scale that resolves to exactly 1) that reads as clicking into a
+   locked, stable state. Drift is off here by design: the reader asked for
+   stable, so it holds perfectly still until they continue. */
+.dest[data-flow="lock"] .dest__inner h1 .kw-word,
+.dest[data-flow="lock"] .dest__inner h2 .kw-word,
+.dest[data-flow="lock"] .dest__inner .kw__lede .kw-word,
+.dest[data-flow="lock"] .kw-word {
+  animation: kw-lock 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--w, 0) * 0.012s);
+}
+
+@keyframes kw-lock {
+  0%   { transform: translate3d(0, -0.14em, 0) scale(1.012); }
+  60%  { transform: translate3d(0, 0.02em, 0) scale(0.999); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+
+/* A hairline that draws itself under the heading when the words lock — a small
+   visual "seated" confirmation, like the current has set. */
+.dest__inner h1,
+.dest__inner h2 {
+  position: relative;
+}
+
+.dest__inner h1::after,
+.dest__inner h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.35rem;
+  height: 1px;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, rgba(127, 216, 234, 0.75), transparent);
+  opacity: 0;
+  transition: transform 620ms cubic-bezier(0.16, 0.84, 0.34, 1), opacity 620ms ease;
+}
+
+.dest[data-flow="lock"] .dest__inner h1::after,
+.dest[data-flow="lock"] .dest__inner h2::after {
+  transform: scaleX(1);
+  opacity: 0.55;
+}
+
+/* Body copy forms as a block just behind the heading, on the same reveal. */
+.dest__inner > div > p:not(.kw__kicker),
+.kw__lede {
+  opacity: clamp(0, calc(var(--koi-reveal, 1) * 1.6 - 0.35), 1);
+  transform: translate3d(
+    0,
+    calc((1 - clamp(0, calc(var(--koi-reveal, 1) * 1.6 - 0.35), 1)) * 0.9em),
+    0
+  );
+  filter: blur(calc((1 - clamp(0, calc(var(--koi-reveal, 1) * 1.6 - 0.35), 1)) * 5px));
+}
+
+/* The koi's wake still nudges the whole reading group along its travel, so the
+   words sit in moving water — but this is displacement, not the reveal. */
+.dest__inner {
+  transform: translate3d(
+    calc(var(--koi-surge, 0) * -6px),
+    calc(var(--koi-surge, 0) * 3px),
+    0
+  );
+  transition: transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* The scrim drifts softly beneath the copy so the "water" under the words is
+   never static, even when the words themselves are locked. */
+.dest__inner::before {
+  animation: kw-scrim-drift 18s ease-in-out infinite;
+}
+
+@keyframes kw-scrim-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+  50% { transform: translate3d(1.4%, -1%, 0) scale(1.035); opacity: 0.94; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kw-word {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    animation: none !important;
+  }
+  .dest__inner h1 .kw-word,
+  .dest__inner h2 .kw-word {
+    color: var(--kw-ink);
+    -webkit-background-clip: initial;
+    background-clip: initial;
+    background-image: none;
+  }
+  .dest__inner > div > p,
+  .kw__lede {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+  .dest__inner,
+  .dest__inner::before {
+    transform: none !important;
+    animation: none !important;
+  }
+  .dest__inner h1::after,
+  .dest__inner h2::after { display: none; }
+}

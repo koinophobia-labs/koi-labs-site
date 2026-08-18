@@ -293,19 +293,27 @@ export default function KoiWorld() {
       const poses = posesFor(destination, mobile);
       let target: KoiPose;
       let phase: "arrive" | "hold" | "depart";
+      // reveal drives the words: 0 = not yet formed, 1 = fully formed and
+      // locked. It climbs across the arrival as the visitor scrolls in, holds
+      // pinned at 1 through the reading hold, then falls back across the
+      // departure so continuing to scroll releases the words. Because it is a
+      // pure function of scroll position, reverse scrolling re-forms and
+      // un-forms the words in exact step.
+      let reveal: number;
       if (t < ARRIVE_END) {
         phase = "arrive";
-        target = mixPose(poses.arrive, poses.hold, smooth(t / ARRIVE_END));
+        const p = t / ARRIVE_END;
+        target = mixPose(poses.arrive, poses.hold, smooth(p));
+        reveal = smooth(p);
       } else if (t < DEPART_START) {
         phase = "hold";
         target = poses.hold;
+        reveal = 1;
       } else {
         phase = "depart";
-        target = mixPose(
-          poses.hold,
-          poses.depart,
-          smooth((t - DEPART_START) / (1 - DEPART_START)),
-        );
+        const p = (t - DEPART_START) / (1 - DEPART_START);
+        target = mixPose(poses.hold, poses.depart, smooth(p));
+        reveal = 1 - smooth(p);
       }
       shell.dataset.koiPhase = phase;
 
@@ -382,6 +390,7 @@ export default function KoiWorld() {
       style.setProperty("--koi-front", smooth(clamp((depth - 0.42) / 0.4)).toFixed(4));
       style.setProperty("--koi-surge", clamp(surge).toFixed(4));
       style.setProperty("--koi-phase-t", t.toFixed(4));
+      style.setProperty("--koi-reveal", reveal.toFixed(4));
       style.setProperty(
         "--koi-hold",
         (1 - smooth(clamp(Math.abs(t - 0.46) / 0.3))).toFixed(4),
@@ -460,7 +469,7 @@ export default function KoiWorld() {
       for (const name of [
         "--koi-x", "--koi-y", "--koi-scale", "--koi-rotate", "--koi-blur",
         "--koi-opacity", "--koi-depth", "--koi-front", "--koi-surge",
-        "--koi-phase-t", "--koi-hold", "--kw-journey",
+        "--koi-phase-t", "--koi-reveal", "--koi-hold", "--kw-journey",
       ]) {
         vars.style.removeProperty(name);
       }
