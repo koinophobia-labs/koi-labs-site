@@ -104,30 +104,112 @@ const assertDepth = (scene, state, visible) => {
   if (!visible && state.opacity > .01) throw new Error(`${scene}: depth pass should be hidden`);
 };
 
-const go = async (scene) => {
+const settleAtHold = async (scene) => {
   const found = await evaluate(`(() => {
     document.documentElement.style.scrollBehavior = 'auto';
     const section = document.querySelector('[data-final-scene="${scene}"]');
     if (!section) return false;
+    const top = window.scrollY + section.getBoundingClientRect().top;
     const travel = Math.max(section.getBoundingClientRect().height - window.innerHeight, 1);
-    window.scrollTo(0, window.scrollY + section.getBoundingClientRect().top + travel * .5);
+    window.scrollTo(0, top + travel * .5);
     return true;
   })()`);
   if (!found) throw new Error(`Missing scene: ${scene}`);
+
+  for (let attempt = 0; attempt < 14; attempt += 1) {
+    await wait(140);
+    const state = await evaluate(`(() => {
+      const section = document.querySelector('[data-final-scene="${scene}"]');
+      if (!section) return null;
+      const progress = Number.parseFloat(
+        getComputedStyle(section).getPropertyValue('--follow-progress') || '0',
+      );
+      const travel = Math.max(section.getBoundingClientRect().height - window.innerHeight, 1);
+      return { progress, correction: (.5 - progress) * travel };
+    })()`);
+    if (!state) throw new Error(`Missing scene state: ${scene}`);
+    if (Math.abs(state.progress - .5) <= .012) break;
+    await evaluate(`window.scrollBy(0, ${Number(state.correction).toFixed(3)})`);
+  }
+
   await waitFor(`document.querySelector('.studio-site--koi')?.dataset.koiScene === '${scene}'`, `${scene} activation`);
   await waitFor(`document.querySelector('[data-final-scene="${scene}"]')?.dataset.followActive === 'true'`, `${scene} information hold`);
-  await wait(1600);
+  await wait(850);
+};
+
+const assertVisible = async (scene, selectors) => {
+  const state = await evaluate(`(() => {
+    const section = document.querySelector('[data-final-scene="${scene}"]');
+    const progress = section
+      ? Number.parseFloat(getComputedStyle(section).getPropertyValue('--follow-progress') || '0')
+      : -1;
+    const items = ${JSON.stringify(selectors)}.map((selector) => {
+      const element = document.querySelector(selector);
+      if (!element) return { selector, missing: true };
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return {
+        selector,
+        missing: false,
+        opacity: Number.parseFloat(style.opacity),
+        top: rect.top,
+        bottom: rect.bottom,
+        left: rect.left,
+        right: rect.right,
+      };
+    });
+    return { progress, items };
+  })()`);
+
+  if (!state || Math.abs(state.progress - .5) > .025) {
+    throw new Error(`${scene}: failed to reach stagnant hold: ${JSON.stringify(state)}`);
+  }
+
+  for (const item of state.items) {
+    if (
+      item.missing ||
+      item.opacity < .72 ||
+      item.bottom <= 76 ||
+      item.top >= 875 ||
+      item.right <= 0 ||
+      item.left >= 1440
+    ) {
+      throw new Error(`${scene}: important information is not visible: ${JSON.stringify(state)}`);
+    }
+  }
+  console.log(`${scene} hold:`, JSON.stringify(state));
 };
 
 assertDepth("hero", await depthState(), true);
+await assertVisible("hero", [".koi-final__copy--hero h1", ".koi-final__hero-line"]);
 await capture("01-final-koi-hero");
-await go("products");
+
+await settleAtHold("products");
+await assertVisible("products", [
+  ".koi-final__products-heading",
+  ".koi-final__product--1 article",
+  ".koi-final__product--2 article",
+  ".koi-final__product--3 article",
+]);
 assertDepth("products", await depthState(), false);
 await capture("02-final-product-constellation");
-await go("systems");
+
+await settleAtHold("systems");
+await assertVisible("systems", [
+  ".koi-final__copy--systems h2",
+  ".koi-final__copy--systems .koi-final__body",
+  ".koi-final__service-current",
+]);
 assertDepth("systems", await depthState(), true);
 await capture("03-final-systems-follow");
-await go("start");
+
+await settleAtHold("start");
+await assertVisible("start", [
+  ".koi-final__copy--start h2",
+  ".koi-final__copy--start .koi-final__body",
+  ".koi-final__founder",
+  ".koi-final__copy--start .koi-final__actions",
+]);
 assertDepth("start", await depthState(), true);
 await capture("04-final-start-destination");
 
