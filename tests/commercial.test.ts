@@ -135,8 +135,10 @@ test("the Labs homepage is a clean koi-led website with information following th
   assert.match(motion, /const RAMP_START = 0\.36/);
   assert.match(motion, /const RAMP_END = 0\.64/);
   assert.match(motion, /Math\.sin\(Math\.PI \* rampProgress\)/);
-  assert.match(motion, /755ff0b5-7c99-4754-b9fb-b2fc88a7d886/);
-  assert.match(motion, /92af66f0-5636-4d10-823e-8d6956fc666a/);
+  assert.match(motion, /9199e09c-1519-4fea-b7d8-c115f41cbe92/);
+  assert.match(motion, /2b223e84-91ca-43e3-a741-f2002d009ccc/);
+  assert.doesNotMatch(motion, /755ff0b5-7c99-4754-b9fb-b2fc88a7d886/);
+  assert.doesNotMatch(motion, /92af66f0-5636-4d10-823e-8d6956fc666a/);
   assert.match(motion, /SINGLE_KOI_FALLBACK = "\/brand\/koi-scroll-single\.mp4"/);
   assert.match(motion, /DUO_KOI_FALLBACK = "\/brand\/koi-scroll-duo\.mp4"/);
   assert.ok((motion.match(/\bmuted\b/g) ?? []).length >= 2);
@@ -159,7 +161,8 @@ test("the Labs homepage is a clean koi-led website with information following th
   assert.match(layout, /import KoiDepthPass from/);
   assert.match(layout, /<KoiDepthPass \/>/);
   assert.match(depth, /createPortal/);
-  assert.match(depth, /755ff0b5-7c99-4754-b9fb-b2fc88a7d886/);
+  assert.match(depth, /9199e09c-1519-4fea-b7d8-c115f41cbe92/);
+  assert.doesNotMatch(depth, /755ff0b5-7c99-4754-b9fb-b2fc88a7d886/);
   assert.match(depth, /SINGLE_KOI_FALLBACK = "\/brand\/koi-scroll-single\.mp4"/);
   assert.match(depth, /prefers-reduced-motion: reduce/);
   assert.match(depth, /connection\?\.saveData/);
