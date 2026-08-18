@@ -1,0 +1,81 @@
+name: Inspect Koi Motion Frames
+
+on:
+  push:
+    branches:
+      - agent/final-koi-navigation
+    paths:
+      - .github/workflows/inspect-koi-motion.yml
+  pull_request:
+    paths:
+      - .github/workflows/inspect-koi-motion.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contact-sheets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install FFmpeg
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+
+      - name: Download candidate motion masters
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/koi-candidates artifacts/koi-motion-frames
+
+          curl --fail --location --retry 4 --retry-all-errors \
+            "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260817_180806_9199e09c-1519-4fea-b7d8-c115f41cbe92.mp4" \
+            -o /tmp/koi-candidates/information-swims.mp4
+
+          curl --fail --location --retry 4 --retry-all-errors \
+            "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260817_180711_eff37437-4665-4774-8f52-64bd53ecc9b1.mp4" \
+            -o /tmp/koi-candidates/wake-carrier.mp4
+
+          curl --fail --location --retry 4 --retry-all-errors \
+            "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260817_180735_c79978cc-3a02-49b6-9724-e986d328c1a4.mp4" \
+            -o /tmp/koi-candidates/orbit-anchor.mp4
+
+          curl --fail --location --retry 4 --retry-all-errors \
+            "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260817_153612_85fd7589-b5dd-421b-a56c-758edb9c0556.mp4" \
+            -o /tmp/koi-candidates/original-single.mp4
+
+          curl --fail --location --retry 4 --retry-all-errors \
+            "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260817_180828_2b223e84-91ca-43e3-a741-f2002d009ccc.mp4" \
+            -o /tmp/koi-candidates/product-constellation.mp4
+
+          curl --fail --location --retry 4 --retry-all-errors \
+            "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260817_153625_90275ee1-76df-4c9c-852d-035bde6ab43a.mp4" \
+            -o /tmp/koi-candidates/original-duo.mp4
+
+      - name: Build timestamped contact sheets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for video in /tmp/koi-candidates/*.mp4; do
+            name="$(basename "$video" .mp4)"
+            ffmpeg -hide_banner -loglevel error -y \
+              -i "$video" \
+              -vf "fps=1,scale=360:-2:flags=lanczos,drawtext=text='%{pts\\:hms}':x=12:y=h-th-12:fontsize=22:fontcolor=white:borderw=2:bordercolor=black,tile=5x3:padding=8:margin=8" \
+              -frames:v 1 "artifacts/koi-motion-frames/${name}.png"
+          done
+          test "$(find artifacts/koi-motion-frames -name '*.png' | wc -l)" -eq 6
+
+      - name: Upload candidate contact sheets
+        uses: actions/upload-artifact@v4
+        with:
+          name: koi-motion-contact-sheets-${{ github.sha }}
+          path: artifacts/koi-motion-frames/*.png
+          if-no-files-found: error
+          retention-days: 14

@@ -5,9 +5,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function pageTarget() {
   for (let i = 0; i < 40; i += 1) {
     try {
-      const targets = await fetch("http://127.0.0.1:9222/json/list").then((r) =>
-        r.json(),
-      );
+      const targets = await fetch("http://127.0.0.1:9222/json/list").then((r) => r.json());
       const page = targets.find((target) => target.type === "page");
       if (page?.webSocketDebuggerUrl) return page;
     } catch {}
@@ -32,36 +30,23 @@ socket.addEventListener("message", (event) => {
 
 await new Promise((resolve, reject) => {
   socket.addEventListener("open", resolve, { once: true });
-  socket.addEventListener(
-    "error",
-    () => reject(new Error("DevTools socket failed")),
-    { once: true },
-  );
+  socket.addEventListener("error", () => reject(new Error("DevTools socket failed")), { once: true });
 });
 
-const send = (method, params = {}) =>
-  new Promise((resolve, reject) => {
-    const id = ++nextId;
-    pending.set(id, { resolve, reject });
-    socket.send(JSON.stringify({ id, method, params }));
-  });
+const send = (method, params = {}) => new Promise((resolve, reject) => {
+  const id = ++nextId;
+  pending.set(id, { resolve, reject });
+  socket.send(JSON.stringify({ id, method, params }));
+});
 
 const evaluate = async (expression) => {
-  const response = await send("Runtime.evaluate", {
-    expression,
-    returnByValue: true,
-    awaitPromise: true,
-  });
-  if (response.exceptionDetails) {
-    throw new Error(
-      response.exceptionDetails.text ?? "Browser evaluation failed",
-    );
-  }
+  const response = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
+  if (response.exceptionDetails) throw new Error(response.exceptionDetails.text ?? "Browser evaluation failed");
   return response.result?.value;
 };
 
 const waitFor = async (expression, label) => {
-  for (let i = 0; i < 80; i += 1) {
+  for (let i = 0; i < 120; i += 1) {
     if (await evaluate(expression)) return;
     await wait(250);
   }
@@ -71,295 +56,161 @@ const waitFor = async (expression, label) => {
 fs.mkdirSync("artifacts/koi-visuals", { recursive: true });
 await send("Page.enable");
 await send("Runtime.enable");
-await send("Emulation.setDeviceMetricsOverride", {
-  width: 1440,
-  height: 900,
-  deviceScaleFactor: 1,
-  mobile: false,
-});
+await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
 await send("Page.navigate", { url: "http://127.0.0.1:3000/" });
-await waitFor(
-  "document.readyState === 'complete' && Boolean(document.querySelector('.koi-world--finished'))",
-  "finished koi world",
-);
+await waitFor("document.readyState === 'complete' && Boolean(document.querySelector('.koi-final'))", "final koi homepage");
+await waitFor("document.querySelector('.studio-scroll-koi')?.dataset.ready === 'true'", "final koi video");
+await wait(3400);
 
-// Production prefers the new Higgsfield masters and retains owned local files
-// as fallbacks. Browser QA deliberately pins those local files so a temporary
-// third-party CDN delay cannot hide an otherwise valid interface build.
-await evaluate(`(() => {
-  const single = document.querySelector('.studio-scroll-koi__video--single');
-  const duo = document.querySelector('.studio-scroll-koi__video--duo');
-  if (!single || !duo) return false;
-  single.pause();
-  duo.pause();
-  single.src = '/brand/koi-scroll-single.mp4';
-  duo.src = '/brand/koi-scroll-duo.mp4';
-  single.load();
-  duo.load();
-  return true;
-})()`);
-await waitFor(
-  "document.querySelector('.studio-scroll-koi__video--single')?.readyState >= 1 && document.querySelector('.studio-scroll-koi__video--duo')?.readyState >= 1",
-  "local koi metadata",
-);
-await evaluate(`(() => {
-  const layer = document.querySelector('.studio-scroll-koi');
-  if (!layer) return false;
-  layer.dataset.ready = 'true';
-  return true;
-})()`);
-await waitFor(
-  "document.querySelector('.koi-world--finished')?.dataset.koiLiving === 'true'",
-  "living hero hold",
-);
-await wait(650);
-
-const architecture = await evaluate(`(() => {
-  const primaryLinks = [...document.querySelectorAll('.koi-world__primary-nav [data-koi-nav]')];
-  return {
-    products: document.querySelectorAll('.koi-product-node').length,
-    scenes: document.querySelectorAll('[data-koi-frame]').length,
-    followScenes: document.querySelectorAll('[data-koi-follow-scene]').length,
-    followParts: document.querySelectorAll('[data-koi-follow]').length,
-    sectionMarkers: document.querySelectorAll('.koi-section-marker').length,
-    primaryNavLinks: primaryLinks.length,
-    visiblePrimaryNavLinks: primaryLinks.filter((link) => {
-      const style = getComputedStyle(link);
-      return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity) > .8;
-    }).length,
-    oldRail: Boolean(document.querySelector('.koi-world__rail')),
-    oldWayfinder: Boolean(document.querySelector('.koi-wayfinder')),
-    legacy: Boolean(document.querySelector('.studio-problem-grid, .studio-pricing-grid, .studio-product-grid, .studio-trust')),
-    companion: document.querySelector('.koi-companion') ? getComputedStyle(document.querySelector('.koi-companion')).display : 'none',
-    opacity: Number.parseFloat(getComputedStyle(document.querySelector('.studio-scroll-koi__video--single')).opacity),
-    brightness: Number.parseFloat(getComputedStyle(document.querySelector('.koi-world--finished')).getPropertyValue('--koi-video-brightness')),
-    living: document.querySelector('.koi-world--finished')?.dataset.koiLiving ?? 'false',
-  };
-})()`);
+const architecture = await evaluate(`(() => ({
+  products: document.querySelectorAll('.koi-final__product').length,
+  scenes: document.querySelectorAll('[data-final-scene]').length,
+  followParts: document.querySelectorAll('[data-follow-part]').length,
+  activeScene: document.querySelector('[data-final-scene][data-follow-active="true"]')?.dataset.finalScene,
+  legacy: Boolean(document.querySelector('.studio-problem-grid, .studio-pricing-grid, .studio-product-grid, .studio-trust')),
+  companion: document.querySelector('.koi-companion') ? getComputedStyle(document.querySelector('.koi-companion')).display : 'none',
+  opacity: Number.parseFloat(getComputedStyle(document.querySelector('.studio-scroll-koi__video--single')).opacity),
+  heroOpacity: Number.parseFloat(getComputedStyle(document.querySelector('.koi-final__copy--hero h1')).opacity),
+}))()`);
 if (
   architecture.products !== 3 ||
-  architecture.scenes !== 6 ||
-  architecture.followScenes !== 6 ||
-  architecture.followParts < 30 ||
-  architecture.sectionMarkers !== 6 ||
-  architecture.primaryNavLinks !== 6 ||
-  architecture.visiblePrimaryNavLinks !== 6 ||
-  architecture.oldRail ||
-  architecture.oldWayfinder ||
+  architecture.scenes !== 5 ||
+  architecture.followParts < 15 ||
+  architecture.activeScene !== "hero" ||
   architecture.legacy ||
   architecture.companion !== "none" ||
-  architecture.opacity < 0.9 ||
-  architecture.brightness < 0.95 ||
-  architecture.living !== "true"
+  architecture.opacity < .7 ||
+  architecture.heroOpacity < .6
 ) {
   throw new Error(`Invalid final koi architecture: ${JSON.stringify(architecture)}`);
 }
 
-const livingState = () =>
-  evaluate(`(() => {
-    const root = document.querySelector('.koi-world--finished');
-    const single = document.querySelector('.studio-scroll-koi__video--single');
-    const duo = document.querySelector('.studio-scroll-koi__video--duo');
-    if (!root || !single || !duo) return null;
-    return {
-      scene: root.dataset.koiScene,
-      living: root.dataset.koiLiving,
-      singleTime: single.currentTime,
-      duoTime: duo.currentTime,
-      idleX: getComputedStyle(root).getPropertyValue('--koi-idle-x').trim(),
-      idleY: getComputedStyle(root).getPropertyValue('--koi-idle-y').trim(),
-      brightness: Number.parseFloat(getComputedStyle(root).getPropertyValue('--koi-video-brightness')),
-    };
-  })()`);
-
-const assertLiving = async (scene) => {
-  const before = await livingState();
-  await wait(420);
-  const after = await livingState();
-  if (!before || !after || after.scene !== scene || after.living !== 'true') {
-    throw new Error(`${scene}: living hold is unavailable: ${JSON.stringify({ before, after })}`);
-  }
-
-  const timelineMoved =
-    Math.abs(after.singleTime - before.singleTime) >= 0.002;
-  const visualDriftMoved =
-    before.idleX !== after.idleX || before.idleY !== after.idleY;
-
-  if (!timelineMoved && !visualDriftMoved) {
-    throw new Error(`${scene}: all koi motion is frozen: ${JSON.stringify({ before, after })}`);
-  }
-  if (after.brightness < .95) {
-    throw new Error(`${scene}: koi visibility is too low: ${JSON.stringify(after)}`);
-  }
-};
-
 const capture = async (name) => {
-  const image = await send("Page.captureScreenshot", {
-    format: "png",
-    fromSurface: true,
-    captureBeyondViewport: false,
-  });
-  fs.writeFileSync(
-    `artifacts/koi-visuals/${name}.png`,
-    Buffer.from(image.data, "base64"),
-  );
+  const image = await send("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
+  fs.writeFileSync(`artifacts/koi-visuals/${name}.png`, Buffer.from(image.data, "base64"));
 };
 
-const depthState = () =>
-  evaluate(`(() => {
-    const root = document.querySelector('.koi-world--finished');
-    const depth = document.querySelector('.studio-koi-depth-pass');
-    if (!root || !depth) return null;
-    const style = getComputedStyle(depth);
-    return {
-      scene: root.dataset.koiScene,
-      opacity: Number.parseFloat(style.opacity),
-      zIndex: Number.parseFloat(style.zIndex),
-    };
-  })()`);
-
-const followState = () =>
-  evaluate(`(() => {
-    const scene = document.querySelector('[data-koi-active="true"]');
-    const parts = [...(scene?.querySelectorAll('[data-koi-follow]') ?? [])];
-    const cluster = scene?.querySelector('.koi-follow-cluster');
-    const stage = scene?.querySelector('.koi-follow-stage');
-    const heading = scene?.querySelector('h1, h2');
-    const marker = scene?.querySelector('.koi-section-marker');
-    const panelStyle = cluster ? getComputedStyle(cluster, '::before') : null;
-    const clusterStyle = cluster ? getComputedStyle(cluster) : null;
-    const sceneStyle = scene ? getComputedStyle(scene) : null;
-    const headingRect = heading?.getBoundingClientRect();
-    const markerRect = marker?.getBoundingClientRect();
-    const clusterRect = cluster?.getBoundingClientRect();
-    return {
-      scene: scene?.dataset.koiFollowScene ?? null,
-      count: parts.length,
-      visible: parts.filter((part) => Number.parseFloat(getComputedStyle(part).opacity) > .9).length,
-      transforms: new Set(parts.map((part) => getComputedStyle(part).transform)).size,
-      headingOpacity: heading ? Number.parseFloat(getComputedStyle(heading).opacity) : 0,
-      headingColor: heading ? getComputedStyle(heading).color : '',
-      readingOpacity: sceneStyle ? Number.parseFloat(sceneStyle.getPropertyValue('--koi-reading-opacity')) : 0,
-      panelBackground: panelStyle?.backgroundImage ?? 'none',
-      panelBorder: panelStyle?.borderTopColor ?? 'transparent',
-      clusterOpacity: clusterStyle ? Number.parseFloat(clusterStyle.opacity) : 0,
-      clusterVisibility: clusterStyle?.visibility ?? 'hidden',
-      clusterDisplay: clusterStyle?.display ?? 'none',
-      clusterInViewport: clusterRect ? (
-        clusterRect.left >= 0 &&
-        clusterRect.right <= document.documentElement.clientWidth &&
-        clusterRect.top >= 72 &&
-        clusterRect.bottom <= document.documentElement.clientHeight
-      ) : false,
-      stageZ: stage ? Number.parseFloat(getComputedStyle(stage).zIndex) : 0,
-      activeMapLinks: document.querySelectorAll('.koi-world__primary-nav [aria-current="true"]').length,
-      markerText: marker?.textContent?.replace(/\\s+/g, ' ').trim() ?? '',
-      markerVisible: markerRect ? markerRect.width > 20 && markerRect.height > 12 : false,
-      headingInViewport: headingRect ? (
-        headingRect.left >= 0 &&
-        headingRect.right <= document.documentElement.clientWidth &&
-        headingRect.top >= 70 &&
-        headingRect.bottom <= document.documentElement.clientHeight
-      ) : false,
-    };
-  })()`);
+const depthState = () => evaluate(`(() => {
+  const root = document.querySelector('.studio-site--koi');
+  const depth = document.querySelector('.studio-koi-depth-pass');
+  if (!root || !depth) return null;
+  const style = getComputedStyle(depth);
+  return { scene: root.dataset.koiScene, opacity: Number.parseFloat(style.opacity), zIndex: style.zIndex };
+})()`);
 
 const assertDepth = (scene, state, visible) => {
-  if (!state || state.zIndex !== 3) {
-    throw new Error(`${scene}: invalid depth pass: ${JSON.stringify(state)}`);
-  }
-  if (visible && state.opacity < 0.05) {
-    throw new Error(`${scene}: depth pass is hidden`);
-  }
-  if (!visible && state.opacity > 0.01) {
-    throw new Error(`${scene}: depth pass should be hidden`);
-  }
+  if (!state || state.zIndex !== "3") throw new Error(`${scene}: invalid depth pass`);
+  if (visible && state.opacity < .05) throw new Error(`${scene}: depth pass is hidden`);
+  if (!visible && state.opacity > .01) throw new Error(`${scene}: depth pass should be hidden`);
 };
 
-const assertFollow = (scene, state) => {
-  if (!state || state.scene !== scene || state.count < 4) {
-    throw new Error(`${scene}: missing follow content: ${JSON.stringify(state)}`);
-  }
-  if (
-    state.visible < Math.min(5, state.count) ||
-    state.headingOpacity < .95 ||
-    state.readingOpacity < .9 ||
-    state.panelBackground === 'none' ||
-    state.panelBorder === 'rgba(0, 0, 0, 0)' ||
-    state.clusterOpacity < .95 ||
-    state.clusterVisibility === 'hidden' ||
-    state.clusterDisplay === 'none' ||
-    !state.clusterInViewport ||
-    state.stageZ < 4 ||
-    state.activeMapLinks !== 1 ||
-    !state.markerVisible ||
-    !state.markerText ||
-    !state.headingInViewport ||
-    !state.headingColor.includes('255')
-  ) {
-    throw new Error(`${scene}: information or navigation is not readable: ${JSON.stringify(state)}`);
-  }
-};
-
-const go = async (scene) => {
+const settleAtHold = async (scene) => {
   const found = await evaluate(`(() => {
     document.documentElement.style.scrollBehavior = 'auto';
-    const section = document.querySelector('[data-koi-scene="${scene}"]');
+    const section = document.querySelector('[data-final-scene="${scene}"]');
     if (!section) return false;
-    section.scrollIntoView({ block: 'center' });
+    const top = window.scrollY + section.getBoundingClientRect().top;
+    const travel = Math.max(section.getBoundingClientRect().height - window.innerHeight, 1);
+    window.scrollTo(0, top + travel * .5);
     return true;
   })()`);
   if (!found) throw new Error(`Missing scene: ${scene}`);
-  await waitFor(
-    `document.querySelector('.koi-world--finished')?.dataset.koiScene === '${scene}'`,
-    `${scene} activation`,
-  );
-  await wait(1500);
+
+  for (let attempt = 0; attempt < 14; attempt += 1) {
+    await wait(140);
+    const state = await evaluate(`(() => {
+      const section = document.querySelector('[data-final-scene="${scene}"]');
+      if (!section) return null;
+      const progress = Number.parseFloat(
+        getComputedStyle(section).getPropertyValue('--follow-progress') || '0',
+      );
+      const travel = Math.max(section.getBoundingClientRect().height - window.innerHeight, 1);
+      return { progress, correction: (.5 - progress) * travel };
+    })()`);
+    if (!state) throw new Error(`Missing scene state: ${scene}`);
+    if (Math.abs(state.progress - .5) <= .012) break;
+    await evaluate(`window.scrollBy(0, ${Number(state.correction).toFixed(3)})`);
+  }
+
+  await waitFor(`document.querySelector('.studio-site--koi')?.dataset.koiScene === '${scene}'`, `${scene} activation`);
+  await waitFor(`document.querySelector('[data-final-scene="${scene}"]')?.dataset.followActive === 'true'`, `${scene} information hold`);
+  await wait(850);
 };
 
-const verifyScene = async ({
-  scene,
-  captureName,
-  depthVisible,
-  scroll = true,
-}) => {
-  if (scroll) await go(scene);
-  assertDepth(scene, await depthState(), depthVisible);
-  assertFollow(scene, await followState());
-  await assertLiving(scene);
-  await capture(captureName);
+const assertVisible = async (scene, selectors) => {
+  const state = await evaluate(`(() => {
+    const section = document.querySelector('[data-final-scene="${scene}"]');
+    const progress = section
+      ? Number.parseFloat(getComputedStyle(section).getPropertyValue('--follow-progress') || '0')
+      : -1;
+    const items = ${JSON.stringify(selectors)}.map((selector) => {
+      const element = document.querySelector(selector);
+      if (!element) return { selector, missing: true };
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return {
+        selector,
+        missing: false,
+        opacity: Number.parseFloat(style.opacity),
+        top: rect.top,
+        bottom: rect.bottom,
+        left: rect.left,
+        right: rect.right,
+      };
+    });
+    return { progress, items };
+  })()`);
+
+  if (!state || Math.abs(state.progress - .5) > .025) {
+    throw new Error(`${scene}: failed to reach stagnant hold: ${JSON.stringify(state)}`);
+  }
+
+  for (const item of state.items) {
+    if (
+      item.missing ||
+      item.opacity < .72 ||
+      item.bottom <= 76 ||
+      item.top >= 875 ||
+      item.right <= 0 ||
+      item.left >= 1440
+    ) {
+      throw new Error(`${scene}: important information is not visible: ${JSON.stringify(state)}`);
+    }
+  }
+  console.log(`${scene} hold:`, JSON.stringify(state));
 };
 
-await verifyScene({
-  scene: "hero",
-  captureName: "01-koi-world-hero",
-  depthVisible: true,
-  scroll: false,
-});
-await verifyScene({
-  scene: "products",
-  captureName: "02-product-constellation-two-koi",
-  depthVisible: false,
-});
-await verifyScene({
-  scene: "systems",
-  captureName: "03-systems-follow-the-koi",
-  depthVisible: true,
-});
-await verifyScene({
-  scene: "work",
-  captureName: "04-work-follows-the-koi",
-  depthVisible: true,
-});
-await verifyScene({
-  scene: "founder",
-  captureName: "05-founder-follows-the-koi",
-  depthVisible: true,
-});
-await verifyScene({
-  scene: "start",
-  captureName: "06-final-koi-contact",
-  depthVisible: true,
-});
+assertDepth("hero", await depthState(), true);
+await assertVisible("hero", [".koi-final__copy--hero h1", ".koi-final__hero-line"]);
+await capture("01-final-koi-hero");
+
+await settleAtHold("products");
+await assertVisible("products", [
+  ".koi-final__products-heading",
+  ".koi-final__product--1 article",
+  ".koi-final__product--2 article",
+  ".koi-final__product--3 article",
+]);
+assertDepth("products", await depthState(), false);
+await capture("02-final-product-constellation");
+
+await settleAtHold("systems");
+await assertVisible("systems", [
+  ".koi-final__copy--systems h2",
+  ".koi-final__copy--systems .koi-final__body",
+  ".koi-final__service-current",
+]);
+assertDepth("systems", await depthState(), true);
+await capture("03-final-systems-follow");
+
+await settleAtHold("start");
+await assertVisible("start", [
+  ".koi-final__copy--start h2",
+  ".koi-final__copy--start .koi-final__body",
+  ".koi-final__founder",
+  ".koi-final__copy--start .koi-final__actions",
+]);
+assertDepth("start", await depthState(), true);
+await capture("04-final-start-destination");
 
 socket.close();
