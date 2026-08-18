@@ -6,6 +6,9 @@ on:
       - agent/final-koi-navigation
     paths:
       - .github/workflows/inspect-koi-motion.yml
+  pull_request:
+    paths:
+      - .github/workflows/inspect-koi-motion.yml
   workflow_dispatch:
 
 permissions:
