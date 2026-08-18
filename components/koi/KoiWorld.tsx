@@ -428,7 +428,7 @@ export default function KoiWorld() {
 
     measure();
     ensureVideo(DESTINATIONS[0].clip, performance.now());
-    shell.dataset.koiReady = "true";
+    shell.setAttribute("data-koi-ready", "true");
 
     const resizeObserver =
       typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
@@ -458,7 +458,7 @@ export default function KoiWorld() {
       }
       pool.clear();
       water?.dispose();
-      delete shell.dataset.koiReady;
+      shell.removeAttribute("data-koi-ready");
       delete shell.dataset.koiPhase;
       for (const name of [
         "--koi-x", "--koi-y", "--koi-scale", "--koi-rotate", "--koi-blur",

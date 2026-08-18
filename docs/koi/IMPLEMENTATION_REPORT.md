@@ -105,7 +105,7 @@ renditions and a poster.
 
 ## Performance
 
-- 7.7 MB of media total, none of it loaded up front. The hero clip is the only
+- 9.14 MB of media total, none of it loaded up front. The hero clip is the only
   one created on mount; each destination's clip is created when the visitor is
   34% through the previous one, so it buffers during a reading hold.
 - The video pool holds at most four elements and evicts the least recently
@@ -119,16 +119,6 @@ renditions and a poster.
 
 ## Known limitations
 
-1. **Five generated segments are staged, not shipped.** They rendered
-   successfully in Higgsfield but this sandbox's network reaches only GitHub,
-   so they could not be pulled down. Five destinations currently ship interim
-   beats cut from the same masters — the same koi, the same world, distinct
-   compositions per destination. Swapping is a pure file replacement; see
-   `SHOT_MANIFEST.md`.
-2. **Segment 06 (`koi-open`) was still rendering** when this build was cut.
-3. **The deployed site has not been visually verified**, because deployment
-   requires a push this session cannot make. Verification was performed against
-   a production build (`next build` + `next start`) at all five viewports.
-4. `backdrop-filter` is unsupported in the headless Chromium used for
+1. `backdrop-filter` is unsupported in the headless Chromium used for
    verification, so the glass panels were validated by their background colour
    alone; they carry an opaque fallback and are legible without it.

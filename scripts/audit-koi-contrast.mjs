@@ -4,7 +4,7 @@
  *
  *   KOI_VERIFY_BASE=http://127.0.0.1:3000 node scripts/audit-koi-contrast.mjs
  */
-import { chromium, devices } from 'playwright';
+import { chromium } from 'playwright';
 const lum = ([r,g,b]) => { const f = v => { v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }; return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b); };
 const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
 const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } });

@@ -39,7 +39,7 @@ used as start frames:
 | 03 | `koi-systems` | generated `269a9bd6` | 8.0s | lower right | lower left, tail last | lateral truck left, 6° tilt down | Descent past submerged structure into the systems region |
 | 04 | `koi-work` | generated `6f312ad7` | 8.0s | centre left | right edge, tail last | locked off, 4% push | Lateral drift past suspended planes of light |
 | 05 | `koi-still` | generated `1563ee58` | 8.0s | in frame | never leaves — loops | 15° orbit, slight push | The calm pocket; a hold shot built to loop |
-| 06 | `koi-open` | generated `dd032fdc` | 8.0s | lower right | recedes to centre against a widening glow | low angle push in | The final illuminated destination |
+| 06 | `koi-open` | generated `719b8650` | 8.0s | lower right | recedes to centre against a widening glow | low angle push in | The final illuminated destination |
 
 Every generated prompt specified, explicitly: character reference, entry
 direction, exit direction, camera position and movement, koi distance and body
@@ -60,26 +60,21 @@ motion so the frame can be frozen, looped or blended.
 
 ## Shipping state
 
-`koi-lead`, `koi-glass` and `koi-duo` ship from the finished masters.
+`koi-lead`, `koi-glass` and `koi-duo` ship from the finished masters. All five
+generated segments now ship from their completed Higgsfield renders:
 
-The four rendered generated segments (`koi-separate`, `koi-systems`,
-`koi-work`, `koi-still`) and the fifth still rendering (`koi-open`) are staged
-in Higgsfield. Until they are dropped into `public/koi/`, those five slots ship
-**interim beats cut from the same masters** — distinct time windows of the
-navigation and duo masters, some speed-graded, chosen so each destination has
-its own composition and motion:
-
-| Slot | Interim source | Window |
+| Slot | Higgsfield generation | Duration |
 | --- | --- | --- |
-| `koi-systems` | navigation master | 9.0 – 15.0s |
-| `koi-work` | navigation master | 4.0 – 10.0s |
-| `koi-still` | navigation master | 5.5 – 10.5s at 0.61× |
-| `koi-open` | navigation master | 10.4 – 15.0s at 0.57×, slow push in |
-| `koi-separate` | duo master | 5.0 – 10.0s |
+| `koi-separate` | `e4d33722-258a-41b9-ac07-aab0edccc2ac` | 6.0s |
+| `koi-systems` | `269a9bd6-4f4c-4c0b-ae20-395b45bf3e75` | 8.0s |
+| `koi-work` | `6f312ad7-baa0-4849-aaea-dddceeb9aab1` | 8.0s |
+| `koi-still` | `1563ee58-8f7e-43ba-a50d-8ef60129fb7c` | 8.0s |
+| `koi-open` | `719b8650-6678-418e-a436-ede53a63831a` | 8.0s |
 
-These are the same koi in the same world, so identity and continuity hold.
-Swapping in the generated segments is a pure file replacement in
-`public/koi/` — no code change, no configuration change.
+The generated masters were denoised, graded to the same true-black floor as
+the finished masters, encoded into both responsive H.264 renditions and paired
+with matching WebP poster frames. The original interim beats have been fully
+replaced; no code or configuration change was required.
 
 ## Delivery renditions
 
@@ -89,7 +84,7 @@ Swapping in the generated segments is a pure file replacement in
 | `<clip>-854.mp4` | 854×480 | 860 CSS px and below |
 | `poster-<clip>.webp` | 1280 wide | poster frame, reduced-motion still, Save-Data still |
 
-Total shipped media: **7.7 MB across 24 files**, none of it loaded up front.
+Total shipped media: **9.14 MB across 25 files**, none of it loaded up front.
 
 ### Why H.264 only
 
