@@ -1,6 +1,11 @@
 /* Final visual tuning after frame-by-frame motion review. The base film and
    foreground pass share identical geometry, preventing a duplicated fish while
    preserving a restrained edge-over-interface depth effect. */
+body:has(.koi-final) .studio-site-shell,
+.koi-final {
+  overflow: visible !important;
+}
+
 .koi-final {
   --koi-scene-scale: 0;
 }
