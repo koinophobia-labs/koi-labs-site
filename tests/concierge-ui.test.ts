@@ -7,15 +7,20 @@ const root = path.resolve(import.meta.dirname, "..");
 const read = (file: string) => fs.readFileSync(path.join(root, file), "utf8");
 
 test("homepage, services, intake, and audit expose intentional concierge entry points", () => {
+  const homepage = [
+    read("app/page.tsx"),
+    read("components/studio/KoiFinalHomepage.tsx"),
+  ].join("\n");
+
+  assert.match(homepage, /\/concierge\?entry=/);
   for (const file of [
-    "app/page.tsx",
     "app/services/page.tsx",
     "app/intake/page.tsx",
     "app/audit/page.tsx",
   ]) {
     assert.match(read(file), /\/concierge\?entry=/);
   }
-  assert.match(read("app/page.tsx"), /Bring us a problem/);
+  assert.match(homepage, /Bring us a problem/);
   assert.match(read("app/intake/page.tsx"), /Start the standard form/);
 });
 
