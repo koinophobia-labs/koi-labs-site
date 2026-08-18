@@ -6,6 +6,15 @@ body:has(.koi-final) .studio-site-shell,
   overflow: visible !important;
 }
 
+/* The base stylesheet's generic direct-child rule is declared after the
+   original sticky rule. Reassert the viewport canvas with higher specificity
+   so every chapter holds still while its information settles around the koi. */
+.koi-final__scene > .koi-final__sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+}
+
 .koi-final {
   --koi-scene-scale: 0;
 }
