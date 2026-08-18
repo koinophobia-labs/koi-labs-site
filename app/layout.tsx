@@ -23,6 +23,7 @@ import "./founder-editorial.css";
 import "./product-worlds.css";
 import "./commercial.css";
 import "./koi-scroll.css";
+import "./koi-final.css";
 import "./koi-depth.css";
 import "./koi-anchor-renditions.css";
 import "./dev-system.css";
