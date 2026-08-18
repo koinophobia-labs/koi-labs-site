@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 
-const SINGLE_KOI_SRC = "/brand/koi-scroll-single.mp4";
+const SINGLE_KOI_SRC =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260818_021556_755ff0b5-7c99-4754-b9fb-b2fc88a7d886.mp4";
+const SINGLE_KOI_FALLBACK = "/brand/koi-scroll-single.mp4";
 
 type NavigatorWithConnection = Navigator & {
   connection?: { saveData?: boolean };
@@ -97,6 +99,7 @@ export default function KoiDepthPass() {
         tabIndex={-1}
       >
         <source src={SINGLE_KOI_SRC} type="video/mp4" />
+        <source src={SINGLE_KOI_FALLBACK} type="video/mp4" />
       </video>
       <div className="studio-koi-depth-pass__glass" />
     </div>,
