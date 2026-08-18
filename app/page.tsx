@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
-import StudioNav from "@/components/studio/StudioNav";
-import StudioFooter from "@/components/studio/StudioFooter";
-import { CTABand, FAQItem, PricingCard, ProcessStep, ProductCard, ProofItem, SectionIntro, WorkCard } from "@/components/studio";
-import { businessProblems, faqs, processSteps, products, serviceOffers, trustItems, workProjects } from "@/lib/commercial";
+import Link from "next/link";
+import { ArrowDown, ArrowRight, ArrowUpRight } from "lucide-react";
+import KoiWorld from "@/components/koi/KoiWorld";
+import { DESTINATIONS } from "@/lib/koi/journey";
+import { LINKS } from "@/lib/links";
+import { products, serviceOffers, studioConfig, workProjects } from "@/lib/commercial";
 
 export const metadata: Metadata = {
-  title: "Koinophobia Labs | Websites, AI Workflows and Business Systems",
-  description: "Founder-led websites, AI workflows, booking systems, and conversion improvements for small businesses. Start with a practical Revenue Leak Audit.",
+  title: "Koinophobia Labs | AI-Native Products and Systems",
+  description:
+    "A founder-led Chicago studio building AI-native products, websites, automation, and internal systems from first principles. Follow the koi.",
   alternates: { canonical: "https://koinophobialabs.com/" },
 };
 
@@ -22,93 +23,474 @@ const schema = {
   email: "koinophobia999@gmail.com",
   founder: { "@type": "Person", name: "Blake Taylor" },
   areaServed: ["Chicago", "United States"],
-  description: "Founder-led websites, AI workflows, booking systems, and conversion improvements for small businesses.",
+  description:
+    "A founder-led studio building AI-native products, websites, and business systems.",
+};
+
+const audit = serviceOffers.find((offer) => offer.slug === "audit")!;
+const otherServices = serviceOffers.filter((offer) => offer.slug !== "audit");
+
+/**
+ * The constellation. Three shipped products plus the internal operator build,
+ * labelled exactly as the repository labels it: private, dev-signed, not
+ * distributable. No invented availability.
+ */
+const constellation = [
+  ...products.map((product) => ({
+    title: product.title,
+    audience: product.audience,
+    body: product.body,
+    status: product.status.replace("Internal Product · ", ""),
+    href: product.href,
+    cta: product.cta,
+    internal: false,
+  })),
+  {
+    title: "Koi Cave",
+    audience: "The studio's own operating loop",
+    body:
+      "A local-first operator system for notes, tasks, memory, and automations. It runs on one machine and stays there.",
+    status: "Private build · not distributable",
+    href: "/dev/products/koi-cave",
+    cta: "Read the Koi Cave record",
+    internal: true,
+  },
+];
+
+const founderFacts = [
+  "Blake scopes the problem, designs the solution, builds the system, runs the checks, and leads the handoff.",
+  "High-volume customer operations at DraftKings; B.A. in Global Management, Earlham College.",
+  "Client work and owned products share one toolchain — the products are where new techniques get proven first.",
+];
+
+const bandStyle = (index: number) => {
+  const destination = DESTINATIONS[index];
+  return {
+    "--band-desktop": `${destination.band.desktop * 100}svh`,
+    "--band-mobile": `${destination.band.mobile * 100}svh`,
+  } as React.CSSProperties;
 };
 
 export default function Home() {
   return (
-    <div className="studio-site">
-      <StudioNav />
-      <main>
-        <section className="studio-hero">
-          <div className="studio-container studio-hero__grid">
-            <div>
-              <p className="studio-eyebrow">Founder-led systems for small businesses</p>
-              <h1>Websites, AI workflows, and client systems that fix <span>real business friction.</span></h1>
-              <p className="studio-hero__lede">Koinophobia Labs helps small businesses losing time or revenue to outdated websites, messy inquiries, manual follow-up, and disconnected tools. You work directly with Blake from diagnosis through launch.</p>
-              <div className="studio-hero__actions">
-                <Link className="studio-button" href="/audit" data-analytics="audit_cta_click">Start With an Audit</Link>
-                <Link className="studio-button studio-button--secondary" href="/concierge?entry=home" data-analytics="concierge_entry_click">Help Me Figure Out What I Need</Link>
+    <div className="kw" data-koi-destination="enter">
+      <a className="kw__skip" href="#enter-copy">
+        Skip the animation and read the page
+      </a>
+
+      <KoiWorld />
+
+      <header className="kw__masthead">
+        <Link className="kw__brand" href="#enter" aria-label="Koinophobia Labs, home">
+          <span className="kw__brand-ring" aria-hidden="true" />
+          Koinophobia Labs
+        </Link>
+
+        <nav className="kw__nav" aria-label="Primary">
+          {DESTINATIONS.map((destination) => (
+            <a
+              key={destination.id}
+              href={`#${destination.id}`}
+              aria-label={`${destination.label}: ${destination.hint}`}
+            >
+              {destination.label}
+            </a>
+          ))}
+        </nav>
+
+        <Link className="kw__masthead-cta" href="/intake">
+          Start a project <ArrowUpRight size={15} aria-hidden="true" />
+        </Link>
+      </header>
+
+      <nav className="kw__map" aria-label="Journey">
+        {DESTINATIONS.map((destination) => (
+          <a
+            key={destination.id}
+            href={`#${destination.id}`}
+            aria-label={`${destination.marker} ${destination.label}: ${destination.hint}`}
+          >
+            <span className="kw__map-label">{destination.label}</span>
+            <span className="kw__map-dot" aria-hidden="true" />
+          </a>
+        ))}
+      </nav>
+
+      <main className="kw__main">
+        {/* ---------------------------------------------------- 00 Enter */}
+        <section
+          className="dest dest--enter"
+          id="enter"
+          style={bandStyle(0)}
+          aria-labelledby="enter-title"
+        >
+          <div className="dest__stage">
+            <div className="dest__inner" id="enter-copy">
+              <div>
+                <p className="kw__marker">
+                  <b>00</b> Enter the black water
+                </p>
+                <p className="kw__kicker">AI-native product studio · Chicago</p>
+                <h1 id="enter-title">Build what ordinary thinking would never reach.</h1>
+                <p className="kw__lede">
+                  Koinophobia Labs builds AI-native products, websites, automation,
+                  prototypes, and internal systems — founder-led from first scope to
+                  launch. One builder, working software, no agency theater.
+                </p>
+                <div className="kw__actions">
+                  <Link className="kw__btn kw__btn--primary" href="/intake">
+                    Start a project <ArrowRight size={16} aria-hidden="true" />
+                  </Link>
+                  <a className="kw__btn kw__btn--ghost" href="#products">
+                    Follow the koi <ArrowDown size={16} aria-hidden="true" />
+                  </a>
+                </div>
               </div>
-              <div className="studio-hero__tertiary-row"><Link className="studio-hero__tertiary" href="/intake" data-analytics="project_inquiry_cta_click">Already know what you need? Start a project →</Link><Link className="studio-hero__tertiary" href="/work" data-analytics="client_work_view">View client work →</Link></div>
+
+              <dl className="kw__panel kw__proof-strip">
+                <div>
+                  <dt>Built for</dt>
+                  <dd>
+                    Owners and operators who need a working system, not a deck.
+                  </dd>
+                </div>
+                <div>
+                  <dt>Lowest-risk start</dt>
+                  <dd>
+                    Revenue Leak Audit — {studioConfig.auditPrice} flat,{" "}
+                    {studioConfig.auditTimeline}.
+                  </dd>
+                </div>
+                <div>
+                  <dt>How it works</dt>
+                  <dd>
+                    Scope and price are approved in writing before development begins.
+                  </dd>
+                </div>
+              </dl>
             </div>
-            <div className="studio-hero__system" aria-label="Example business system flow">
-              <span className="studio-system-label">A practical system, end to end</span>
-              <div className="studio-system-flow">
-                <div className="studio-system-node"><span>01</span><p><b>Clear front door</b>Visitors understand the offer and next step.</p></div>
-                <div className="studio-system-node"><span>02</span><p><b>Structured intake</b>The right details arrive in one place.</p></div>
-                <div className="studio-system-node"><span>03</span><p><b>Reliable follow-through</b>Routing, reminders, and handoff stop relying on memory.</p></div>
+            <a className="kw__cue" href="#products">
+              Follow the koi <ArrowDown size={14} aria-hidden="true" />
+            </a>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------- 01 Products */}
+        <section
+          className="dest dest--products"
+          id="products"
+          style={bandStyle(1)}
+          aria-labelledby="products-title"
+        >
+          <div className="dest__stage">
+            <div className="dest__inner">
+              <p className="kw__marker">
+                <b>01</b> The product constellation
+              </p>
+              <h2 id="products-title">
+                Products the studio owns, ships, and answers for.
+              </h2>
+              <p>
+                Each one started as a problem worth solving properly. Status is
+                reported as it actually stands — nothing here is described as
+                further along than it is.
+              </p>
+
+              <div className="kw__constellation">
+                {constellation.map((node, index) => {
+                  const external = /^https?:\/\//.test(node.href);
+                  const className = `kw__node${node.internal ? " kw__node--internal" : ""}`;
+                  const content = (
+                    <>
+                      <span className="kw__node-index">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <h3>{node.title}</h3>
+                      <p>{node.body}</p>
+                      <span className="kw__node-meta">
+                        <span>{node.status}</span>
+                        <ArrowUpRight size={15} aria-hidden="true" />
+                      </span>
+                    </>
+                  );
+                  return external ? (
+                    <a
+                      key={node.title}
+                      className={className}
+                      href={node.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`${node.cta} — for ${node.audience}`}
+                    >
+                      {content}
+                    </a>
+                  ) : (
+                    <Link
+                      key={node.title}
+                      className={className}
+                      href={node.href}
+                      aria-label={`${node.cta} — for ${node.audience}`}
+                    >
+                      {content}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div className="kw__actions">
+                <Link className="kw__btn kw__btn--ghost" href="/products">
+                  Every product, with honest status{" "}
+                  <ArrowUpRight size={15} aria-hidden="true" />
+                </Link>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="studio-trust" aria-label="How the studio works">
-          <div className="studio-container studio-trust__grid">{trustItems.map((item) => <ProofItem key={item}>{item}</ProofItem>)}</div>
-        </section>
+        {/* -------------------------------------------------- 02 Systems */}
+        <section
+          className="dest dest--systems"
+          id="systems"
+          style={bandStyle(2)}
+          aria-labelledby="systems-title"
+        >
+          <div className="dest__stage">
+            <div className="dest__inner">
+              <p className="kw__marker">
+                <b>02</b> Systems and services
+              </p>
+              <h2 id="systems-title">
+                Find where the revenue leaks. Then build the system that stops it.
+              </h2>
+              <p>
+                The visible experience is the surface. Koinophobia Labs builds the
+                intake, routing, automation, and operating logic underneath it.
+              </p>
 
-        <section className="studio-section">
-          <div className="studio-container">
-            <SectionIntro eyebrow="Recognize the friction" title="Where businesses usually start losing customers" body="The visible symptom may be a weak website. The actual problem is often an unclear customer path or a process that breaks after someone shows interest." />
-            <div className="studio-problem-grid">{businessProblems.map((problem, index) => <article className="studio-problem-card" key={problem.title}><span>0{index + 1}</span><h3>{problem.title}</h3><p>{problem.body}</p><footer>{problem.service}</footer></article>)}</div>
+              <div className="kw__systems-grid">
+                <div className="kw__audit">
+                  <p className="kw__kicker">Start here</p>
+                  <h3 style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>
+                    {audit.title}
+                  </h3>
+                  <div className="kw__audit-head">
+                    <span className="kw__price">{audit.price}</span>
+                    <span className="kw__price-note">
+                      {audit.priceLabel} · {audit.timeline}
+                    </span>
+                  </div>
+                  <p>{audit.forWhom}</p>
+                  <ul className="kw__includes">
+                    {audit.includes.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                  <p style={{ marginTop: "1.1rem", fontSize: "0.9rem" }}>
+                    <strong style={{ color: "#dbe8ef" }}>You receive:</strong>{" "}
+                    {audit.deliverable}
+                  </p>
+                  <div className="kw__actions" style={{ marginTop: "1.3rem" }}>
+                    <Link className="kw__btn kw__btn--primary" href={audit.href}>
+                      {audit.cta} <ArrowRight size={16} aria-hidden="true" />
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="kw__service-list">
+                  {otherServices.map((offer, index) => (
+                    <Link className="kw__service" href={offer.href} key={offer.slug}>
+                      <span>{String(index + 1).padStart(2, "0")}</span>
+                      <strong>{offer.title}</strong>
+                      <b>{offer.price}</b>
+                      <small>{offer.forWhom}</small>
+                    </Link>
+                  ))}
+                  <Link className="kw__service" href="/services">
+                    <span>—</span>
+                    <strong>All services, scope and timelines</strong>
+                    <b>
+                      <ArrowUpRight size={15} aria-hidden="true" />
+                    </b>
+                    <small>
+                      Pricing, what each engagement includes, and what is decided
+                      before development starts.
+                    </small>
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="studio-section studio-section--panel" data-analytics-view="client_work_view">
-          <div className="studio-container">
-            <SectionIntro eyebrow="Client work and business systems" title="Work built around real business problems" body="Every project below carries a visible status so a concept is never mistaken for a delivered client engagement." />
-            <p className="studio-disclosure">Koinophobia Labs is building its external client portfolio in public. The current published business work is concept work; internal products appear separately below. No concept is presented as completed client work.</p>
-            <div className="studio-work-grid">{workProjects.slice(0, 2).map((project) => <WorkCard project={project} key={project.slug} />)}</div>
-            <div style={{ marginTop: 30 }}><Link className="studio-text-link" href="/work">View all business work <ArrowRight size={16} aria-hidden="true" /></Link></div>
+        {/* ----------------------------------------------------- 03 Work */}
+        <section
+          className="dest dest--work"
+          id="work"
+          style={bandStyle(3)}
+          aria-labelledby="work-title"
+        >
+          <div className="dest__stage">
+            <div className="dest__inner">
+              <p className="kw__marker">
+                <b>03</b> Work and proof
+              </p>
+              <h2 id="work-title">Proof leaves a wake.</h2>
+              <p>
+                Published concept builds, labelled honestly. These are studio-built
+                demonstrations of positioning, structure, and intake — not client
+                case studies, and they carry no invented results.
+              </p>
+
+              <div className="kw__work-grid">
+                {workProjects.map((project) => (
+                  <Link
+                    className="kw__proof"
+                    href={project.previewUrl ?? `/work/${project.slug}`}
+                    key={project.slug}
+                  >
+                    <span className="kw__tag">{project.statusLabel}</span>
+                    <h3>{project.title}</h3>
+                    <p>{project.summary}</p>
+                    <span className="kw__proof-open">
+                      {project.businessType}
+                      <ArrowUpRight size={14} aria-hidden="true" />
+                    </span>
+                  </Link>
+                ))}
+              </div>
+
+              <div className="kw__actions">
+                <Link className="kw__btn kw__btn--ghost" href="/work">
+                  Open the work archive <ArrowUpRight size={15} aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="studio-section" id="services" data-analytics-view="pricing_section_view">
-          <div className="studio-container">
-            <SectionIntro eyebrow="Clear offers" title="Useful work, with the likely range visible" body="No implementation begins until the scope, price, timeline, responsibilities, and revision process are approved." />
-            <div className="studio-pricing-grid">{serviceOffers.slice(0, 4).map((offer) => <PricingCard offer={offer} key={offer.slug} />)}</div>
-            <div className="studio-guarantee"><strong>You will know the agreed scope, price, timeline, and revision process before development starts.</strong><p>AI workflows and front-office systems are custom-scoped because tool access, routing rules, integrations, and failure paths vary by business.</p></div>
-            <div style={{ marginTop: 30 }}><Link className="studio-text-link" href="/services">Compare all services <ArrowRight size={16} aria-hidden="true" /></Link></div>
+        {/* -------------------------------------------------- 04 Founder */}
+        <section
+          className="dest dest--founder"
+          id="founder"
+          style={bandStyle(4)}
+          aria-labelledby="founder-title"
+        >
+          <div className="dest__stage">
+            <div className="dest__inner">
+              <p className="kw__marker">
+                <b>04</b> The founder
+              </p>
+              <div className="kw__panel kw__founder">
+                <div className="kw__portrait">
+                  <Image
+                    src="/blake-portrait.jpg"
+                    alt="Blake Taylor, founder of Koinophobia Labs"
+                    fill
+                    sizes="(max-width: 860px) 170px, 260px"
+                  />
+                </div>
+                <div>
+                  <p className="kw__kicker">Blake Taylor · founder</p>
+                  <h2 id="founder-title">You work with the builder.</h2>
+                  <p>
+                    One studio, one builder, no agency maze. The person making the
+                    promise is the person responsible for the result — from the first
+                    diagnosis through to the deployed system and its handoff.
+                  </p>
+                  <ul className="kw__founder-facts">
+                    {founderFacts.map((fact) => (
+                      <li key={fact}>{fact}</li>
+                    ))}
+                  </ul>
+                  <Link className="kw__text-link" href="/about">
+                    Meet the founder <ArrowUpRight size={15} aria-hidden="true" />
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="studio-section studio-section--panel">
-          <div className="studio-container">
-            <SectionIntro eyebrow="The delivery process" title="Know what happens before the first build day" body="A focused six-step process keeps commercial decisions explicit and the work legible." />
-            <div className="studio-process-grid">{processSteps.map((step) => <ProcessStep {...step} key={step.number} />)}</div>
-            <div style={{ marginTop: 30 }}><Link className="studio-text-link" href="/process">Read about revisions, ownership, and support <ArrowRight size={16} aria-hidden="true" /></Link></div>
+        {/* ---------------------------------------------------- 05 Start */}
+        <section
+          className="dest dest--start"
+          id="start"
+          style={bandStyle(5)}
+          aria-labelledby="start-title"
+        >
+          <div className="dest__stage">
+            <div className="dest__inner">
+              <p className="kw__marker">
+                <b>05</b> Start a project
+              </p>
+              <h2 id="start-title">Bring the problem. We will build the system.</h2>
+              <p>
+                Start with a focused audit, describe the workflow, or send the project
+                directly. Every path ends with a written scope before any development
+                begins.
+              </p>
+
+              <div className="kw__paths">
+                <Link className="kw__path" href="/audit">
+                  <strong>Revenue Leak Audit</strong>
+                  <small>
+                    {studioConfig.auditPrice} flat · {studioConfig.auditTimeline} ·
+                    prioritised PDF and walkthrough
+                  </small>
+                </Link>
+                <Link className="kw__path" href="/intake">
+                  <strong>Start a project</strong>
+                  <small>
+                    Websites, landing pages, AI workflows, prototypes, and custom
+                    software.
+                  </small>
+                </Link>
+                <Link className="kw__path" href="/concierge?entry=home">
+                  <strong>Not sure what you need</strong>
+                  <small>
+                    Describe the friction in plain language and get a preliminary,
+                    rules-grounded recommendation.
+                  </small>
+                </Link>
+                <a className="kw__path" href={LINKS.email}>
+                  <strong>Email the studio</strong>
+                  <small>koinophobia999@gmail.com — Chicago, working remotely.</small>
+                </a>
+              </div>
+
+              <div className="kw__actions" style={{ justifyContent: "center" }}>
+                <Link className="kw__btn kw__btn--primary" href="/intake">
+                  Start a project <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+                <a className="kw__btn kw__btn--ghost" href="#enter">
+                  Return to the beginning
+                </a>
+              </div>
+
+              <footer className="kw__footer">
+                <span>Koinophobia Labs · Chicago</span>
+                <nav aria-label="Footer">
+                  <Link href="/services">Services</Link>
+                  <Link href="/products">Products</Link>
+                  <Link href="/work">Work</Link>
+                  <Link href="/about">About</Link>
+                  <Link href="/process">Process</Link>
+                </nav>
+                <span>Fear ordinary.</span>
+              </footer>
+            </div>
           </div>
         </section>
-
-        <section className="studio-section">
-          <div className="studio-container">
-            <SectionIntro eyebrow="Products built inside the lab" title="Technical depth, separated from client proof" body="These are Koinophobia Labs products. They demonstrate product strategy, interface design, AI integration, mobile thinking, safety work, and production delivery—not external client outcomes." />
-            <div className="studio-product-grid">{products.map((product) => <ProductCard product={product} key={product.title} />)}</div>
-          </div>
-        </section>
-
-        <section className="studio-section studio-section--panel">
-          <div className="studio-container studio-founder-grid">
-            <div className="studio-founder-photo"><Image src="/blake-portrait.jpg" alt="Blake Taylor, founder of Koinophobia Labs" fill sizes="(max-width: 760px) 100vw, 420px" /></div>
-            <div className="studio-founder-copy"><p className="studio-eyebrow">Founder-led by design</p><h2>The person scoping the work is the person building it.</h2><p>Koinophobia Labs is an intentionally focused solo studio. Clients work directly with Blake Taylor across business diagnosis, product thinking, design, AI workflows, implementation, testing, and launch.</p><p>The goal is a useful system with clear ownership—not layers of agency process or inflated deliverables.</p><div className="studio-founder-facts"><div><strong>Direct communication</strong><span>No account-manager handoff</span></div><div><strong>Documented decisions</strong><span>Scope and responsibilities stay visible</span></div><div><strong>Operator background</strong><span>Customer operations and trust-heavy environments</span></div><div><strong>Builder proof</strong><span>Working internal products and tested releases</span></div></div><Link className="studio-text-link" href="/about">Meet Blake and the studio <ArrowRight size={16} aria-hidden="true" /></Link></div>
-          </div>
-        </section>
-
-        <section className="studio-section"><div className="studio-container"><SectionIntro eyebrow="Straight answers" title="Before you commit" /><div className="studio-faq-list">{faqs.slice(0, 7).map((faq) => <FAQItem {...faq} key={faq.question} />)}</div><div style={{ marginTop: 30 }}><Link className="studio-text-link" href="/services#faq">Read every FAQ <ArrowRight size={16} aria-hidden="true" /></Link></div></div></section>
-        <CTABand />
       </main>
-      <StudioFooter />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+
+      <div className="kw__depth" aria-hidden="true">
+        <span />
+      </div>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      />
     </div>
   );
 }

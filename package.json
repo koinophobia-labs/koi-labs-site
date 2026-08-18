@@ -18,7 +18,6 @@
     "test:concierge:e2e": "node scripts/qa-concierge.mjs",
     "verify:founder-packets": "node --import tsx scripts/capture-founder-packet-evidence.ts",
     "test:koi-companion:e2e": "node scripts/qa-koi-companion.mjs",
-    "screenshots:koi": "node scripts/capture-koi-companion.mjs",
     "test:dev-routing": "tsx --test tests/dev-home-routing.test.ts tests/dev-universe.test.ts tests/dev-log.test.ts",
     "test:dev-log": "tsx --test tests/dev-log.test.ts",
     "test:now": "tsx --test tests/now.test.ts",
@@ -27,7 +26,9 @@
     "test:migrations": "node --test tests/database-migrations.test.mjs",
     "vercel-build": "next build",
     "test:dev-universe": "tsx --test tests/dev-universe.test.ts",
-    "test:dev-koi": "tsx --test tests/dev-koi.test.ts"
+    "test:dev-koi": "tsx --test tests/dev-koi.test.ts",
+    "koi:verify": "node scripts/verify-koi-world.mjs",
+    "koi:contrast": "node scripts/audit-koi-contrast.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

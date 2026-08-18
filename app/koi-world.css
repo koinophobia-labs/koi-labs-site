@@ -1,0 +1,1391 @@
+/* ==========================================================================
+   Koinophobia Labs — the koi world
+   The visitor does not scroll through a website. They follow the koi.
+   All interface text is real HTML. This file only builds the space it lives in.
+   ========================================================================== */
+
+/* Runtime composition variables. Written to the document root each frame by
+   KoiWorld so that the water, the koi layers and the reading surfaces all read
+   from one source of truth. Declared here so the page is correct before, and
+   without, JavaScript. */
+:root {
+  --koi-x: 0vw;
+  --koi-y: 0vh;
+  --koi-scale: 1;
+  --koi-rotate: 0deg;
+  --koi-blur: 2px;
+  --koi-opacity: 0;
+  --koi-depth: 0.2;
+  --koi-front: 0;
+  --koi-surge: 0;
+  --koi-hold: 1;
+  --kw-journey: 0;
+}
+
+.kw {
+  --kw-void: #04060a;
+  --kw-ink: #eef4f7;
+  --kw-dim: #9db0bd;
+  --kw-faint: #8b9daa;
+  --kw-line: rgba(173, 214, 235, 0.16);
+  --kw-line-soft: rgba(173, 214, 235, 0.09);
+  --kw-glass: rgba(7, 12, 18, 0.52);
+  --kw-glass-strong: rgba(6, 10, 16, 0.74);
+  --kw-accent: #7fd8ea;
+  --kw-accent-deep: #35b6d6;
+  --kw-shell: min(1220px, 92vw);
+  --kw-gutter: clamp(1.25rem, 4vw, 3rem);
+
+  position: relative;
+  isolation: isolate;
+  background: var(--kw-void);
+  color: var(--kw-ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  overflow-x: clip;
+}
+
+body:has(.kw) {
+  background: #04060a;
+}
+
+/* The sitewide brand intro and floating companion belong to the rest of the
+   site. Inside the koi world the koi is the companion. */
+body:has(.kw) .brand-intro,
+body:has(.kw) > .koi-companion {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   The world: water, koi, veil, grain
+   -------------------------------------------------------------------------- */
+
+.koi-world {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  contain: strict;
+}
+
+.koi-world__water {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* The shader renders below native resolution and is scaled up. Water has no
+     hard edges, so nobody can tell, and it halves the fragment cost. */
+  image-rendering: auto;
+}
+
+/* A base gradient so the frame is never empty before WebGL is ready, and so
+   browsers without WebGL2 still get a body of water rather than flat black. */
+.koi-world::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 82% at 50% -10%, rgba(37, 66, 84, 0.5), transparent 62%),
+    radial-gradient(80% 60% at 12% 108%, rgba(18, 38, 52, 0.42), transparent 70%),
+    linear-gradient(180deg, #060a10 0%, #04060a 55%, #03050a 100%);
+  z-index: -1;
+}
+
+.koi-world__stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.koi-world__clip {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transform:
+    translate(-50%, -50%)
+    translate(var(--koi-x), var(--koi-y))
+    rotate(var(--koi-rotate))
+    scale(var(--koi-scale));
+  transform-origin: 50% 50%;
+  filter: blur(var(--koi-blur)) saturate(0.92) contrast(1.06);
+  /* Screen blending is what fuses the filmed water with the shader water: the
+     clip's black background contributes nothing, so there is no rectangle, no
+     seam, and no sense of a video sitting behind a page. */
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  /* When the koi sits back in the water its clip is smaller than the viewport.
+     Feathering the clip's own edge means the filmed water dissolves into the
+     shader water instead of ending on a rectangle. */
+  -webkit-mask-image: radial-gradient(
+    ellipse 78% 80% at 50% 50%,
+    #000 66%,
+    rgba(0, 0, 0, 0.55) 86%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 78% 80% at 50% 50%,
+    #000 66%,
+    rgba(0, 0, 0, 0.55) 86%,
+    transparent 100%
+  );
+}
+
+.koi-world__clip[data-koi-clip] {
+  opacity: calc(var(--koi-opacity) * var(--kw-clip-on, 1));
+}
+
+/* The koi has mass. When it comes forward it pushes light around and dims what
+   is behind it — this is what makes it read as passing in front of the page
+   rather than glowing on top of it. */
+.koi-world__veil {
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(
+    46% 42% at calc(50% + var(--koi-x)) calc(50% + var(--koi-y)),
+    rgba(0, 0, 0, 0.86) 0%,
+    rgba(0, 0, 0, 0.42) 42%,
+    transparent 74%
+  );
+  opacity: calc(var(--koi-front) * 0.9);
+  mix-blend-mode: multiply;
+  transition: opacity 120ms linear;
+}
+
+.koi-world__grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  background-image:
+    radial-gradient(circle at 50% 50%, transparent 58%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* Designed still experience — not a broken fallback. */
+.koi-world__stills {
+  position: absolute;
+  inset: 0;
+}
+
+.koi-world__still {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transform: scale(1.04);
+  transition: opacity 900ms ease, transform 1400ms ease;
+  mix-blend-mode: screen;
+}
+
+.koi-world__still[data-on="true"] {
+  opacity: 0.9;
+  transform: scale(1);
+}
+
+/* --------------------------------------------------------------------------
+   Chrome: masthead, section map, progress
+   -------------------------------------------------------------------------- */
+
+.kw__masthead {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: clamp(0.75rem, 3vw, 2rem);
+  padding: clamp(0.85rem, 2vw, 1.4rem) var(--kw-gutter);
+  background: linear-gradient(180deg, rgba(4, 6, 10, 0.88), rgba(4, 6, 10, 0));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.kw__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--kw-ink);
+  text-decoration: none;
+  font-family: var(--font-sora), sans-serif;
+  font-weight: 700;
+  font-size: clamp(0.9rem, 1.5vw, 1.02rem);
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+
+.kw__brand-ring {
+  width: 1.45rem;
+  height: 1.45rem;
+  flex: none;
+  border-radius: 999px;
+  border: 1px solid rgba(127, 216, 234, 0.5);
+  background:
+    radial-gradient(circle at 34% 30%, rgba(127, 216, 234, 0.55), transparent 62%);
+  box-shadow: 0 0 18px rgba(53, 182, 214, 0.25);
+}
+
+.kw__nav {
+  display: flex;
+  gap: clamp(0.6rem, 1.6vw, 1.35rem);
+  margin-left: auto;
+  font-size: 0.795rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: var(--font-mono), monospace;
+}
+
+.kw__nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  color: var(--kw-faint);
+  text-decoration: none;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid transparent;
+  transition: color 240ms ease, border-color 240ms ease;
+}
+
+.kw__nav a:hover,
+.kw__nav a:focus-visible {
+  color: var(--kw-ink);
+}
+
+.kw[data-koi-destination="enter"] .kw__nav a[href="#enter"],
+.kw[data-koi-destination="products"] .kw__nav a[href="#products"],
+.kw[data-koi-destination="systems"] .kw__nav a[href="#systems"],
+.kw[data-koi-destination="work"] .kw__nav a[href="#work"],
+.kw[data-koi-destination="founder"] .kw__nav a[href="#founder"],
+.kw[data-koi-destination="start"] .kw__nav a[href="#start"] {
+  color: var(--kw-accent);
+  border-bottom-color: rgba(127, 216, 234, 0.6);
+}
+
+.kw__masthead-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(127, 216, 234, 0.36);
+  background: rgba(10, 26, 34, 0.6);
+  color: var(--kw-ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 220ms ease, background 220ms ease, transform 220ms ease;
+}
+
+.kw__masthead-cta:hover,
+.kw__masthead-cta:focus-visible {
+  border-color: rgba(127, 216, 234, 0.75);
+  background: rgba(16, 44, 56, 0.78);
+  transform: translateY(-1px);
+}
+
+/* The section map: a depth gauge, not a navbar bolted on top. */
+.kw__map {
+  position: fixed;
+  right: clamp(0.85rem, 2vw, 1.9rem);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  align-items: flex-end;
+}
+
+.kw__map a {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--kw-faint);
+  text-decoration: none;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.kw__map-label {
+  opacity: 0;
+  transform: translateX(6px);
+  transition: opacity 260ms ease, transform 260ms ease;
+}
+
+.kw__map a:hover .kw__map-label,
+.kw__map a:focus-visible .kw__map-label,
+.kw__map a[aria-current="true"] .kw__map-label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.kw__map-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(157, 176, 189, 0.5);
+  transition: background 260ms ease, border-color 260ms ease, box-shadow 260ms ease;
+}
+
+.kw__map a[aria-current="true"] {
+  color: var(--kw-accent);
+}
+
+.kw__map a[aria-current="true"] .kw__map-dot {
+  background: var(--kw-accent);
+  border-color: var(--kw-accent);
+  box-shadow: 0 0 12px rgba(127, 216, 234, 0.6);
+}
+
+.kw__depth {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  z-index: 40;
+  width: 100%;
+  height: 2px;
+  background: rgba(127, 216, 234, 0.1);
+}
+
+.kw__depth span {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: 0 50%;
+  transform: scaleX(var(--kw-journey, 0));
+  background: linear-gradient(90deg, rgba(53, 182, 214, 0.35), var(--kw-accent));
+  transition: transform 90ms linear;
+}
+
+.kw__skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 60;
+  padding: 0.7rem 1.1rem;
+  background: #08121a;
+  color: var(--kw-ink);
+  border: 1px solid var(--kw-line);
+  border-radius: 8px;
+}
+
+.kw__skip:focus {
+  left: 1rem;
+  top: 1rem;
+}
+
+/* --------------------------------------------------------------------------
+   Destinations
+   -------------------------------------------------------------------------- */
+
+.kw__main {
+  position: relative;
+  z-index: 10;
+}
+
+.dest {
+  position: relative;
+  height: var(--band-mobile, 260svh);
+  scroll-margin-top: 0;
+}
+
+@media (min-width: 861px) {
+  .dest {
+    height: var(--band-desktop, 300svh);
+  }
+}
+
+.dest__stage {
+  position: sticky;
+  top: 0;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  padding: clamp(5.5rem, 12vh, 8rem) var(--kw-gutter) clamp(4rem, 10vh, 6rem);
+}
+
+.dest__inner {
+  width: var(--kw-shell);
+  margin: 0 auto;
+  /* Content is fully visible by default. The world only dims it once the
+     cinematic layer has confirmed it is running, so a JS or WebGL failure can
+     never hide the page. */
+  transition:
+    opacity 520ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 620ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    filter 520ms ease;
+}
+
+.kw[data-koi-ready="true"] .dest__inner {
+  opacity: 0.1;
+  transform: translateY(26px) scale(0.985);
+  filter: blur(3px);
+  pointer-events: none;
+}
+
+.kw[data-koi-ready="true"][data-koi-destination="enter"] #enter .dest__inner,
+.kw[data-koi-ready="true"][data-koi-destination="products"] #products .dest__inner,
+.kw[data-koi-ready="true"][data-koi-destination="systems"] #systems .dest__inner,
+.kw[data-koi-ready="true"][data-koi-destination="work"] #work .dest__inner,
+.kw[data-koi-ready="true"][data-koi-destination="founder"] #founder .dest__inner,
+.kw[data-koi-ready="true"][data-koi-destination="start"] #start .dest__inner {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  pointer-events: auto;
+}
+
+/* The reading position recedes as the koi begins to move on. */
+.kw[data-koi-ready="true"][data-koi-phase="depart"][data-koi-destination="enter"] #enter .dest__inner,
+.kw[data-koi-ready="true"][data-koi-phase="depart"][data-koi-destination="products"] #products .dest__inner,
+.kw[data-koi-ready="true"][data-koi-phase="depart"][data-koi-destination="systems"] #systems .dest__inner,
+.kw[data-koi-ready="true"][data-koi-phase="depart"][data-koi-destination="work"] #work .dest__inner,
+.kw[data-koi-ready="true"][data-koi-phase="depart"][data-koi-destination="founder"] #founder .dest__inner,
+.kw[data-koi-ready="true"][data-koi-phase="depart"][data-koi-destination="start"] #start .dest__inner {
+  opacity: calc(1 - var(--koi-front) * 0.55);
+  transform: translateY(calc(var(--koi-surge) * -10px)) scale(calc(1 - var(--koi-surge) * 0.012));
+}
+
+/* --------------------------------------------------------------------------
+   Type and shared surfaces
+   -------------------------------------------------------------------------- */
+
+.kw__marker {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--kw-faint);
+  margin: 0 0 1.35rem;
+}
+
+.kw__marker b {
+  color: var(--kw-accent);
+  font-weight: 500;
+}
+
+.kw__kicker {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--kw-accent);
+  margin: 0 0 1rem;
+}
+
+.kw h1 {
+  font-family: var(--font-sora), sans-serif;
+  font-size: clamp(2.3rem, 6.2vw, 4.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  margin: 0 0 1.35rem;
+  max-width: 17ch;
+  text-wrap: balance;
+}
+
+.kw h2 {
+  font-family: var(--font-sora), sans-serif;
+  font-size: clamp(1.75rem, 3.9vw, 2.9rem);
+  line-height: 1.08;
+  letter-spacing: -0.028em;
+  margin: 0 0 1.1rem;
+  max-width: 20ch;
+  text-wrap: balance;
+}
+
+.kw h3 {
+  font-family: var(--font-sora), sans-serif;
+  font-size: 1.06rem;
+  letter-spacing: -0.012em;
+  margin: 0;
+}
+
+.kw p {
+  margin: 0 0 1rem;
+  color: var(--kw-dim);
+  font-size: clamp(0.98rem, 1.25vw, 1.09rem);
+  line-height: 1.62;
+  max-width: 56ch;
+}
+
+.kw__lede {
+  color: #cddbe4;
+  font-size: clamp(1.04rem, 1.5vw, 1.22rem);
+}
+
+.kw__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.9rem;
+}
+
+.kw__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.4rem;
+  border-radius: 999px;
+  font-size: 0.94rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: transform 200ms ease, box-shadow 240ms ease, background 240ms ease,
+    border-color 240ms ease;
+}
+
+.kw__btn--primary {
+  background: linear-gradient(135deg, #9fe6f4, #4cc0dd);
+  color: #041018;
+  box-shadow: 0 12px 40px -18px rgba(76, 192, 221, 0.9);
+}
+
+.kw__btn--primary:hover,
+.kw__btn--primary:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 48px -18px rgba(76, 192, 221, 1);
+}
+
+.kw__btn--ghost {
+  border-color: var(--kw-line);
+  background: var(--kw-glass);
+  color: var(--kw-ink);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.kw__btn--ghost:hover,
+.kw__btn--ghost:focus-visible {
+  border-color: rgba(127, 216, 234, 0.55);
+  background: rgba(12, 28, 38, 0.72);
+  transform: translateY(-2px);
+}
+
+/* Glass surfaces: the koi is genuinely visible behind them, refracted. */
+.kw__panel {
+  border: 1px solid var(--kw-line-soft);
+  border-radius: 18px;
+  background: var(--kw-glass);
+  backdrop-filter: blur(20px) saturate(1.12);
+  -webkit-backdrop-filter: blur(20px) saturate(1.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 30px 70px -50px rgba(0, 0, 0, 0.95);
+}
+
+.kw a:focus-visible,
+.kw button:focus-visible {
+  outline: 2px solid var(--kw-accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   00 Enter
+   -------------------------------------------------------------------------- */
+
+.dest--enter .dest__inner {
+  display: grid;
+  gap: clamp(2rem, 5vw, 4rem);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: end;
+}
+
+.kw__proof-strip {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.35rem 1.5rem;
+  margin: 0;
+}
+
+.kw__proof-strip div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.kw__proof-strip dt {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kw-faint);
+}
+
+.kw__proof-strip dd {
+  margin: 0;
+  font-size: 0.94rem;
+  color: #cbdae3;
+  line-height: 1.45;
+}
+
+.kw__cue {
+  position: absolute;
+  left: var(--kw-gutter);
+  bottom: clamp(1.5rem, 4vh, 2.6rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--kw-faint);
+  text-decoration: none;
+  opacity: var(--koi-hold);
+  transition: color 240ms ease;
+  min-height: 44px;
+  padding-right: 0.5rem;
+}
+
+.kw__cue:hover,
+.kw__cue:focus-visible {
+  color: var(--kw-accent);
+}
+
+.kw__cue svg {
+  animation: kw-drift 3.4s ease-in-out infinite;
+}
+
+@keyframes kw-drift {
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50% { transform: translateY(5px); opacity: 1; }
+}
+
+/* --------------------------------------------------------------------------
+   01 Products — the constellation
+   -------------------------------------------------------------------------- */
+
+.kw__constellation {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: clamp(0.9rem, 1.6vw, 1.35rem);
+  margin-top: 2.2rem;
+}
+
+.kw__node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 1.4rem 1.35rem 1.5rem;
+  border-radius: 18px;
+  border: 1px solid var(--kw-line-soft);
+  background: var(--kw-glass);
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  color: var(--kw-ink);
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    border-color 320ms ease, background 320ms ease;
+}
+
+/* Each node sits at its own depth, so the constellation has real volume
+   instead of being a row of cards. */
+.kw__node:nth-child(1) { transform: translateY(calc(var(--koi-hold) * -14px)); }
+.kw__node:nth-child(2) { transform: translateY(calc(var(--koi-hold) * 10px)); }
+.kw__node:nth-child(3) { transform: translateY(calc(var(--koi-hold) * -6px)); }
+.kw__node:nth-child(4) { transform: translateY(calc(var(--koi-hold) * 16px)); }
+
+.kw__node::after {
+  content: "";
+  position: absolute;
+  inset: -40% -40% auto auto;
+  width: 12rem;
+  height: 12rem;
+  background: radial-gradient(circle, rgba(127, 216, 234, 0.16), transparent 68%);
+  opacity: 0;
+  transition: opacity 380ms ease;
+}
+
+.kw__node:hover,
+.kw__node:focus-visible {
+  border-color: rgba(127, 216, 234, 0.42);
+  background: rgba(11, 26, 35, 0.7);
+}
+
+.kw__node:hover::after,
+.kw__node:focus-visible::after {
+  opacity: 1;
+}
+
+.kw__node-index {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  color: var(--kw-accent);
+}
+
+.kw__node p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--kw-dim);
+}
+
+.kw__node-meta {
+  margin-top: auto;
+  padding-top: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kw-faint);
+  border-top: 1px solid var(--kw-line-soft);
+}
+
+.kw__node-meta span:first-child {
+  font-size: 0.68rem;
+}
+
+.kw__node--internal {
+  border-style: dashed;
+}
+
+.kw__node--internal .kw__node-index {
+  color: var(--kw-faint);
+}
+
+/* --------------------------------------------------------------------------
+   02 Systems — the audit gets its own commercial moment
+   -------------------------------------------------------------------------- */
+
+.kw__systems-grid {
+  display: grid;
+  gap: clamp(1rem, 2.2vw, 1.8rem);
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  align-items: start;
+  margin-top: 2rem;
+}
+
+.kw__audit {
+  padding: clamp(1.4rem, 2.4vw, 2rem);
+  border-radius: 20px;
+  border: 1px solid rgba(127, 216, 234, 0.26);
+  background:
+    linear-gradient(160deg, rgba(16, 42, 54, 0.72), rgba(6, 11, 17, 0.66));
+  backdrop-filter: blur(22px) saturate(1.15);
+  -webkit-backdrop-filter: blur(22px) saturate(1.15);
+  position: relative;
+  overflow: hidden;
+}
+
+/* The leak: fine threads of light escaping a structure, reconnecting on hover.
+   A metaphor, not a diagram. */
+.kw__audit::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      104deg,
+      transparent 0 22px,
+      rgba(127, 216, 234, 0.09) 22px 23px,
+      transparent 23px 46px
+    );
+  mask-image: radial-gradient(120% 90% at 88% 8%, #000 0%, transparent 62%);
+  -webkit-mask-image: radial-gradient(120% 90% at 88% 8%, #000 0%, transparent 62%);
+  opacity: 0.85;
+  transition: opacity 500ms ease;
+}
+
+.kw__audit:hover::before {
+  opacity: 0.35;
+}
+
+.kw__audit > * {
+  position: relative;
+}
+
+.kw__audit-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.kw__price {
+  font-family: var(--font-sora), sans-serif;
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  letter-spacing: -0.03em;
+  color: var(--kw-ink);
+}
+
+.kw__price-note {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kw-faint);
+}
+
+.kw__includes {
+  list-style: none;
+  margin: 1.1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.kw__includes li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #c6d6df;
+}
+
+.kw__includes li::before {
+  content: "";
+  flex: none;
+  width: 5px;
+  height: 5px;
+  margin-top: 0.55rem;
+  border-radius: 999px;
+  background: var(--kw-accent);
+  box-shadow: 0 0 8px rgba(127, 216, 234, 0.8);
+}
+
+.kw__service-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.kw__service {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 1rem 1.15rem;
+  border-radius: 14px;
+  border: 1px solid var(--kw-line-soft);
+  background: rgba(6, 11, 17, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--kw-ink);
+  text-decoration: none;
+  transition: border-color 260ms ease, background 260ms ease, transform 260ms ease;
+}
+
+.kw__service:hover,
+.kw__service:focus-visible {
+  border-color: rgba(127, 216, 234, 0.4);
+  background: rgba(11, 24, 32, 0.72);
+  transform: translateX(4px);
+}
+
+.kw__service span:first-child {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.66rem;
+  color: var(--kw-accent);
+  letter-spacing: 0.14em;
+}
+
+.kw__service strong {
+  font-weight: 600;
+  font-size: 0.98rem;
+}
+
+.kw__service small {
+  grid-column: 2;
+  color: var(--kw-faint);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.kw__service b {
+  grid-row: 1 / span 2;
+  grid-column: 3;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #cbdae3;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   03 Work
+   -------------------------------------------------------------------------- */
+
+.kw__work-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: clamp(0.9rem, 1.6vw, 1.3rem);
+  margin-top: 2rem;
+}
+
+.kw__proof {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.4rem 1.35rem;
+  border-radius: 18px;
+  border: 1px solid var(--kw-line-soft);
+  background: var(--kw-glass);
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  color: var(--kw-ink);
+  text-decoration: none;
+  transition: transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    border-color 300ms ease, background 300ms ease;
+}
+
+.kw__proof:nth-child(2) { transform: translateY(calc(var(--koi-hold) * 14px)); }
+.kw__proof:nth-child(3) { transform: translateY(calc(var(--koi-hold) * -8px)); }
+
+.kw__proof:hover,
+.kw__proof:focus-visible {
+  border-color: rgba(127, 216, 234, 0.4);
+  background: rgba(11, 24, 32, 0.7);
+}
+
+.kw__tag {
+  align-self: flex-start;
+  padding: 0.24rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--kw-line);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kw-dim);
+}
+
+.kw__proof p {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.kw__proof-open {
+  margin-top: auto;
+  padding-top: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--kw-accent);
+  font-family: var(--font-mono), monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------------------
+   04 Founder
+   -------------------------------------------------------------------------- */
+
+.kw__founder {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: clamp(1.4rem, 3.4vw, 3rem);
+  align-items: center;
+  padding: clamp(1.6rem, 3vw, 2.4rem);
+  border-radius: 24px;
+}
+
+.kw__portrait {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--kw-line);
+  filter: grayscale(0.35) contrast(1.06);
+}
+
+.kw__portrait img {
+  object-fit: cover;
+}
+
+.kw__founder-facts {
+  list-style: none;
+  margin: 1.4rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.kw__founder-facts li {
+  display: flex;
+  gap: 0.65rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #c6d6df;
+}
+
+.kw__founder-facts li::before {
+  content: "";
+  flex: none;
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(180deg, var(--kw-accent), transparent);
+}
+
+.kw__text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1.4rem;
+  color: var(--kw-accent);
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(127, 216, 234, 0.28);
+  padding-bottom: 2px;
+  transition: border-color 220ms ease;
+}
+
+.kw__text-link:hover,
+.kw__text-link:focus-visible {
+  border-bottom-color: var(--kw-accent);
+}
+
+/* --------------------------------------------------------------------------
+   05 Start
+   -------------------------------------------------------------------------- */
+
+.dest--start .dest__inner {
+  text-align: center;
+  display: grid;
+  justify-items: center;
+}
+
+.dest--start h2,
+.dest--start p {
+  max-width: 40ch;
+  margin-inline: auto;
+}
+
+.kw__paths {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.85rem;
+  margin: 1.8rem 0 0;
+  max-width: 60rem;
+  width: 100%;
+  text-align: left;
+}
+
+.kw__path {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1.2rem 1.25rem;
+  border-radius: 16px;
+  border: 1px solid var(--kw-line-soft);
+  background: var(--kw-glass);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: var(--kw-ink);
+  text-decoration: none;
+  transition: border-color 260ms ease, background 260ms ease, transform 260ms ease;
+}
+
+.kw__path:hover,
+.kw__path:focus-visible {
+  border-color: rgba(127, 216, 234, 0.45);
+  background: rgba(11, 26, 35, 0.72);
+  transform: translateY(-3px);
+}
+
+.kw__path small {
+  color: var(--kw-faint);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.kw__footer {
+  margin-top: clamp(2.4rem, 6vh, 4rem);
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--kw-line-soft);
+  font-size: 0.82rem;
+  color: var(--kw-faint);
+  text-align: left;
+}
+
+.kw__footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.kw__footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.15rem;
+  color: var(--kw-dim);
+  text-decoration: none;
+}
+
+.kw__footer a:hover,
+.kw__footer a:focus-visible {
+  color: var(--kw-accent);
+}
+
+/* --------------------------------------------------------------------------
+   Mobile — a different composition, not a squeezed desktop
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 860px) {
+  .kw {
+    --kw-shell: 100%;
+  }
+
+  .kw__nav {
+    display: none;
+  }
+
+  /* A fixed masthead over a scrolling page has to occlude cleanly, otherwise
+     copy passing underneath it becomes unreadable rather than hidden. */
+  .kw__masthead {
+    background: linear-gradient(
+      180deg,
+      rgba(4, 6, 10, 0.96) 0%,
+      rgba(4, 6, 10, 0.92) 62%,
+      rgba(4, 6, 10, 0) 100%
+    );
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding-bottom: 1.5rem;
+  }
+
+  .kw__map {
+    top: auto;
+    bottom: 0.85rem;
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    flex-direction: row;
+    gap: 0.7rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid var(--kw-line-soft);
+    background: rgba(4, 8, 12, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .kw__map-label {
+    display: none;
+  }
+
+  .kw__map a {
+    min-width: 22px;
+    min-height: 22px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* The reading position sits low so the koi always has clear water above the
+     copy rather than swimming underneath it. */
+  .dest {
+    height: auto;
+    min-height: var(--band-mobile, 150svh);
+  }
+
+  .dest__stage {
+    position: static;
+    min-height: 0;
+    align-items: flex-end;
+    padding: 32svh var(--kw-gutter) 12svh;
+  }
+
+  .dest--enter .dest__stage {
+    padding-top: 38svh;
+  }
+
+  .kw h1 {
+    font-size: clamp(2.05rem, 9vw, 2.9rem);
+  }
+
+  .kw h2 {
+    font-size: clamp(1.6rem, 7vw, 2.1rem);
+  }
+
+  .kw__constellation,
+  .kw__work-grid,
+  .kw__paths {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dest--enter .dest__inner,
+  .kw__systems-grid,
+  .kw__founder {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .kw__founder {
+    padding: 1.25rem;
+  }
+
+  .kw__portrait {
+    max-width: 170px;
+    aspect-ratio: 1 / 1;
+  }
+
+  .kw__node:nth-child(n),
+  .kw__proof:nth-child(n) {
+    transform: none;
+  }
+
+  .kw__btn {
+    padding: 0.95rem 1.3rem;
+    min-height: 48px;
+  }
+
+  .kw__cue {
+    display: none;
+  }
+
+  .kw__depth {
+    bottom: 0;
+  }
+}
+
+/* Laptops and tablets in landscape have the width for the full composition but
+   not the height. Tighten the vertical rhythm rather than letting a sticky
+   reading stage clip its own content. */
+@media (min-width: 861px) and (max-height: 960px) {
+  .dest__stage {
+    padding-block: clamp(4.5rem, 9vh, 6rem) clamp(2.5rem, 6vh, 4rem);
+  }
+
+  .kw h1 {
+    font-size: clamp(2.1rem, 4.4vw, 3.4rem);
+    margin-bottom: 1rem;
+  }
+
+  .kw h2 {
+    font-size: clamp(1.55rem, 2.9vw, 2.2rem);
+    margin-bottom: 0.8rem;
+  }
+
+  .kw p {
+    font-size: 0.97rem;
+    line-height: 1.55;
+    margin-bottom: 0.8rem;
+  }
+
+  .kw__marker {
+    margin-bottom: 0.9rem;
+  }
+
+  .kw__actions {
+    margin-top: 1.3rem;
+  }
+
+  .kw__audit {
+    padding: 1.3rem 1.4rem;
+  }
+
+  .kw__includes {
+    margin-top: 0.8rem;
+    gap: 0.35rem;
+  }
+
+  .kw__includes li,
+  .kw__service small,
+  .kw__node p,
+  .kw__proof p {
+    font-size: 0.85rem;
+    line-height: 1.42;
+  }
+
+  .kw__service {
+    padding: 0.75rem 1rem;
+  }
+
+  .kw__node,
+  .kw__proof {
+    padding: 1.05rem 1.1rem 1.15rem;
+  }
+
+  .kw__founder {
+    padding: 1.4rem;
+  }
+
+  .kw__constellation,
+  .kw__work-grid,
+  .kw__systems-grid {
+    margin-top: 1.4rem;
+  }
+
+  .kw__footer {
+    margin-top: 1.8rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .kw__masthead-cta span {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Reduced motion and constrained data — designed, complete, and quiet
+   -------------------------------------------------------------------------- */
+
+.kw[data-motion="still"] .dest__inner,
+.kw[data-motion="pending"] .dest__inner {
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+  pointer-events: auto !important;
+}
+
+.kw[data-motion="still"] .dest__stage {
+  min-height: auto;
+  position: static;
+  padding-block: clamp(4rem, 12vh, 7rem);
+}
+
+.kw[data-motion="still"] .dest {
+  min-height: auto;
+  height: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .kw *,
+  .kw *::before,
+  .kw *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .koi-world__still {
+    transition: opacity 300ms ease;
+    transform: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .kw {
+    --kw-dim: #cfdde5;
+    --kw-faint: #9fb2bf;
+    --kw-glass: rgba(3, 6, 10, 0.88);
+    --kw-line-soft: rgba(180, 214, 232, 0.28);
+  }
+}
