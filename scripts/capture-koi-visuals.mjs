@@ -46,7 +46,7 @@ const evaluate = async (expression) => {
 };
 
 const waitFor = async (expression, label) => {
-  for (let i = 0; i < 60; i += 1) {
+  for (let i = 0; i < 120; i += 1) {
     if (await evaluate(expression)) return;
     await wait(250);
   }
@@ -58,19 +58,31 @@ await send("Page.enable");
 await send("Runtime.enable");
 await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
 await send("Page.navigate", { url: "http://127.0.0.1:3000/" });
-await waitFor("document.readyState === 'complete' && Boolean(document.querySelector('.koi-world'))", "koi world");
-await waitFor("document.querySelector('.studio-scroll-koi')?.dataset.ready === 'true'", "koi video");
-await wait(3200);
+await waitFor("document.readyState === 'complete' && Boolean(document.querySelector('.koi-final'))", "final koi homepage");
+await waitFor("document.querySelector('.studio-scroll-koi')?.dataset.ready === 'true'", "final koi video");
+await wait(3400);
 
 const architecture = await evaluate(`(() => ({
-  products: document.querySelectorAll('.koi-product-node').length,
-  scenes: document.querySelectorAll('[data-koi-frame]').length,
+  products: document.querySelectorAll('.koi-final__product').length,
+  scenes: document.querySelectorAll('[data-final-scene]').length,
+  followParts: document.querySelectorAll('[data-follow-part]').length,
+  activeScene: document.querySelector('[data-final-scene][data-follow-active="true"]')?.dataset.finalScene,
   legacy: Boolean(document.querySelector('.studio-problem-grid, .studio-pricing-grid, .studio-product-grid, .studio-trust')),
   companion: document.querySelector('.koi-companion') ? getComputedStyle(document.querySelector('.koi-companion')).display : 'none',
   opacity: Number.parseFloat(getComputedStyle(document.querySelector('.studio-scroll-koi__video--single')).opacity),
+  heroOpacity: Number.parseFloat(getComputedStyle(document.querySelector('.koi-final__copy--hero h1')).opacity),
 }))()`);
-if (architecture.products !== 3 || architecture.scenes !== 6 || architecture.legacy || architecture.companion !== "none" || architecture.opacity < .7) {
-  throw new Error(`Invalid koi-world architecture: ${JSON.stringify(architecture)}`);
+if (
+  architecture.products !== 3 ||
+  architecture.scenes !== 5 ||
+  architecture.followParts < 15 ||
+  architecture.activeScene !== "hero" ||
+  architecture.legacy ||
+  architecture.companion !== "none" ||
+  architecture.opacity < .7 ||
+  architecture.heroOpacity < .6
+) {
+  throw new Error(`Invalid final koi architecture: ${JSON.stringify(architecture)}`);
 }
 
 const capture = async (name) => {
@@ -95,26 +107,28 @@ const assertDepth = (scene, state, visible) => {
 const go = async (scene) => {
   const found = await evaluate(`(() => {
     document.documentElement.style.scrollBehavior = 'auto';
-    const section = document.querySelector('[data-koi-scene="${scene}"]');
+    const section = document.querySelector('[data-final-scene="${scene}"]');
     if (!section) return false;
-    section.scrollIntoView({ block: 'center' });
+    const travel = Math.max(section.getBoundingClientRect().height - window.innerHeight, 1);
+    window.scrollTo(0, window.scrollY + section.getBoundingClientRect().top + travel * .5);
     return true;
   })()`);
   if (!found) throw new Error(`Missing scene: ${scene}`);
   await waitFor(`document.querySelector('.studio-site--koi')?.dataset.koiScene === '${scene}'`, `${scene} activation`);
-  await wait(1500);
+  await waitFor(`document.querySelector('[data-final-scene="${scene}"]')?.dataset.followActive === 'true'`, `${scene} information hold`);
+  await wait(1600);
 };
 
 assertDepth("hero", await depthState(), true);
-await capture("01-koi-world-hero");
+await capture("01-final-koi-hero");
 await go("products");
 assertDepth("products", await depthState(), false);
-await capture("02-product-constellation-two-koi");
+await capture("02-final-product-constellation");
 await go("systems");
 assertDepth("systems", await depthState(), true);
-await capture("03-systems-around-the-koi");
+await capture("03-final-systems-follow");
 await go("start");
 assertDepth("start", await depthState(), true);
-await capture("04-koi-portal");
+await capture("04-final-start-destination");
 
 socket.close();
