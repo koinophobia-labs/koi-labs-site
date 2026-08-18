@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 
 const SINGLE_KOI_SRC =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260818_021556_755ff0b5-7c99-4754-b9fb-b2fc88a7d886.mp4";
+  "https://d8j0ntlcm91z4.cloudfront.net/user_3HhOHQGL0oXayVyXOmPdMu1Mdi2/hf_20260817_180806_9199e09c-1519-4fea-b7d8-c115f41cbe92.mp4";
 const SINGLE_KOI_FALLBACK = "/brand/koi-scroll-single.mp4";
 
 type NavigatorWithConnection = Navigator & {
