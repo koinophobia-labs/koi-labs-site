@@ -23,24 +23,25 @@ test("betting requests pause scoring", () => {
   assert.equal(score.points, 0);
 });
 
-test("the koi-first homepage leads with the internal product constellation", async () => {
-  const page = await readFile(
-    new URL("../app/page.tsx", import.meta.url),
+test("the koi-led homepage reveals the internal product constellation before systems and work", async () => {
+  const final = await readFile(
+    new URL("../components/studio/KoiFinalHomepage.tsx", import.meta.url),
     "utf8",
   );
-  const productsScene = page.indexOf('data-koi-scene="products"');
-  const systemsScene = page.indexOf('data-koi-scene="systems"');
-  const workScene = page.indexOf('data-koi-scene="work"');
+  const productsScene = final.indexOf('scene="products"');
+  const systemsScene = final.indexOf('scene="systems"');
+  const workScene = final.indexOf('scene="work"');
 
   assert.ok(productsScene > 0, "the product constellation must exist");
   assert.ok(
     productsScene < systemsScene,
-    "the product constellation should follow the hero before the services chapter",
+    "the product constellation should follow the hero before the systems chapter",
   );
   assert.ok(
     systemsScene < workScene,
     "the systems chapter should lead into the work chapter",
   );
-  assert.match(page, /data-koi-duo="true"/);
-  assert.match(page, /product\.status\.replace\("Internal Product · ", ""\)/);
+  assert.match(final, /scene="products"[\s\S]*duo/);
+  assert.match(final, /product\.status\.replace\("Internal Product · ", ""\)/);
+  assert.match(final, /featuredProducts/);
 });
