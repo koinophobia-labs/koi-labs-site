@@ -14,7 +14,7 @@ import { createWater, type WaterHandle } from "./water";
 
 type MotionMode = "pending" | "cinematic" | "still";
 
-const MOBILE_QUERY = "(max-width: 860px)";
+const MOBILE_QUERY = "(max-width: 1024px)";
 const FADE_SECONDS = 0.24;
 const LOOP_FADE = 0.42;
 
