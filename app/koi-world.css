@@ -483,10 +483,16 @@ body:has(.kw) > .koi-companion {
 .kw[data-koi-ready="true"][data-koi-destination="work"] #work .dest__inner,
 .kw[data-koi-ready="true"][data-koi-destination="founder"] #founder .dest__inner,
 .kw[data-koi-ready="true"][data-koi-destination="start"] #start .dest__inner {
-  opacity: clamp(0.72, calc(0.72 + var(--koi-reveal) * 0.28), 1);
+  /* Reading floor while arriving and holding; on departure the whole block
+     sinks together (--kw-exit), so the words never dissolve over copy that
+     is still fully readable. */
+  opacity: min(
+    calc(0.72 + var(--koi-reveal, 1) * 0.28),
+    calc(1 - var(--kw-exit, 0) * 0.78)
+  );
   transform: translate3d(
     calc(var(--koi-surge) * -3px),
-    calc((1 - var(--koi-reveal)) * 12px + var(--koi-surge) * 2px),
+    calc((1 - var(--koi-reveal)) * 12px + var(--koi-surge) * 2px + var(--kw-exit, 0) * -10px),
     0
   );
   pointer-events: auto;
@@ -529,11 +535,15 @@ body:has(.kw) > .koi-companion {
   font-size: 0.68rem;
 }
 
+/* Weight hierarchy: the H1 carries the site's one true bold; chapter
+   headings sit a step below it; card titles a step below that. Sora ships
+   here in 600/700 only, so the weights are declared, never synthesized. */
 .kw h1 {
   font-family: var(--font-sora), sans-serif;
   font-size: clamp(2.3rem, 6.2vw, 4.6rem);
+  font-weight: 700;
   line-height: 1.02;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.04em;
   margin: 0 0 1.35rem;
   max-width: 17ch;
   text-wrap: balance;
@@ -542,6 +552,7 @@ body:has(.kw) > .koi-companion {
 .kw h2 {
   font-family: var(--font-sora), sans-serif;
   font-size: clamp(1.75rem, 3.9vw, 2.9rem);
+  font-weight: 600;
   line-height: 1.08;
   letter-spacing: -0.028em;
   margin: 0 0 1.1rem;
@@ -687,6 +698,7 @@ body:has(.kw) > .koi-companion {
 .kw__btn--grand {
   padding: 1.05rem 2.1rem 1.05rem 1.8rem;
   font-size: 0.92rem;
+  font-weight: 700;
   letter-spacing: 0.22em;
   border-color: rgba(127, 216, 234, 0.65);
   box-shadow: 0 0 54px -18px rgba(76, 192, 221, 0.7);
@@ -904,6 +916,7 @@ body:has(.kw) > .koi-companion {
 
 .kw__audit h3 {
   font-size: 1.5rem;
+  font-weight: 600;
   margin-bottom: 0.5rem;
 }
 
@@ -1429,6 +1442,24 @@ body:has(.kw) > .koi-companion {
   .kw__map-dot {
     width: 6px;
     height: 6px;
+  }
+
+  /* Copy approaching the depth gauge dims into the water before it slips
+     beneath the pill — the same dissolve the masthead performs, so a passing
+     headline reads as depth, never as a collision. */
+  .kw__map::before {
+    content: "";
+    position: absolute;
+    inset: -2rem -2.8rem;
+    z-index: -1;
+    border-radius: 999px;
+    background: radial-gradient(
+      56% 104% at 50% 50%,
+      rgba(4, 6, 10, 0.92) 28%,
+      rgba(4, 6, 10, 0.58) 60%,
+      transparent 84%
+    );
+    pointer-events: none;
   }
 
   /* The reading position sits low so the koi always has clear water above the

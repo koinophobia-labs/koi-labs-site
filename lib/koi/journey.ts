@@ -33,6 +33,14 @@ export type KoiClip = {
   poster: string;
   /** Seconds. Used for loop-fade timing. */
   duration: number;
+  /**
+   * Seconds into the loop where the koi is most present — measured from the
+   * footage's luminance curve and confirmed by eye. Destinations open their
+   * clip here (via a #t media fragment, never a scripted seek), so an arrival
+   * can never land on an empty stretch of water. Transition clips omit it:
+   * they are motion continuity and begin at their natural start.
+   */
+  hero?: number;
   /** Human description for the asset manifest and alt text. */
   description: string;
 };
@@ -42,6 +50,7 @@ export const CLIPS = {
     id: "koi-lead",
     poster: "/koi/poster-lead.webp",
     duration: 15.04,
+    hero: 3.2,
     description:
       "Single koi circling in black water, elevated three-quarter view — the navigation master.",
   },
@@ -56,6 +65,7 @@ export const CLIPS = {
     id: "koi-duo",
     poster: "/koi/poster-duo.webp",
     duration: 10.04,
+    hero: 7.6,
     description: "Two koi orbiting one another — the product constellation.",
   },
   separate: {
@@ -69,6 +79,7 @@ export const CLIPS = {
     id: "koi-systems",
     poster: "/koi/poster-systems.webp",
     duration: 8,
+    hero: 3.4,
     description:
       "The koi descends past submerged structure into the systems region.",
   },
@@ -76,6 +87,7 @@ export const CLIPS = {
     id: "koi-work",
     poster: "/koi/poster-work.webp",
     duration: 8,
+    hero: 2.8,
     description:
       "Lateral drift past suspended planes of light — the proof corridor.",
   },
@@ -83,12 +95,14 @@ export const CLIPS = {
     id: "koi-still",
     poster: "/koi/poster-still.webp",
     duration: 8,
+    hero: 3,
     description: "The koi holds station in a calm pocket under a single shaft of light.",
   },
   open: {
     id: "koi-open",
     poster: "/koi/poster-open.webp",
     duration: 8,
+    hero: 5.8,
     description:
       "The koi swims away from camera toward a widening glow — the final destination.",
   },

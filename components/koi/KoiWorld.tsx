@@ -132,13 +132,18 @@ export default function KoiWorld() {
     const pool = new Map<ClipKey, HTMLVideoElement>();
 
     const sourceFor = (key: ClipKey) => {
-      const clip = CLIPS[key];
+      const clip = CLIPS[key] as (typeof CLIPS)[ClipKey] & { hero?: number };
       const size = mobile ? "854" : "1280";
       // H.264 only, deliberately. VP9/AV1 re-encodes of this footage measured
       // the same size or larger at equal quality (near-black frames compress
       // extremely well in H.264), so a second rendition would cost payload and
       // decode support without buying anything.
-      return { mp4: `/koi/${clip.id}-${size}.mp4` };
+      //
+      // The #t media fragment opens each destination's clip at its measured
+      // hero moment, so an arrival never lands on an empty stretch of water.
+      // It is an entry point, not a seek: playback and looping stay untouched.
+      const at = clip.hero ? `#t=${clip.hero}` : "";
+      return { mp4: `/koi/${clip.id}-${size}.mp4${at}` };
     };
 
     const ensureVideo = (
@@ -417,6 +422,7 @@ export default function KoiWorld() {
         floors.set(cid, floor);
 
         let wordReveal: number;
+        let exit = 0;
         let flow: "form" | "lock" | "release" | "out";
         if (mobile) {
           // Phones read in natural flow: words form as the copy arrives and
@@ -426,12 +432,21 @@ export default function KoiWorld() {
           flow =
             !onScreen && floor === 0 ? "out" : wordReveal >= 0.98 ? "lock" : "form";
         } else if (isActive) {
+          // The whole reading group leaves together: the block starts sinking
+          // (--kw-exit) the moment departure begins, and the words hold their
+          // form through the first half of it, dissolving only once the copy
+          // around them is already fading. No headline-shaped hole ever sits
+          // over crisp, readable text.
+          const departP =
+            ct < DEPART_START ? 0 : (ct - DEPART_START) / (1 - DEPART_START);
+          const releaseP = clamp((departP - 0.45) / 0.55);
           const scrollReveal =
             ct < ARRIVE_END
               ? smooth(ct / ARRIVE_END)
               : ct < DEPART_START
                 ? 1
-                : 1 - smooth((ct - DEPART_START) / (1 - DEPART_START));
+                : 1 - smooth(releaseP);
+          if (!isLast) exit = smooth(departP);
           wordReveal =
             ct >= DEPART_START ? scrollReveal : Math.max(scrollReveal, smooth(floor));
           flow =
@@ -446,6 +461,7 @@ export default function KoiWorld() {
         }
 
         candidate.el.style.setProperty("--koi-reveal", wordReveal.toFixed(4));
+        candidate.el.style.setProperty("--kw-exit", exit.toFixed(4));
         if (candidate.el.dataset.flow !== flow) candidate.el.dataset.flow = flow;
       }
 
@@ -649,6 +665,7 @@ export default function KoiWorld() {
       delete shell.dataset.koiRest;
       for (const band of bands) {
         band.el.style.removeProperty("--koi-reveal");
+        band.el.style.removeProperty("--kw-exit");
         delete band.el.dataset.flow;
       }
       for (const name of [
