@@ -215,6 +215,7 @@ const frameCases = [
   { name: "small phone", width: 375, height: 667, mobile: true },
   { name: "landscape tablet", width: 900, height: 600, mobile: false },
   { name: "short laptop", width: 1280, height: 720, mobile: false },
+  { name: "true ultrawide", width: 3440, height: 1440, mobile: false },
 ];
 
 for (const frame of frameCases) {
@@ -236,6 +237,7 @@ for (const frame of frameCases) {
     const map = document.querySelector(".kw__map")?.getBoundingClientRect();
     const nav = document.querySelector(".kw__nav");
     const labels = [...document.querySelectorAll(".kw__map-label")];
+    const wideShell = document.querySelector("#start .dest__inner")?.getBoundingClientRect();
     return {
       overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
       navDisplay: nav ? getComputedStyle(nav).display : "missing",
@@ -244,6 +246,7 @@ for (const frame of frameCases) {
       ),
       mapClearsMasthead: Boolean(map && masthead && map.top >= masthead.bottom - 1),
       labelsHidden: labels.every((label) => getComputedStyle(label).display === "none"),
+      shellWidthRatio: wideShell ? wideShell.width / innerWidth : 0,
     };
   })()`);
 
@@ -251,14 +254,18 @@ for (const frame of frameCases) {
     chrome.overflow ||
     !chrome.mapInsideFrame ||
     (frame.width <= 1024 && (chrome.navDisplay !== "none" || !chrome.mapClearsMasthead)) ||
-    (frame.width > 1024 && frame.width <= 1320 && !chrome.labelsHidden)
+    (frame.width > 1024 && frame.width <= 1320 && !chrome.labelsHidden) ||
+    (frame.width >= 2800 && chrome.shellWidthRatio < 0.48)
   ) {
     throw new Error(
       `${frame.name} chrome escaped or obscured the frame: ${JSON.stringify(chrome)}`,
     );
   }
 
-  for (const id of ["products", "systems"]) {
+  const sectionIds = frame.width >= 2800
+    ? destinations.map(([id]) => id)
+    : ["products", "systems"];
+  for (const id of sectionIds) {
     await evaluate(`document.getElementById(${JSON.stringify(id)})?.scrollIntoView({ block: "start", behavior: "instant" })`);
     await wait(200);
 
@@ -320,7 +327,7 @@ for (const frame of frameCases) {
       );
     }
 
-    if (frame.width <= 1024) {
+    if (frame.width <= 1024 || frame.width >= 2800) {
       await evaluate(`(() => {
         const section = document.getElementById(${JSON.stringify(id)});
         const top = section.getBoundingClientRect().top + window.scrollY;

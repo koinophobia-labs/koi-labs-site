@@ -15,6 +15,10 @@ import { createWater, type WaterHandle } from "./water";
 type MotionMode = "pending" | "cinematic" | "still";
 
 const MOBILE_QUERY = "(max-width: 1024px)";
+const ULTRAWIDE_MIN_WIDTH = 2800;
+const ULTRAWIDE_MIN_ASPECT = 2;
+const ULTRAWIDE_MOTION_WIDTH = 1600;
+const ULTRAWIDE_SCALE = 0.84;
 const FADE_SECONDS = 0.24;
 const LOOP_FADE = 0.42;
 
@@ -402,9 +406,20 @@ export default function KoiWorld() {
       const pose = smoothed;
       const depth = clamp(pose.depth);
       const opacity = pose.opacity * envelope * loopFade;
-      publish("--koi-x", `${(pose.x * 50).toFixed(3)}vw`);
+      // Viewport-relative translation keeps growing after the reading shell
+      // has reached its desktop max. On a 3440px canvas that pushed most of
+      // the koi beyond the right edge. Cap only the ultrawide travel range and
+      // trim scale slightly so the fish remains a guide inside the scene.
+      const ultrawide =
+        window.innerWidth >= ULTRAWIDE_MIN_WIDTH &&
+        window.innerWidth / Math.max(window.innerHeight, 1) >= ULTRAWIDE_MIN_ASPECT;
+      const horizontalFactor = ultrawide
+        ? Math.min(1, ULTRAWIDE_MOTION_WIDTH / window.innerWidth)
+        : 1;
+      const displayScale = pose.scale * (ultrawide ? ULTRAWIDE_SCALE : 1);
+      publish("--koi-x", `${(pose.x * 50 * horizontalFactor).toFixed(3)}vw`);
       publish("--koi-y", `${(pose.y * 50).toFixed(3)}vh`);
-      publish("--koi-scale", pose.scale.toFixed(4));
+      publish("--koi-scale", displayScale.toFixed(4));
       publish("--koi-rotate", `${pose.rotate.toFixed(3)}deg`);
       publish("--koi-blur", `${pose.blur.toFixed(2)}px`);
       publish("--koi-opacity", opacity.toFixed(4));
