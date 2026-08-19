@@ -211,4 +211,144 @@ await waitFor(
   "reverse scrolling to restore the opening destination",
 );
 
+const frameCases = [
+  { name: "small phone", width: 375, height: 667, mobile: true },
+  { name: "landscape tablet", width: 900, height: 600, mobile: false },
+  { name: "short laptop", width: 1280, height: 720, mobile: false },
+];
+
+for (const frame of frameCases) {
+  await send("Emulation.setDeviceMetricsOverride", {
+    width: frame.width,
+    height: frame.height,
+    deviceScaleFactor: 1,
+    mobile: frame.mobile,
+  });
+  await send("Page.navigate", { url: "http://127.0.0.1:3000/" });
+  await waitFor(
+    `document.readyState === "complete" && document.querySelector(".kw")?.dataset.koiReady === "true"`,
+    `${frame.name} koi world to initialize`,
+  );
+  await wait(500);
+
+  const chrome = await evaluate(`(() => {
+    const masthead = document.querySelector(".kw__masthead")?.getBoundingClientRect();
+    const map = document.querySelector(".kw__map")?.getBoundingClientRect();
+    const nav = document.querySelector(".kw__nav");
+    const labels = [...document.querySelectorAll(".kw__map-label")];
+    return {
+      overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+      navDisplay: nav ? getComputedStyle(nav).display : "missing",
+      mapInsideFrame: Boolean(
+        map && map.left >= -1 && map.right <= innerWidth + 1 && map.top >= -1 && map.bottom <= innerHeight + 1
+      ),
+      mapClearsMasthead: Boolean(map && masthead && map.top >= masthead.bottom - 1),
+      labelsHidden: labels.every((label) => getComputedStyle(label).display === "none"),
+    };
+  })()`);
+
+  if (
+    chrome.overflow ||
+    !chrome.mapInsideFrame ||
+    (frame.width <= 1024 && (chrome.navDisplay !== "none" || !chrome.mapClearsMasthead)) ||
+    (frame.width > 1024 && frame.width <= 1320 && !chrome.labelsHidden)
+  ) {
+    throw new Error(
+      `${frame.name} chrome escaped or obscured the frame: ${JSON.stringify(chrome)}`,
+    );
+  }
+
+  for (const id of ["products", "systems"]) {
+    await evaluate(`document.getElementById(${JSON.stringify(id)})?.scrollIntoView({ block: "start", behavior: "instant" })`);
+    await wait(200);
+
+    const landing = await evaluate(`(() => {
+      const section = document.getElementById(${JSON.stringify(id)});
+      const heading = section?.querySelector("h1, h2")?.getBoundingClientRect();
+      const masthead = document.querySelector(".kw__masthead")?.getBoundingClientRect();
+      const map = document.querySelector(".kw__map")?.getBoundingClientRect();
+      const intersects = (a, b) => Boolean(
+        a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+      );
+      return {
+        headingInFrame: Boolean(
+          heading && heading.left >= -1 && heading.right <= innerWidth + 1 &&
+          heading.top >= -1 && heading.bottom <= innerHeight + 1
+        ),
+        headingObscured: intersects(heading, masthead) || intersects(heading, map),
+        stagePosition: section ? getComputedStyle(section.querySelector(".dest__stage")).position : "missing",
+      };
+    })()`);
+
+    const expectedStage = frame.width <= 1024 || (id === "systems" && frame.height <= 760)
+      ? ["static", "relative"]
+      : ["sticky"];
+    if (
+      !landing.headingInFrame ||
+      landing.headingObscured ||
+      !expectedStage.includes(landing.stagePosition)
+    ) {
+      throw new Error(
+        `${frame.name} ${id} landing escaped the frame: ${JSON.stringify(landing)}`,
+      );
+    }
+
+    const controls = await evaluate(`(async () => {
+      const nodes = [...document.querySelectorAll(${JSON.stringify(`#${id} .dest__inner a, #${id} .dest__inner button`)})];
+      const masthead = document.querySelector(".kw__masthead")?.getBoundingClientRect();
+      const map = document.querySelector(".kw__map")?.getBoundingClientRect();
+      const intersects = (a, b) => Boolean(
+        a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+      );
+      const results = [];
+      for (const node of nodes) {
+        node.scrollIntoView({ block: "center", behavior: "instant" });
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const rect = node.getBoundingClientRect();
+        results.push({
+          text: node.textContent?.trim().replace(/\\s+/g, " ").slice(0, 60),
+          inFrame: rect.left >= -1 && rect.right <= innerWidth + 1 && rect.top >= -1 && rect.bottom <= innerHeight + 1,
+          obscured: intersects(rect, masthead) || intersects(rect, map),
+        });
+      }
+      return results;
+    })()`);
+
+    if (controls.some((control) => !control.inFrame || control.obscured)) {
+      throw new Error(
+        `${frame.name} ${id} controls escaped the frame: ${JSON.stringify(controls)}`,
+      );
+    }
+
+    if (frame.width <= 1024) {
+      await evaluate(`(() => {
+        const section = document.getElementById(${JSON.stringify(id)});
+        const top = section.getBoundingClientRect().top + window.scrollY;
+        const travel = Math.max(section.offsetHeight - window.innerHeight, 1);
+        window.scrollTo({ top: top + travel * 0.46, behavior: "instant" });
+      })()`);
+      await waitFor(
+        `document.querySelector(".kw")?.dataset.koiDestination === ${JSON.stringify(id)}`,
+        `${frame.name} ${id} scene to become current`,
+      );
+      await wait(300);
+
+      const sceneVisibility = await evaluate(`(() => {
+        const clips = [...document.querySelectorAll(".koi-world__clip[data-koi-clip]")]
+          .sort((a, b) => Number(getComputedStyle(b).opacity) - Number(getComputedStyle(a).opacity));
+        const rect = clips[0]?.getBoundingClientRect();
+        if (!rect) return 0;
+        const width = Math.max(0, Math.min(rect.right, innerWidth) - Math.max(rect.left, 0));
+        const height = Math.max(0, Math.min(rect.bottom, innerHeight) - Math.max(rect.top, 0));
+        return (width * height) / Math.max(rect.width * rect.height, 1);
+      })()`);
+      if (sceneVisibility < 0.72) {
+        throw new Error(
+          `${frame.name} ${id} scene is over-clipped: ${sceneVisibility.toFixed(3)}`,
+        );
+      }
+    }
+  }
+}
+
 socket.close();
