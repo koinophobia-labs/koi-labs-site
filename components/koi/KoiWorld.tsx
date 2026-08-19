@@ -397,7 +397,8 @@ export default function KoiWorld() {
       // while the visitor is moving; a per-destination floor climbs with time
       // whenever a section is being looked at, so a nav jump, a deep link, or
       // a phone's natural reading flow always ends with the words formed.
-      for (const candidate of bands) {
+      for (let bi = 0; bi < bands.length; bi++) {
+        const candidate = bands[bi];
         const cid = candidate.destination.id;
         const cTravel = Math.max(
           candidate.height - window.innerHeight,
@@ -405,6 +406,21 @@ export default function KoiWorld() {
         );
         const isActive = cid === destination.id;
         const isLast = candidate.destination.index === DESTINATIONS.length - 1;
+        // How far the NEXT chapter's stage has physically entered the viewport
+        // (0 = still below the fold, 1 = fully covering the handoff). The
+        // reading surface may only dissolve in proportion to this: a departing
+        // chapter with no successor on screen holds readable, so no scroll
+        // position a visitor can park on ever rests as a ghost. Still a pure
+        // function of scroll position — reverse scrolling retraces it exactly.
+        const successor = bands[bi + 1];
+        const handoff = successor
+          ? smooth(
+              clamp(
+                (scrollY + window.innerHeight - successor.top) /
+                  window.innerHeight,
+              ),
+            )
+          : 0;
         // The journey's final destination has nothing to depart into: its
         // words hold formed to the very bottom of the page.
         const rawT = isActive ? t : clamp((focus - candidate.top) / cTravel);
@@ -432,21 +448,21 @@ export default function KoiWorld() {
           flow =
             !onScreen && floor === 0 ? "out" : wordReveal >= 0.98 ? "lock" : "form";
         } else if (isActive) {
-          // The whole reading group leaves together: the block starts sinking
-          // (--kw-exit) the moment departure begins, and the words hold their
-          // form through the first half of it, dissolving only once the copy
-          // around them is already fading. No headline-shaped hole ever sits
-          // over crisp, readable text.
+          // The whole reading group leaves together, and only when the next
+          // chapter actually takes the stage: departure (--kw-exit) and word
+          // release are both scaled by the handoff, the words trailing the
+          // sink. The koi still departs on its own schedule — the fish moves
+          // on first; the words wait for the water to turn.
           const departP =
             ct < DEPART_START ? 0 : (ct - DEPART_START) / (1 - DEPART_START);
-          const releaseP = clamp((departP - 0.45) / 0.55);
+          const releaseP = clamp((departP - 0.45) / 0.55) * handoff;
           const scrollReveal =
             ct < ARRIVE_END
               ? smooth(ct / ARRIVE_END)
               : ct < DEPART_START
                 ? 1
                 : 1 - smooth(releaseP);
-          if (!isLast) exit = smooth(departP);
+          if (!isLast) exit = smooth(departP) * handoff;
           wordReveal =
             ct >= DEPART_START ? scrollReveal : Math.max(scrollReveal, smooth(floor));
           flow =

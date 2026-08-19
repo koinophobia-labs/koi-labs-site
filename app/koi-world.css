@@ -49,12 +49,13 @@ body:has(.kw) {
   background: #04060a;
 }
 
-/* Navigation swims, it does not teleport: anchor jumps travel through the
-   water so the world's physics hold even when the visitor uses the menu. */
-@media (prefers-reduced-motion: no-preference) {
-  html:has(.kw) {
-    scroll-behavior: smooth;
-  }
+/* In-page navigation swims via the koi-link click handler (KoiWorld), which
+   scrolls each destination to its reading rest. The app-wide smooth
+   scroll-behavior (globals.css) is overridden here on purpose: a cold load of
+   /#section must LAND there instantly, not animate the whole journey from the
+   surface first. The handler's explicit smooth scrollTo is unaffected. */
+html:has(.kw) {
+  scroll-behavior: auto;
 }
 
 /* The sitewide brand intro and floating companion belong to the rest of the
