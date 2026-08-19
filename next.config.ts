@@ -49,13 +49,13 @@ const nextConfig: NextConfig = {
         source: "/home",
         has: [{ type: "host", value: DEV_HOST }],
         destination: `https://${DEV_HOST}/`,
-        permanent: false,
+        permanent: true,
       },
       {
         source: "/home",
         has: [{ type: "host", value: LABS_HOST }],
         destination: `https://${DEV_HOST}/`,
-        permanent: false,
+        permanent: true,
       },
       // /dev/* is internal plumbing. On the personal host it collapses to the
       // clean URL; on the studio host it leaves for the personal host entirely.
@@ -65,13 +65,13 @@ const nextConfig: NextConfig = {
         source: `/dev${route}`,
         has: [{ type: "host" as const, value: DEV_HOST }],
         destination: `https://${DEV_HOST}${route}`,
-        permanent: false,
+        permanent: true,
       })),
       {
         source: "/dev/:path*",
         has: [{ type: "host", value: LABS_HOST }],
         destination: `https://${DEV_HOST}/:path*`,
-        permanent: false,
+        permanent: true,
       },
     ];
   },

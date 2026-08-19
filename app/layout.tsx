@@ -35,6 +35,12 @@ import "./resume-dev.css";
 import "./now-dev.css";
 import AnalyticsBridge from "@/components/studio/AnalyticsBridge";
 import KoiCompanion from "@/components/companion/KoiCompanion";
+import {
+  STUDIO_DESCRIPTION,
+  STUDIO_SOCIAL_IMAGE,
+  STUDIO_TITLE,
+  STUDIO_URL,
+} from "@/lib/seo";
 import "./koi-companion.css";
 
 const sora = Sora({
@@ -66,21 +72,13 @@ const ibmPlexMono = IBM_Plex_Mono({
   weight: ["400", "500", "600"],
 });
 
-const socialImage = {
-  url: "/brand/social-card",
-  width: 1200,
-  height: 630,
-  alt: "Koinophobia Labs official logo with two cybernetic koi and a violet pulse",
-};
-
 export const metadata: Metadata = {
-  metadataBase: new URL("https://koinophobialabs.com"),
+  metadataBase: new URL(STUDIO_URL),
   title: {
-    default: "Koinophobia Labs | Websites, AI Workflows and Business Systems",
+    default: STUDIO_TITLE,
     template: "%s | Koinophobia Labs",
   },
-  description:
-    "Founder-led websites, AI workflows, booking systems, and conversion improvements for small businesses. Start with a practical Revenue Leak Audit.",
+  description: STUDIO_DESCRIPTION,
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [{ url: "/brand/koi-emblem.svg", type: "image/svg+xml" }],
@@ -92,16 +90,15 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Koinophobia Labs",
-    title: "Koinophobia Labs | Websites, AI Workflows and Business Systems",
-    description:
-      "Founder-led websites, AI workflows, booking systems, and conversion improvements for small businesses.",
-    images: [socialImage],
+    url: STUDIO_URL,
+    title: STUDIO_TITLE,
+    description: STUDIO_DESCRIPTION,
+    images: [STUDIO_SOCIAL_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Koinophobia Labs | Websites, AI Workflows and Business Systems",
-    description:
-      "Founder-led websites, AI workflows, booking systems, and conversion improvements for small businesses.",
+    title: STUDIO_TITLE,
+    description: STUDIO_DESCRIPTION,
     images: ["/brand/social-card"],
   },
 };

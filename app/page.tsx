@@ -6,25 +6,32 @@ import KoiWorld from "@/components/koi/KoiWorld";
 import { DESTINATIONS } from "@/lib/koi/journey";
 import { LINKS } from "@/lib/links";
 import { products, serviceOffers, studioConfig, workProjects } from "@/lib/commercial";
+import {
+  STUDIO_DESCRIPTION,
+  STUDIO_SCHEMA,
+  STUDIO_SOCIAL_IMAGE,
+  STUDIO_TITLE,
+  STUDIO_URL,
+} from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Koinophobia Labs | AI-Native Products and Systems",
-  description:
-    "A founder-led Chicago studio building AI-native products, websites, automation, and internal systems from first principles. Follow the koi.",
-  alternates: { canonical: "https://koinophobialabs.com/" },
-};
-
-const schema = {
-  "@context": "https://schema.org",
-  "@type": "ProfessionalService",
-  name: "Koinophobia Labs",
-  url: "https://koinophobialabs.com",
-  image: "https://koinophobialabs.com/koi-mark.png",
-  email: "koinophobia999@gmail.com",
-  founder: { "@type": "Person", name: "Blake Taylor" },
-  areaServed: ["Chicago", "United States"],
-  description:
-    "A founder-led studio building AI-native products, websites, and business systems.",
+  title: STUDIO_TITLE,
+  description: STUDIO_DESCRIPTION,
+  alternates: { canonical: `${STUDIO_URL}/` },
+  openGraph: {
+    type: "website",
+    siteName: "Koinophobia Labs",
+    url: `${STUDIO_URL}/`,
+    title: STUDIO_TITLE,
+    description: STUDIO_DESCRIPTION,
+    images: [STUDIO_SOCIAL_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: STUDIO_TITLE,
+    description: STUDIO_DESCRIPTION,
+    images: ["/brand/social-card"],
+  },
 };
 
 const audit = serviceOffers.find((offer) => offer.slug === "audit")!;
@@ -467,7 +474,7 @@ export default function Home() {
 
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(STUDIO_SCHEMA) }}
       />
     </div>
   );
