@@ -174,7 +174,9 @@ test("the koi world leads through six destinations without hiding the business",
 
   // Performance and resilience.
   assert.match(world, /visibilitychange/);
-  assert.match(world, /MAX_VIDEOS/);
+  assert.match(world, /const hasMoved =/);
+  assert.match(world, /ensureVideo\(next\.clip, t > 0\.56 \? "auto" : "metadata"\)/);
+  assert.doesNotMatch(world, /pool\.delete/);
   assert.match(world, /koiFallback/);
   assert.match(world, /854/); // mobile rendition
   assert.match(water, /webgl2/);

@@ -8,9 +8,9 @@ Every destination owns a scroll band taller than the viewport. Local progress
 `t` runs 0 → 1 as the band passes:
 
 ```
-t 0.00 → 0.30   ARRIVE   koi decelerates in, copy settles, water shifts mood
-t 0.30 → 0.62   HOLD     copy static and readable, koi idles or circles nearby
-t 0.62 → 1.00   DEPART   koi accelerates out, copy recedes, next mood blends in
+t 0.00 → 0.25   ARRIVE   koi decelerates in, copy settles, water shifts mood
+t 0.25 → 0.70   HOLD     copy static and readable, koi settles in open water
+t 0.70 → 1.00   DEPART   koi accelerates out, next mood blends in
 ```
 
 Nothing hijacks scrolling. `t` is a pure function of `window.scrollY`, so
@@ -43,12 +43,12 @@ a body with mass instead of being welded to the scroll offset.
 
 | # | id | Band (desktop / mobile) | Clip | Transition | Koi hold pose (x, y, scale, depth) | Water |
 | --- | --- | --- | --- | --- | --- | --- |
-| 00 | `enter` | 2.6 / 1.55 vh | `lead` | `glass` | 0.42, −0.06, 0.94, 0.26 | cool, light high-left, depth 0.42 |
-| 01 | `products` | 3.1 / 1.35 vh | `duo` | `separate` | 0.00, −0.42, 0.62, 0.12 | brighter, depth 0.60, particles 1.0 |
-| 02 | `systems` | 3.4 / 1.35 vh | `systems` | — | −0.50, −0.08, 0.62, 0.16 | coldest, depth 0.78, light low-left |
-| 03 | `work` | 3.2 / 1.35 vh | `work` | — | 0.60, −0.06, 0.58, 0.16 | depth 0.66, light high-right |
-| 04 | `founder` | 2.8 / 1.40 vh | `still` | — | −0.64, −0.04, 0.46, 0.12 | warmest, depth 0.34, few particles |
-| 05 | `start` | 2.9 / 1.50 vh | `open` | — | 0.06, −0.32, 0.62, 0.12 | most open, depth 0.95, caustics 0.85 |
+| 00 | `enter` | 2.40 / 1.45 vh | `lead` | `glass` | 0.16, −0.04, 1.18, 0.28 | cool, light high-left, depth 0.42 |
+| 01 | `products` | 2.75 / 1.25 vh | `duo` | `separate` | 0.90, −0.58, 0.68, 0.01 | brighter, depth 0.60, particles 1.0 |
+| 02 | `systems` | 3.00 / 1.25 vh | `systems` | — | 0.90, −0.58, 0.68, 0.01 | coldest, depth 0.78, light low-left |
+| 03 | `work` | 2.80 / 1.25 vh | `work` | — | 0.98, −0.62, 0.68, 0.01 | depth 0.66, light high-right |
+| 04 | `founder` | 2.45 / 1.30 vh | `still` | — | 0.90, −0.62, 0.66, 0.01 | warmest, depth 0.34, few particles |
+| 05 | `start` | 2.60 / 1.35 vh | `open` | — | 0.90, −0.62, 0.68, 0.01 | most open, depth 0.95, caustics 0.85 |
 
 `x` and `y` are viewport-relative (−1 … 1). `scale` below 1 pulls the koi back
 into the water; above 1 brings it toward the lens. `depth` above ~0.42 promotes
@@ -85,8 +85,8 @@ layer dims to 45%, so it dips into the dark and re-emerges instead of popping.
 
 ## The through-the-glass moment
 
-Between `enter` and `products`, the `glass` segment takes over at t > 0.68 and
-the hero's departure pose drives `scale` to 1.5 and `depth` to 0.7. It happens
+Between `enter` and `products`, the `glass` segment takes over at t > 0.76 and
+the hero's departure pose drives `scale` to 1.8 and `depth` to 0.78. It happens
 once, at a transition, never while anyone is reading.
 
 ## Desktop
@@ -107,8 +107,9 @@ Not a cropped desktop. The sticky stage is dropped entirely — a 660 px viewpor
 cannot hold a reading stage — so copy flows naturally and the fixed koi
 re-poses around it. Poses are overridden per destination to sit high (y ≈ −0.6)
 so the koi always has clear water *above* the copy and never swims underneath
-it. Particle density is halved, the shader renders at 0.7 scale and 0.5
-quality, DPR is capped at 1.25, grids collapse to one column, tap targets are
+it. During reading holds it settles even farther into the upper-right water at
+low opacity and depth. Particle density is reduced, the shader uses a 0.9 MP
+pixel budget and 0.5 quality, DPR is capped at 1.25, grids collapse to one column, tap targets are
 at least 44 px, the masthead occludes opaquely, and the 854 px renditions are
 selected. The narrative and every piece of content are identical.
 
@@ -124,8 +125,8 @@ link, price and call to action — remain present and reachable.
 ## Failure behaviour
 
 - **No WebGL2** — the canvas hides and a layered CSS gradient carries the water.
-- **A clip fails to fetch or decode** — that clip falls back to the navigation
-  master, so the koi keeps leading and only that beat's choreography simplifies.
+- **A clip fails to fetch or decode** — that clip holds on its own poster, so
+  the destination keeps the correct angle and the decoder is not retried.
 - **No JavaScript at all** — `.dest__inner` is fully opaque by default; the
   dimming rule only applies once the world reports `data-koi-ready`. The page
   renders as ordinary readable HTML with every link intact.
@@ -135,8 +136,15 @@ link, price and call to action — remain present and reachable.
 
 ## Loading policy
 
-The hero clip is the only one created on mount. Each destination's clip is
-created once the visitor is 34% through the previous destination, so it buffers
-during a reading hold rather than during a transition. The pool holds at most
-four video elements and evicts the least recently needed. Nothing is
-preloaded speculatively beyond one destination ahead.
+The hero clip is the only one created on mount. No next clip is requested until
+the visitor has actually moved and local progress passes 0.42. The next clip
+warms as metadata first, then upgrades to full preload after 0.56; transition
+clips follow the same policy at 0.50 and just before departure. Once a clip has
+been reached, its paused element remains available for reverse scrolling; this
+prevents a second network transfer without warming beyond one destination
+ahead.
+
+The water canvas is bounded to 2.2 MP desktop / 0.9 MP mobile. It renders at up
+to roughly 45 / 30 fps while motion is active, then rests at 20 / 15 fps during
+a calm reading hold. CSS variables are published only when their rounded value
+changes, avoiding repeated style writes for visually identical frames.

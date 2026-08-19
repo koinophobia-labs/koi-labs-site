@@ -28,9 +28,9 @@ test("the koi-first homepage leads with the internal product constellation", asy
     new URL("../app/page.tsx", import.meta.url),
     "utf8",
   );
-  const productsScene = page.indexOf('data-koi-scene="products"');
-  const systemsScene = page.indexOf('data-koi-scene="systems"');
-  const workScene = page.indexOf('data-koi-scene="work"');
+  const productsScene = page.indexOf('className="dest dest--products"');
+  const systemsScene = page.indexOf('className="dest dest--systems"');
+  const workScene = page.indexOf('className="dest dest--work"');
 
   assert.ok(productsScene > 0, "the product constellation must exist");
   assert.ok(
@@ -41,6 +41,7 @@ test("the koi-first homepage leads with the internal product constellation", asy
     systemsScene < workScene,
     "the systems chapter should lead into the work chapter",
   );
-  assert.match(page, /data-koi-duo="true"/);
+  assert.match(page, /className="kw__constellation"/);
+  assert.match(page, /constellation\.map\(\(node, index\) =>/);
   assert.match(page, /product\.status\.replace\("Internal Product · ", ""\)/);
 });

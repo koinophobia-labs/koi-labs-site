@@ -15,7 +15,7 @@ test("homepage, services, intake, and audit expose intentional concierge entry p
   ]) {
     assert.match(read(file), /\/concierge\?entry=/);
   }
-  assert.match(read("app/page.tsx"), /Bring us a problem/);
+  assert.match(read("app/page.tsx"), /Not sure what you need/);
   assert.match(read("app/intake/page.tsx"), /Start the standard form/);
 });
 

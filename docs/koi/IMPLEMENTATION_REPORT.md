@@ -1,5 +1,51 @@
 # The koi world — implementation report
 
+## Scroll-experience refinement — 2026-08-18
+
+This pass preserved the existing world and corrected its pacing, legibility,
+loading, and control behavior rather than redesigning it.
+
+- Reading holds now occupy `t = 0.25…0.70`; desktop bands are shorter and
+  mobile sections use natural document flow rather than imitating a sticky
+  desktop composition.
+- Non-hero hold poses settle the koi in upper-right open water with lower
+  scale, opacity, depth, and a softer focus. The fish remains the transition
+  guide without occupying the product, service, proof, founder, or CTA planes.
+- Per-word post-hydration DOM mutation and blur animation were removed. Copy
+  reveals as one composited block, remains still during the hold, and retraces
+  cleanly on reverse scroll.
+- Destination activation uses a viewport focus line consistently for both the
+  active section and local progress. The masthead and journey map expose
+  `aria-current="location"`; mobile map targets are 44 × 44 px.
+- Initial media loading is hero-only. Next and transition clips warm metadata
+  first only after real movement, then upgrade near departure.
+- The water canvas has pixel budgets, phase-aware frame throttling, and
+  deduplicated CSS-variable writes. Video/source URLs are cleared together on
+  eviction, pointer light exits correctly, and breakpoint source comparisons
+  no longer reload identical media.
+- Mobile copy is never dimmed or disabled, the fixed masthead occludes passing
+  content cleanly, and reduced-motion / Save-Data still create no video.
+
+Measured in the same software-rendered Playwright harness:
+
+| Metric | Before | After | Change |
+| --- | ---: | ---: | ---: |
+| Laptop initial transfer | 3.89 MB | 1.68 MB | −56.8% |
+| Laptop initial media | 3.41 MB / 7 files | 1.20 MB / 3 files | −64.8% |
+| Mobile initial transfer | 2.32 MB | 1.18 MB | −49.0% |
+| Mobile initial media | 1.84 MB / 7 files | 0.70 MB / 3 files | −61.9% |
+| Laptop initial layout shift | 0.0486 | 0 | eliminated |
+| Laptop scripted-scroll layout shift | 0.3527 | 0 | eliminated |
+| Laptop frame-gap median / p95 | 75.8 / 124.3 ms | 46.9 / 87.8 ms | −38.1% / −29.4% |
+| Ultrawide frame-gap median / p95 | 122.5 / 206.1 ms | 72.8 / 189.5 ms | −40.6% / −8.1% |
+| Laptop two-pass journey media | 6.238 MB | 6.236 MB | no refetch penalty |
+| Mobile two-pass journey media | 3.466 MB | 3.006 MB | −13.3% |
+
+The repository verifier captured 42 final screenshots across desktop-xl,
+laptop, tablet, iPhone, Android, and reduced motion. The quantitative audit
+also covered 2560 × 1080 ultrawide and 1440 × 1200 tall-screen layouts and
+recorded complete laptop and mobile journeys.
+
 ## What changed
 
 The homepage was a koi video playing behind a stack of sections. It is now a
@@ -86,13 +132,14 @@ overflow, content clipped out of a sticky stage, sub-24 px tap targets, the
 correct active destination, console errors and failed requests. It also sweeps
 the full page in reverse and asserts the journey lands back on the hero.
 
-Final run: **clean at every viewport**. The only remaining console entry is a
-404 for `/_vercel/insights/script.js`, which exists only when deployed on
-Vercel.
+Final run: **clean at every viewport**. The only browser-verifier entry is the
+expected localhost 404 for `/_vercel/insights/script.js`; the URL-attributed
+functional audit excludes only that production-only endpoint and found no
+other console, page, or HTTP errors.
 
 `npm run koi:contrast` resolves the nearest painted background for every text
 node — following gradients, not just background colours — and checks WCAG AA.
-**97 of 97 samples pass.** Reaching that moved the faintest type tier from
+**90 of 90 samples pass.** Reaching that moved the faintest type tier from
 `#647787` to `#8b9daa` and lifted the smallest labels off the 10 px floor.
 
 `npx tsx --test tests/commercial.test.ts` — 8/8 pass. The old test asserted the
@@ -103,14 +150,24 @@ assignment anywhere, the zero-opacity swap, one duo clip only, the still
 journey's completeness, and that every clip the journey references ships both
 renditions and a poster.
 
+The final functional audit also passed keyboard tab order, 27 homepage links,
+current-location semantics, reduced motion, Save-Data, failed-video poster
+fallback, touch scrolling, horizontal overflow, and 44 px mobile map targets.
+
 ## Performance
 
-- 9.14 MB of media total, none of it loaded up front. The hero clip is the only
-  one created on mount; each destination's clip is created when the visitor is
-  34% through the previous one, so it buffers during a reading hold.
-- The video pool holds at most four elements and evicts the least recently
-  needed.
-- Shader renders at 0.85 scale desktop / 0.7 mobile, DPR capped at 1.5 / 1.25.
+- The shipped media inventory is unchanged; no replacement koi asset was
+  generated. Initial laptop media transfer fell from 3.41 MB to 1.20 MB and
+  initial mobile media transfer from 1.84 MB to 0.70 MB because only the hero
+  poster and hero rendition are requested before movement.
+- A following clip first warms metadata after local progress 0.42 and upgrades
+  to full preload after 0.56; transition media follows the same late policy.
+- Reached clips remain as paused elements, preventing reverse scroll from
+  re-downloading media while keeping initial and one-ahead loading unchanged.
+- The shader is bounded to 2.2 MP desktop / 0.9 MP mobile, DPR capped at 1.35 /
+  1.25, and render cadence rests at 20 / 15 fps during calm holds.
+- Scripted layout shift measured zero at initial load and during the complete
+  scroll sweep at laptop, ultrawide, tall, tablet, and mobile sizes.
 - `visibilitychange` pauses every video and skips the render loop entirely.
 - Reduced motion and Save-Data create no canvas, no video element, and fetch no
   clip at all.

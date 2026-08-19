@@ -16,7 +16,6 @@ type MotionMode = "pending" | "cinematic" | "still";
 
 const MOBILE_QUERY = "(max-width: 860px)";
 const FADE_SECONDS = 0.24;
-const MAX_VIDEOS = 4;
 const LOOP_FADE = 0.42;
 
 const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
@@ -54,6 +53,14 @@ function clipFor(destination: Destination, t: number): ClipKey {
     return destination.transitionClip;
   }
   return destination.clip;
+}
+
+function markCurrentDestination(shell: HTMLElement, id: string) {
+  shell.dataset.koiDestination = id;
+  for (const link of shell.querySelectorAll<HTMLElement>("[data-koi-link]")) {
+    if (link.dataset.koiLink === id) link.setAttribute("aria-current", "location");
+    else link.removeAttribute("aria-current");
+  }
 }
 
 export default function KoiWorld() {
@@ -116,7 +123,6 @@ export default function KoiWorld() {
 
     // --- Video pool -------------------------------------------------------
     const pool = new Map<ClipKey, HTMLVideoElement>();
-    const lastNeeded = new Map<ClipKey, number>();
 
     const sourceFor = (key: ClipKey) => {
       const clip = CLIPS[key];
@@ -128,10 +134,18 @@ export default function KoiWorld() {
       return { mp4: `/koi/${clip.id}-${size}.mp4` };
     };
 
-    const ensureVideo = (key: ClipKey, now: number) => {
-      lastNeeded.set(key, now);
+    const ensureVideo = (
+      key: ClipKey,
+      preload: "metadata" | "auto" = "auto",
+    ) => {
       const existing = pool.get(key);
-      if (existing) return existing;
+      if (existing) {
+        if (preload === "auto" && existing.preload !== "auto") {
+          existing.preload = "auto";
+          existing.load();
+        }
+        return existing;
+      }
 
       const video = document.createElement("video");
       video.className = "koi-world__clip";
@@ -139,7 +153,7 @@ export default function KoiWorld() {
       video.defaultMuted = true;
       video.loop = true;
       video.playsInline = true;
-      video.preload = "auto";
+      video.preload = preload;
       video.setAttribute("aria-hidden", "true");
       video.setAttribute("tabindex", "-1");
       video.poster = CLIPS[key].poster;
@@ -169,25 +183,6 @@ export default function KoiWorld() {
 
       stage.appendChild(video);
       pool.set(key, video);
-
-      // Evict the least recently needed clip once the pool is full.
-      if (pool.size > MAX_VIDEOS) {
-        const ranked = [...pool.keys()].sort(
-          (a, b) => (lastNeeded.get(a) ?? 0) - (lastNeeded.get(b) ?? 0),
-        );
-        for (const candidate of ranked) {
-          if (pool.size <= MAX_VIDEOS) break;
-          if (candidate === key || candidate === mountedKey) continue;
-          const node = pool.get(candidate);
-          if (!node) continue;
-          node.pause();
-          node.removeAttribute("src");
-          node.load();
-          node.remove();
-          pool.delete(candidate);
-          lastNeeded.delete(candidate);
-        }
-      }
       return video;
     };
 
@@ -204,6 +199,13 @@ export default function KoiWorld() {
     let pointerAmp = 0;
     let paused = false;
     let activeIndex = -1;
+    let lastWaterAt = 0;
+    const published = new Map<string, string>();
+    const publish = (name: string, value: string) => {
+      if (published.get(name) === value) return;
+      published.set(name, value);
+      vars.style.setProperty(name, value);
+    };
 
     const bands: { destination: Destination; top: number; height: number }[] = [];
 
@@ -219,9 +221,17 @@ export default function KoiWorld() {
           height: Math.max(rect.height, 1),
         });
       }
-      const dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.5);
-      const scale = mobile ? 0.7 : 0.85;
-      water?.resize(window.innerWidth * scale, window.innerHeight * scale, dpr);
+      const dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.35);
+      const baseScale = mobile ? 0.68 : window.innerWidth >= 2200 ? 0.68 : 0.82;
+      const pixelBudget = mobile ? 900_000 : 2_200_000;
+      const requestedPixels =
+        window.innerWidth * baseScale * dpr * window.innerHeight * baseScale * dpr;
+      const budgetScale = Math.min(1, Math.sqrt(pixelBudget / requestedPixels));
+      water?.resize(
+        window.innerWidth * baseScale * budgetScale,
+        window.innerHeight * baseScale * budgetScale,
+        dpr,
+      );
     };
 
     const onPointer = (event: PointerEvent) => {
@@ -231,13 +241,16 @@ export default function KoiWorld() {
       pointerAmp = 1;
     };
     const onPointerLeave = () => {
-      pointerAmp = 0;
+      pointerX = -1;
+      pointerY = -1;
     };
 
     const onVisibility = () => {
       paused = document.hidden;
       if (paused) {
         for (const video of pool.values()) video.pause();
+      } else {
+        lastFrameAt = performance.now();
       }
     };
 
@@ -249,7 +262,7 @@ export default function KoiWorld() {
       for (const [key, video] of pool) {
         const { mp4 } = sourceFor(key);
         const source = video.querySelector("source");
-        if (source && source.src !== mp4) {
+        if (source && source.getAttribute("src") !== mp4) {
           source.src = mp4;
           video.load();
         }
@@ -270,7 +283,8 @@ export default function KoiWorld() {
       velocity += (rawVelocity - velocity) * clamp(dt * 9);
 
       // --- Locate the visitor in the journey -------------------------------
-      const focus = scrollY + window.innerHeight * 0.5;
+      const activationOffset = window.innerHeight * (mobile ? 0.22 : 0.38);
+      const focus = scrollY + activationOffset;
       let band = bands[0];
       for (const candidate of bands) {
         if (focus >= candidate.top) band = candidate;
@@ -280,12 +294,12 @@ export default function KoiWorld() {
       const destination = band.destination;
       const travel = Math.max(band.height - window.innerHeight, band.height * 0.45);
       const t = scrollY < 2 && band.destination.index === 0
-        ? 0.42
-        : clamp((scrollY - band.top) / travel);
+        ? ARRIVE_END + 0.15
+        : clamp((focus - band.top) / travel);
 
       if (destination.index !== activeIndex) {
         activeIndex = destination.index;
-        shell.dataset.koiDestination = destination.id;
+        markCurrentDestination(shell, destination.id);
         setActive(destination.index);
       }
 
@@ -293,12 +307,10 @@ export default function KoiWorld() {
       const poses = posesFor(destination, mobile);
       let target: KoiPose;
       let phase: "arrive" | "hold" | "depart";
-      // reveal drives the words: 0 = not yet formed, 1 = fully formed and
-      // locked. It climbs across the arrival as the visitor scrolls in, holds
-      // pinned at 1 through the reading hold, then falls back across the
-      // departure so continuing to scroll releases the words. Because it is a
-      // pure function of scroll position, reverse scrolling re-forms and
-      // un-forms the words in exact step.
+      // Reveal drives the reading surface: 0 = entering, 1 = fully settled.
+      // It climbs across the arrival, stays pinned through the reading hold,
+      // then eases away during departure. Because it is a pure function of
+      // scroll position, reverse scrolling retraces the transition exactly.
       let reveal: number;
       if (t < ARRIVE_END) {
         phase = "arrive";
@@ -330,11 +342,22 @@ export default function KoiWorld() {
 
       // --- Clip management --------------------------------------------------
       const desired = clipFor(destination, t);
-      ensureVideo(desired, now);
-      // Warm the next destination's opening clip while the visitor still reads.
+      ensureVideo(desired, "auto");
+      // The initial frame loads only the lead clip. Once the visitor actually
+      // moves, warm one beat ahead during the latter half of the reading hold.
+      // Metadata arrives first; full decode begins close enough to departure to
+      // avoid a transition stall without paying for three videos at page load.
+      const hasMoved = scrollY > Math.max(72, window.innerHeight * 0.08);
       const next = DESTINATIONS[destination.index + 1];
-      if (next && t > 0.34) ensureVideo(next.clip, now);
-      if (destination.transitionClip) ensureVideo(destination.transitionClip, now);
+      if (next && hasMoved && t > 0.42) {
+        ensureVideo(next.clip, t > 0.56 ? "auto" : "metadata");
+      }
+      if (destination.transitionClip && hasMoved && t > 0.5) {
+        ensureVideo(
+          destination.transitionClip,
+          t > DEPART_START - 0.04 ? "auto" : "metadata",
+        );
+      }
 
       if (mountedKey !== desired) {
         envelope -= dt / FADE_SECONDS;
@@ -379,23 +402,22 @@ export default function KoiWorld() {
       const pose = smoothed;
       const depth = clamp(pose.depth);
       const opacity = pose.opacity * envelope * loopFade;
-      const style = vars.style;
-      style.setProperty("--koi-x", `${(pose.x * 50).toFixed(3)}vw`);
-      style.setProperty("--koi-y", `${(pose.y * 50).toFixed(3)}vh`);
-      style.setProperty("--koi-scale", pose.scale.toFixed(4));
-      style.setProperty("--koi-rotate", `${pose.rotate.toFixed(3)}deg`);
-      style.setProperty("--koi-blur", `${pose.blur.toFixed(2)}px`);
-      style.setProperty("--koi-opacity", opacity.toFixed(4));
-      style.setProperty("--koi-depth", depth.toFixed(4));
-      style.setProperty("--koi-front", smooth(clamp((depth - 0.42) / 0.4)).toFixed(4));
-      style.setProperty("--koi-surge", clamp(surge).toFixed(4));
-      style.setProperty("--koi-phase-t", t.toFixed(4));
-      style.setProperty("--koi-reveal", reveal.toFixed(4));
-      style.setProperty(
+      publish("--koi-x", `${(pose.x * 50).toFixed(3)}vw`);
+      publish("--koi-y", `${(pose.y * 50).toFixed(3)}vh`);
+      publish("--koi-scale", pose.scale.toFixed(4));
+      publish("--koi-rotate", `${pose.rotate.toFixed(3)}deg`);
+      publish("--koi-blur", `${pose.blur.toFixed(2)}px`);
+      publish("--koi-opacity", opacity.toFixed(4));
+      publish("--koi-depth", depth.toFixed(4));
+      publish("--koi-front", smooth(clamp((depth - 0.42) / 0.4)).toFixed(4));
+      publish("--koi-surge", clamp(surge).toFixed(4));
+      publish("--koi-phase-t", t.toFixed(4));
+      publish("--koi-reveal", reveal.toFixed(4));
+      publish(
         "--koi-hold",
         (1 - smooth(clamp(Math.abs(t - 0.46) / 0.3))).toFixed(4),
       );
-      style.setProperty(
+      publish(
         "--kw-journey",
         clamp((destination.index + t) / DESTINATIONS.length).toFixed(4),
       );
@@ -412,28 +434,33 @@ export default function KoiWorld() {
           ? smooth((t - DEPART_START) / (1 - DEPART_START))
           : 0;
         pointerAmp += ((pointerX >= 0 ? 1 : 0) - pointerAmp) * clamp(dt * 4);
-        water.render({
-          time: now / 1000,
-          progress: clamp(
-            (destination.index + t) / Math.max(DESTINATIONS.length - 1, 1),
-          ),
-          surge: clamp(surge),
-          depth: mix(w.depth, nextWater.depth, blend),
-          particles: mix(w.particles, nextWater.particles, blend) * (mobile ? 0.6 : 1),
-          caustics: mix(w.caustics, nextWater.caustics, blend),
-          warmth: mix(w.warmth, nextWater.warmth, blend),
-          lightX: mix(w.lightX, nextWater.lightX, blend),
-          lightY: mix(w.lightY, nextWater.lightY, blend),
-          pointerX,
-          pointerY,
-          pointerAmp: pointerAmp * 0.9,
-          quality: mobile ? 0.5 : 1,
-        });
+        const calm = phase === "hold" && Math.abs(velocity) < 0.04 && pointerAmp < 0.02;
+        const renderInterval = calm ? (mobile ? 66 : 50) : mobile ? 33 : 22;
+        if (now - lastWaterAt >= renderInterval) {
+          lastWaterAt = now;
+          water.render({
+            time: now / 1000,
+            progress: clamp(
+              (destination.index + t) / Math.max(DESTINATIONS.length - 1, 1),
+            ),
+            surge: clamp(surge),
+            depth: mix(w.depth, nextWater.depth, blend),
+            particles: mix(w.particles, nextWater.particles, blend) * (mobile ? 0.6 : 1),
+            caustics: mix(w.caustics, nextWater.caustics, blend),
+            warmth: mix(w.warmth, nextWater.warmth, blend),
+            lightX: mix(w.lightX, nextWater.lightX, blend),
+            lightY: mix(w.lightY, nextWater.lightY, blend),
+            pointerX,
+            pointerY,
+            pointerAmp: pointerAmp * 0.9,
+            quality: mobile ? 0.5 : 1,
+          });
+        }
       }
     };
 
     measure();
-    ensureVideo(DESTINATIONS[0].clip, performance.now());
+    ensureVideo(DESTINATIONS[0].clip);
     shell.setAttribute("data-koi-ready", "true");
 
     const resizeObserver =
@@ -459,6 +486,9 @@ export default function KoiWorld() {
       for (const video of pool.values()) {
         video.pause();
         video.removeAttribute("src");
+        for (const source of video.querySelectorAll("source")) {
+          source.removeAttribute("src");
+        }
         video.load();
         video.remove();
       }
@@ -473,6 +503,7 @@ export default function KoiWorld() {
       ]) {
         vars.style.removeProperty(name);
       }
+      published.clear();
     };
   }, [mode]);
 
@@ -491,7 +522,7 @@ export default function KoiWorld() {
           if (!entry.isIntersecting) continue;
           const index = sections.indexOf(entry.target as HTMLElement);
           if (index < 0) continue;
-          shell.dataset.koiDestination = DESTINATIONS[index].id;
+          markCurrentDestination(shell, DESTINATIONS[index].id);
           setActive(index);
         }
       },
