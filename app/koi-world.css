@@ -350,7 +350,7 @@ body:has(.kw) > .koi-companion {
   left: 0;
   bottom: 0;
   z-index: 40;
-  width: 100%;
+  width: 100vw;
   height: 1px;
   background: linear-gradient(
     90deg,
