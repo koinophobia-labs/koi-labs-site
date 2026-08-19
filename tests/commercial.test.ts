@@ -31,9 +31,18 @@ test("optional project fields can remain absent", () => {
   const project = getWorkProject("blackline-ritual");
   assert.ok(project);
   assert.equal(project.liveUrl, undefined);
-  assert.equal(project.image, undefined);
   assert.equal(project.testimonial, undefined);
   assert.equal(project.measuredResults, undefined);
+});
+
+test("every concept build's proof pane is a real screenshot that ships", () => {
+  for (const project of workProjects) {
+    assert.ok(project.image, `${project.slug} should carry a proof image`);
+    assert.ok(
+      fs.existsSync(path.join(root, "public", project.image)),
+      `missing public${project.image}`,
+    );
+  }
 });
 
 test("pricing and timelines match the approved commercial ranges", () => {

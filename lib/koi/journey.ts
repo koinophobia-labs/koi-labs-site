@@ -17,6 +17,15 @@
 export const ARRIVE_END = 0.25;
 export const DEPART_START = 0.7;
 
+/**
+ * Words must always finish forming. Scroll drives the formation while the
+ * visitor is moving, but a destination that is simply *looked at* — reached by
+ * a nav jump, a deep link, or a phone's natural reading flow — completes its
+ * formation on its own over this many seconds. The resting state of every
+ * headline is fully formed, everywhere, on every entry path.
+ */
+export const FORM_SECONDS = 1.05;
+
 export type KoiClip = {
   /** Basename under /koi/ — `${id}-1280.mp4|webm` and `${id}-854.mp4|webm`. */
   id: string;
@@ -165,8 +174,8 @@ export const DESTINATIONS: Destination[] = [
       depart: pose(-0.04, 0.12, 1.8, 5, 0.78, 1, 0),
     },
     poseMobile: {
-      arrive: pose(0.16, -0.5, 0.98, -2, 0.28, 0.9, 1.8),
-      hold: pose(0.18, -0.44, 0.9, 0, 0.24, 1, 0.5),
+      arrive: pose(0.14, -0.4, 1.2, -2, 0.28, 0.9, 1.8),
+      hold: pose(0.12, -0.34, 1.14, 0, 0.24, 1, 0.5),
       depart: pose(0.04, -0.2, 1.5, 4, 0.66, 1, 0),
     },
     water: { lightX: -0.42, lightY: -0.7, depth: 0.42, particles: 0.7, caustics: 0.55, warmth: -0.15 },
@@ -181,14 +190,14 @@ export const DESTINATIONS: Destination[] = [
     transitionClip: "separate",
     band: { desktop: 2.75, mobile: 1.25 },
     pose: {
-      arrive: pose(0.4, -0.4, 0.9, 0, 0.12, 0.62, 2.5),
-      hold: pose(0.9, -0.58, 0.68, 0, 0.01, 0.3, 2.8),
-      depart: pose(0.5, -0.35, 0.9, -4, 0.16, 0.64, 2),
+      arrive: pose(0, -0.1, 1.34, 0, 0.24, 0.92, 2.2),
+      hold: pose(0, -0.18, 1.24, 0, 0.2, 1, 0.5),
+      depart: pose(-0.16, -0.04, 1.42, -4, 0.34, 1, 0.8),
     },
     poseMobile: {
-      arrive: pose(0.26, -0.48, 0.74, 0, 0.08, 0.48, 2.8),
-      hold: pose(0.44, -0.62, 0.56, 0, 0.01, 0.22, 3.4),
-      depart: pose(0.22, -0.44, 0.78, 0, 0.12, 0.52, 2.4),
+      arrive: pose(0, -0.52, 1.22, 0, 0.22, 0.88, 2.2),
+      hold: pose(0, -0.5, 1.12, 0, 0.18, 1, 0.6),
+      depart: pose(0, -0.5, 1.06, 0, 0.3, 0.98, 1),
     },
     water: { lightX: 0.1, lightY: -0.55, depth: 0.6, particles: 1, caustics: 0.75, warmth: -0.05 },
   },
@@ -201,14 +210,14 @@ export const DESTINATIONS: Destination[] = [
     clip: "systems",
     band: { desktop: 3, mobile: 1.25 },
     pose: {
-      arrive: pose(0.48, -0.42, 0.9, 3, 0.12, 0.6, 2.6),
-      hold: pose(0.9, -0.58, 0.68, 0, 0.01, 0.3, 2.8),
-      depart: pose(0.54, -0.3, 1, -6, 0.18, 0.65, 2),
+      arrive: pose(-0.22, -0.12, 1.3, 3, 0.26, 0.92, 2.2),
+      hold: pose(-0.18, -0.02, 1.2, 0, 0.22, 1, 0.5),
+      depart: pose(-0.06, 0.14, 1.62, -6, 0.6, 1, 0.4),
     },
     poseMobile: {
-      arrive: pose(0.26, -0.48, 0.74, 2, 0.08, 0.46, 2.8),
-      hold: pose(0.44, -0.62, 0.56, 0, 0.01, 0.22, 3.4),
-      depart: pose(0.22, -0.44, 0.8, -4, 0.12, 0.5, 2.4),
+      arrive: pose(-0.14, -0.5, 1.18, 2, 0.24, 0.88, 2.2),
+      hold: pose(-0.14, -0.48, 1.1, 0, 0.2, 1, 0.6),
+      depart: pose(-0.06, -0.38, 1.14, -4, 0.46, 0.98, 1),
     },
     water: { lightX: -0.6, lightY: -0.35, depth: 0.78, particles: 0.85, caustics: 0.5, warmth: -0.3 },
   },
@@ -221,14 +230,14 @@ export const DESTINATIONS: Destination[] = [
     clip: "work",
     band: { desktop: 2.8, mobile: 1.25 },
     pose: {
-      arrive: pose(0.5, -0.44, 0.9, -3, 0.12, 0.6, 2.6),
-      hold: pose(0.98, -0.62, 0.68, 0, 0.01, 0.28, 2.9),
-      depart: pose(0.54, -0.32, 0.96, 5, 0.18, 0.64, 2),
+      arrive: pose(0.24, -0.1, 1.3, -3, 0.26, 0.92, 2.2),
+      hold: pose(0.18, -0.02, 1.2, 0, 0.22, 1, 0.5),
+      depart: pose(0.04, 0.12, 1.56, 5, 0.54, 1, 0.5),
     },
     poseMobile: {
-      arrive: pose(0.26, -0.48, 0.74, -2, 0.08, 0.46, 2.8),
-      hold: pose(0.44, -0.62, 0.56, 0, 0.01, 0.2, 3.4),
-      depart: pose(0.22, -0.44, 0.8, 4, 0.12, 0.5, 2.4),
+      arrive: pose(0.14, -0.5, 1.18, -2, 0.24, 0.88, 2.2),
+      hold: pose(0.14, -0.48, 1.1, 0, 0.2, 1, 0.6),
+      depart: pose(0.06, -0.38, 1.1, 4, 0.44, 0.98, 1),
     },
     water: { lightX: 0.55, lightY: -0.5, depth: 0.66, particles: 0.9, caustics: 0.62, warmth: -0.1 },
   },
@@ -241,14 +250,14 @@ export const DESTINATIONS: Destination[] = [
     clip: "still",
     band: { desktop: 2.45, mobile: 1.3 },
     pose: {
-      arrive: pose(0.56, -0.48, 0.86, 2, 0.1, 0.54, 2.8),
-      hold: pose(0.9, -0.62, 0.66, 0, 0.01, 0.28, 3),
-      depart: pose(0.52, -0.38, 0.9, -4, 0.14, 0.6, 2.2),
+      arrive: pose(0.4, -0.22, 1.22, 2, 0.22, 0.88, 2.2),
+      hold: pose(0.46, -0.16, 1.12, 0, 0.18, 1, 0.6),
+      depart: pose(0.22, 0.08, 1.4, -4, 0.4, 1, 0.6),
     },
     poseMobile: {
-      arrive: pose(0.26, -0.48, 0.72, 1, 0.08, 0.44, 2.8),
-      hold: pose(0.44, -0.62, 0.54, 0, 0.01, 0.2, 3.4),
-      depart: pose(0.22, -0.44, 0.76, -3, 0.1, 0.48, 2.5),
+      arrive: pose(-0.12, -0.5, 1.12, 1, 0.22, 0.86, 2),
+      hold: pose(-0.12, -0.46, 1.06, 0, 0.18, 1, 0.6),
+      depart: pose(-0.06, -0.4, 1.02, -3, 0.34, 0.98, 1),
     },
     water: { lightX: 0, lightY: -0.85, depth: 0.34, particles: 0.5, caustics: 0.3, warmth: 0.22 },
   },
@@ -261,14 +270,14 @@ export const DESTINATIONS: Destination[] = [
     clip: "open",
     band: { desktop: 2.6, mobile: 1.35 },
     pose: {
-      arrive: pose(0.52, -0.48, 0.9, 0, 0.1, 0.58, 2.6),
-      hold: pose(0.9, -0.62, 0.68, 0, 0.01, 0.3, 2.9),
-      depart: pose(0.6, -0.56, 0.8, 0, 0.08, 0.58, 2.2),
+      arrive: pose(0.12, -0.34, 1.3, 0, 0.2, 0.92, 1.9),
+      hold: pose(0.08, -0.4, 1.2, 0, 0.16, 1, 0.5),
+      depart: pose(0.02, -0.44, 1.12, 0, 0.12, 0.94, 0.9),
     },
     poseMobile: {
-      arrive: pose(0.26, -0.48, 0.74, 0, 0.08, 0.46, 2.8),
-      hold: pose(0.44, -0.62, 0.56, 0, 0.01, 0.22, 3.4),
-      depart: pose(0.24, -0.5, 0.7, 0, 0.06, 0.48, 2.5),
+      arrive: pose(0, -0.52, 1.2, 0, 0.2, 0.9, 1.8),
+      hold: pose(0, -0.5, 1.14, 0, 0.16, 1, 0.5),
+      depart: pose(0, -0.66, 0.9, 0, 0.12, 0.94, 0.9),
     },
     water: { lightX: 0, lightY: -0.2, depth: 0.95, particles: 1.1, caustics: 0.85, warmth: 0.1 },
   },

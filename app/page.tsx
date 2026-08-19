@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, ArrowUpRight } from "lucide-react";
 import KoiWorld from "@/components/koi/KoiWorld";
+import WaterText from "@/components/koi/WaterText";
 import { DESTINATIONS } from "@/lib/koi/journey";
 import { LINKS } from "@/lib/links";
 import { products, serviceOffers, studioConfig, workProjects } from "@/lib/commercial";
@@ -86,6 +87,7 @@ export default function Home() {
       </a>
 
       <KoiWorld />
+      <WaterText />
 
       <header className="kw__masthead">
         <Link className="kw__brand" href="#enter" aria-label="Koinophobia Labs, home">
@@ -152,16 +154,17 @@ export default function Home() {
                   <Link className="kw__btn kw__btn--primary" href="/intake">
                     Start a project <ArrowRight size={16} aria-hidden="true" />
                   </Link>
-                  <a className="kw__btn kw__btn--ghost" href="#products">
+                  <a
+                    className="kw__btn kw__btn--ghost kw__btn--dive"
+                    href="#products"
+                    data-koi-link="products"
+                  >
                     Follow the koi <ArrowDown size={16} aria-hidden="true" />
                   </a>
                 </div>
               </div>
 
             </div>
-            <a className="kw__cue" href="#products">
-              Follow the koi <ArrowDown size={14} aria-hidden="true" />
-            </a>
           </div>
         </section>
 
@@ -259,9 +262,7 @@ export default function Home() {
               <div className="kw__systems-grid">
                 <div className="kw__audit">
                   <p className="kw__kicker">Start here</p>
-                  <h3 style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>
-                    {audit.title}
-                  </h3>
+                  <h3>{audit.title}</h3>
                   <div className="kw__audit-head">
                     <span className="kw__price">{audit.price}</span>
                     <span className="kw__price-note">
@@ -336,6 +337,16 @@ export default function Home() {
                     href={project.previewUrl ?? `/work/${project.slug}`}
                     key={project.slug}
                   >
+                    {project.image ? (
+                      <span className="kw__proof-visual" aria-hidden="true">
+                        <Image
+                          src={project.image}
+                          alt=""
+                          fill
+                          sizes="(max-width: 1024px) 92vw, 30vw"
+                        />
+                      </span>
+                    ) : null}
                     <span className="kw__tag">{project.statusLabel}</span>
                     <h3>{project.title}</h3>
                     <p>{project.summary}</p>
@@ -418,19 +429,21 @@ export default function Home() {
                 begins.
               </p>
 
+              <div className="kw__actions">
+                <Link className="kw__btn kw__btn--primary kw__btn--grand" href="/intake">
+                  Start a project <ArrowRight size={18} aria-hidden="true" />
+                </Link>
+              </div>
+              <a className="kw__finale-mail" href={LINKS.email}>
+                Email the studio directly <ArrowUpRight size={14} aria-hidden="true" />
+              </a>
+
               <div className="kw__paths">
                 <Link className="kw__path" href="/audit">
                   <strong>Revenue Leak Audit</strong>
                   <small>
                     {studioConfig.auditPrice} flat · {studioConfig.auditTimeline} ·
-                    prioritised PDF and walkthrough
-                  </small>
-                </Link>
-                <Link className="kw__path" href="/intake">
-                  <strong>Start a project</strong>
-                  <small>
-                    Websites, landing pages, AI workflows, prototypes, and custom
-                    software.
+                    prioritized PDF and walkthrough
                   </small>
                 </Link>
                 <Link className="kw__path" href="/concierge?entry=home">
@@ -440,17 +453,18 @@ export default function Home() {
                     rules-grounded recommendation.
                   </small>
                 </Link>
-                <a className="kw__path" href={LINKS.email}>
-                  <strong>Email the studio</strong>
-                  <small>koinophobia999@gmail.com — Chicago, working remotely.</small>
-                </a>
+                <Link className="kw__path" href="/services">
+                  <strong>Every service, scoped in writing</strong>
+                  <small>
+                    Pricing, what each engagement includes, and what is decided
+                    before development starts.
+                  </small>
+                </Link>
               </div>
 
-              <div className="kw__actions" style={{ justifyContent: "center" }}>
-                <a className="kw__btn kw__btn--ghost" href="#enter">
-                  Return to the beginning
-                </a>
-              </div>
+              <a className="kw__return" href="#enter" data-koi-link="enter">
+                Return to the surface
+              </a>
 
               <footer className="kw__footer">
                 <span>Koinophobia Labs · Chicago</span>
@@ -461,7 +475,7 @@ export default function Home() {
                   <Link href="/about">About</Link>
                   <Link href="/process">Process</Link>
                 </nav>
-                <span>Fear ordinary.</span>
+                <span className="kw__footer-sign">Fear ordinary.</span>
               </footer>
             </div>
           </div>

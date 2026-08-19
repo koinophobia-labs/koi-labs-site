@@ -32,9 +32,10 @@ export default function WaterText() {
     const shell = document.querySelector<HTMLElement>(".kw");
     if (!shell) return;
 
-    // Only the reading copy flows — not labels, buttons, or nav.
-    const SELECTOR =
-      ".dest__inner h1, .dest__inner h2, .dest__inner .kw__lede, .dest__inner > div > p, .kw__kicker";
+    // Only display type lives in the water. Body copy, ledes, kickers and
+    // labels read as ordinary text — the signature effect is reserved for the
+    // headlines, so reading never has to fight the ocean.
+    const SELECTOR = ".dest__inner h1, .dest__inner h2";
 
     const wrapWords = (el: HTMLElement) => {
       if (el.dataset.watered === "true") return;
@@ -61,49 +62,15 @@ export default function WaterText() {
       el.style.setProperty("--words", String(wi));
     };
 
-    const sections = new Map<string, HTMLElement>();
     document.querySelectorAll<HTMLElement>(".dest").forEach((section) => {
-      const id = section.id;
-      if (id) sections.set(id, section);
       section
         .querySelectorAll<HTMLElement>(SELECTOR)
         .forEach((el) => wrapWords(el));
     });
 
-    // The active destination's words form as the visitor scrolls in (driven by
-    // the live --koi-reveal the loop writes), lock stable through the reading
-    // hold, then release as they scroll on. Inactive sections park "out".
-    //   form    — arriving: words assembling on the current
-    //   lock     — holding: fully formed, pinned stable, drift stilled
-    //   release  — departing: words letting go as the koi moves on
-    // Reverse scroll walks the same states backwards in exact step.
-    let activeId = shell.dataset.koiDestination ?? "";
-    let phase = shell.dataset.koiPhase ?? "arrive";
-    const phaseToFlow = (p: string) =>
-      p === "hold" ? "lock" : p === "depart" ? "release" : "form";
-    const apply = () => {
-      const flow = phaseToFlow(phase);
-      for (const [sid, section] of sections) {
-        section.dataset.flow = sid === activeId ? flow : "out";
-      }
-    };
-    apply();
-
-    const observer = new MutationObserver(() => {
-      const nextId = shell.dataset.koiDestination ?? "";
-      const nextPhase = shell.dataset.koiPhase ?? "arrive";
-      if (nextId !== activeId || nextPhase !== phase) {
-        activeId = nextId;
-        phase = nextPhase;
-        apply();
-      }
-    });
-    observer.observe(shell, {
-      attributes: true,
-      attributeFilter: ["data-koi-destination", "data-koi-phase"],
-    });
-
-    return () => observer.disconnect();
+    // The per-destination flow states (form / lock / release / out) and the
+    // per-section --koi-reveal are written by the KoiWorld loop itself, which
+    // is the only code that knows where every destination sits each frame.
   }, []);
 
   return null;

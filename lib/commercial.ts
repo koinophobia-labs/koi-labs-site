@@ -122,6 +122,7 @@ export const workProjects: WorkProject[] = [
       "Set deposit and scheduling expectations earlier",
     ],
     previewUrl: "/demos/tattoo-studio",
+    image: "/work/blackline-ritual.jpg",
     featured: true,
   },
   {
@@ -150,6 +151,7 @@ export const workProjects: WorkProject[] = [
       "Make the trial offer easier to act on",
     ],
     previewUrl: "/demos/fitness-coach",
+    image: "/work/iron-method-coaching.jpg",
     featured: true,
   },
   {
@@ -178,6 +180,7 @@ export const workProjects: WorkProject[] = [
       "Create clearer reasons to return",
     ],
     previewUrl: "/demos/coffee-shop",
+    image: "/work/forge-and-foam.jpg",
     featured: true,
   },
 ];

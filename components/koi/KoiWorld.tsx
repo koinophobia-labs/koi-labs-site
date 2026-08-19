@@ -6,6 +6,7 @@ import {
   CLIPS,
   DEPART_START,
   DESTINATIONS,
+  FORM_SECONDS,
   type ClipKey,
   type Destination,
   type KoiPose,
@@ -215,7 +216,15 @@ export default function KoiWorld() {
       vars.style.setProperty(name, value);
     };
 
-    const bands: { destination: Destination; top: number; height: number }[] = [];
+    const bands: {
+      destination: Destination;
+      el: HTMLElement;
+      top: number;
+      height: number;
+    }[] = [];
+
+    // Time-based formation floors, one per destination. See FORM_SECONDS.
+    const floors = new Map<string, number>();
 
     const measure = () => {
       bands.length = 0;
@@ -225,6 +234,7 @@ export default function KoiWorld() {
         const rect = el.getBoundingClientRect();
         bands.push({
           destination,
+          el,
           top: rect.top + window.scrollY,
           height: Math.max(rect.height, 1),
         });
@@ -376,6 +386,69 @@ export default function KoiWorld() {
       }
       shell.dataset.koiPhase = phase;
 
+      // --- Words: per-destination reveal and flow ---------------------------
+      // Reveal is written on every section, not only the active one, because
+      // on mobile several sections share the screen. Scroll drives formation
+      // while the visitor is moving; a per-destination floor climbs with time
+      // whenever a section is being looked at, so a nav jump, a deep link, or
+      // a phone's natural reading flow always ends with the words formed.
+      for (const candidate of bands) {
+        const cid = candidate.destination.id;
+        const cTravel = Math.max(
+          candidate.height - window.innerHeight,
+          candidate.height * 0.45,
+        );
+        const isActive = cid === destination.id;
+        const isLast = candidate.destination.index === DESTINATIONS.length - 1;
+        // The journey's final destination has nothing to depart into: its
+        // words hold formed to the very bottom of the page.
+        const rawT = isActive ? t : clamp((focus - candidate.top) / cTravel);
+        const ct = isLast ? Math.min(rawT, DEPART_START - 0.001) : rawT;
+        const onScreen =
+          candidate.top < scrollY + window.innerHeight * (mobile ? 0.78 : 1) &&
+          candidate.top + candidate.height > scrollY;
+
+        let floor = floors.get(cid) ?? 0;
+        if (mobile ? onScreen : isActive && ct < DEPART_START) {
+          floor = Math.min(1, floor + dt / FORM_SECONDS);
+        } else if (!onScreen) {
+          floor = 0;
+        }
+        floors.set(cid, floor);
+
+        let wordReveal: number;
+        let flow: "form" | "lock" | "release" | "out";
+        if (mobile) {
+          // Phones read in natural flow: words form as the copy arrives and
+          // then stay formed. Release is a sticky-stage idea — on a phone it
+          // would dissolve text the visitor is still reading.
+          wordReveal = smooth(floor);
+          flow =
+            !onScreen && floor === 0 ? "out" : wordReveal >= 0.98 ? "lock" : "form";
+        } else if (isActive) {
+          const scrollReveal =
+            ct < ARRIVE_END
+              ? smooth(ct / ARRIVE_END)
+              : ct < DEPART_START
+                ? 1
+                : 1 - smooth((ct - DEPART_START) / (1 - DEPART_START));
+          wordReveal =
+            ct >= DEPART_START ? scrollReveal : Math.max(scrollReveal, smooth(floor));
+          flow =
+            phase === "depart" && !isLast
+              ? "release"
+              : wordReveal >= 0.98
+                ? "lock"
+                : "form";
+        } else {
+          wordReveal = 0;
+          flow = "out";
+        }
+
+        candidate.el.style.setProperty("--koi-reveal", wordReveal.toFixed(4));
+        if (candidate.el.dataset.flow !== flow) candidate.el.dataset.flow = flow;
+      }
+
       // The koi carries inertia: it lags the scroll slightly, like a body with
       // mass, instead of being welded to the scroll offset.
       const follow = 1 - Math.exp(-(phase === "depart" ? 7.5 : 4.4) * dt);
@@ -426,21 +499,23 @@ export default function KoiWorld() {
       const video = pool.get(mountedKey);
       let loopFade = 1;
       if (video && video.dataset.koiStatic !== "true") {
-        if (readingRest) {
-          if (!video.paused) video.pause();
-        } else if (video.paused && video.readyState >= 2) {
+        if (video.paused && video.readyState >= 2) {
           void video.play().catch(() => {
             /* Autoplay refusal is handled by the poster underneath. */
           });
         }
-        if (!readingRest) {
-          // Motion belongs to travel. At a reading rest the current frame is
-          // held until the visitor scrolls again.
-          const rate = phase === "arrive" ? 0.62 : 0.72 + surge * 1.15;
-          const clamped = clamp(rate, 0.25, 2.2);
-          if (Math.abs(video.playbackRate - clamped) > 0.02) {
-            video.playbackRate = clamped;
-          }
+        // Motion belongs to travel; a reading rest is calm, not a freeze-frame.
+        // With the koi present through the hold, a stopped frame reads as a
+        // broken video — so the fish keeps station at a slow ambient drift and
+        // accelerates only when the visitor moves on.
+        const rate = readingRest
+          ? 0.45
+          : phase === "arrive"
+            ? 0.62
+            : 0.72 + surge * 1.15;
+        const clamped = clamp(rate, 0.25, 2.2);
+        if (Math.abs(video.playbackRate - clamped) > 0.02) {
+          video.playbackRate = clamped;
         }
 
         // Dip the koi into the dark across the loop seam so the cut never pops.
@@ -529,6 +604,10 @@ export default function KoiWorld() {
     };
 
     measure();
+    // Arriving at the top of the page, the hero is already formed — the
+    // journey begins readable. Formation choreography plays for every other
+    // destination, and for the hero again on the way back up.
+    if (window.scrollY < 2) floors.set(DESTINATIONS[0].id, 1);
     ensureVideo(DESTINATIONS[0].clip);
     shell.setAttribute("data-koi-ready", "true");
 
@@ -568,6 +647,10 @@ export default function KoiWorld() {
       shell.removeAttribute("data-koi-ready");
       delete shell.dataset.koiPhase;
       delete shell.dataset.koiRest;
+      for (const band of bands) {
+        band.el.style.removeProperty("--koi-reveal");
+        delete band.el.dataset.flow;
+      }
       for (const name of [
         "--koi-x", "--koi-y", "--koi-scale", "--koi-rotate", "--koi-blur",
         "--koi-opacity", "--koi-depth", "--koi-front", "--koi-surge",
