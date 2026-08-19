@@ -207,14 +207,14 @@ export default function Home() {
                       {content}
                     </a>
                   ) : (
-                    <Link
+                    <a
                       key={node.title}
                       className={className}
                       href={node.href}
                       aria-label={`${node.cta} — for ${node.audience}`}
                     >
                       {content}
-                    </Link>
+                    </a>
                   );
                 })}
               </div>
