@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, ArrowUpRight } from "lucide-react";
 import KoiWorld from "@/components/koi/KoiWorld";
-import WaterText from "@/components/koi/WaterText";
 import { DESTINATIONS } from "@/lib/koi/journey";
 import { LINKS } from "@/lib/links";
 import { products, serviceOffers, studioConfig, workProjects } from "@/lib/commercial";
@@ -80,7 +79,6 @@ export default function Home() {
       </a>
 
       <KoiWorld />
-      <WaterText />
 
       <header className="kw__masthead">
         <Link className="kw__brand" href="#enter" aria-label="Koinophobia Labs, home">
@@ -93,6 +91,8 @@ export default function Home() {
             <a
               key={destination.id}
               href={`#${destination.id}`}
+              data-koi-link={destination.id}
+              aria-current={destination.index === 0 ? "location" : undefined}
               aria-label={`${destination.label}: ${destination.hint}`}
             >
               {destination.label}
@@ -110,6 +110,8 @@ export default function Home() {
           <a
             key={destination.id}
             href={`#${destination.id}`}
+            data-koi-link={destination.id}
+            aria-current={destination.index === 0 ? "location" : undefined}
             aria-label={`${destination.marker} ${destination.label}: ${destination.hint}`}
           >
             <span className="kw__map-label">{destination.label}</span>
