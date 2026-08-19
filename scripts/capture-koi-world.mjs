@@ -238,6 +238,7 @@ for (const frame of frameCases) {
     const nav = document.querySelector(".kw__nav");
     const labels = [...document.querySelectorAll(".kw__map-label")];
     const wideShell = document.querySelector("#start .dest__inner")?.getBoundingClientRect();
+    const koiClips = [...document.querySelectorAll(".koi-world__clip[data-koi-clip]")];
     return {
       overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
       navDisplay: nav ? getComputedStyle(nav).display : "missing",
@@ -247,6 +248,7 @@ for (const frame of frameCases) {
       mapClearsMasthead: Boolean(map && masthead && map.top >= masthead.bottom - 1),
       labelsHidden: labels.every((label) => getComputedStyle(label).display === "none"),
       shellWidthRatio: wideShell ? wideShell.width / innerWidth : 0,
+      koiContained: koiClips.every((clip) => getComputedStyle(clip).objectFit === "contain"),
     };
   })()`);
 
@@ -255,10 +257,80 @@ for (const frame of frameCases) {
     !chrome.mapInsideFrame ||
     (frame.width <= 1024 && (chrome.navDisplay !== "none" || !chrome.mapClearsMasthead)) ||
     (frame.width > 1024 && frame.width <= 1320 && !chrome.labelsHidden) ||
-    (frame.width >= 2800 && chrome.shellWidthRatio < 0.48)
+    (frame.width >= 2800 && (chrome.shellWidthRatio < 0.48 || !chrome.koiContained))
   ) {
     throw new Error(
       `${frame.name} chrome escaped or obscured the frame: ${JSON.stringify(chrome)}`,
+    );
+  }
+
+  await evaluate(`document.querySelector('.kw__nav [data-koi-link="start"]')?.click()`);
+  await waitFor(
+    `document.querySelector(".kw")?.dataset.koiDestination === "start" && document.querySelector(".kw")?.dataset.koiPhase === "hold" && document.querySelector(".kw")?.dataset.koiRest === "true"`,
+    `${frame.name} navigation to reach the Start reading rest`,
+  );
+  await wait(1_800);
+
+  const readingRestBefore = await evaluate(`(() => {
+    const content = document.querySelector("#start .dest__inner");
+    const activeVideo = [...document.querySelectorAll(".koi-world__clip[data-koi-clip]")]
+      .sort((a, b) => Number(getComputedStyle(b).opacity) - Number(getComputedStyle(a).opacity))[0];
+    const videoRect = activeVideo?.getBoundingClientRect();
+    const depth = document.querySelector(".kw__depth");
+    const depthFill = depth?.querySelector("span");
+    const rect = content?.getBoundingClientRect();
+    return {
+      phase: document.querySelector(".kw")?.dataset.koiPhase,
+      content: rect ? { top: rect.top, left: rect.left, opacity: Number(getComputedStyle(content).opacity) } : null,
+      videoTime: activeVideo?.currentTime ?? 0,
+      videoPaused: !activeVideo || activeVideo.paused || activeVideo.dataset.koiStatic === "true",
+      videoInFrame: Boolean(
+        videoRect &&
+        videoRect.left >= -1 &&
+        videoRect.right <= innerWidth + 1 &&
+        videoRect.top >= -1 &&
+        videoRect.bottom <= innerHeight + 1
+      ),
+      depthFullWidth: Boolean(depth && Math.abs(depth.getBoundingClientRect().width - innerWidth) <= 1),
+      depthHeight: depth?.getBoundingClientRect().height ?? 0,
+      depthFillHidden: !depthFill || getComputedStyle(depthFill).display === "none",
+    };
+  })()`);
+  await wait(600);
+  const readingRestAfter = await evaluate(`(() => {
+    const content = document.querySelector("#start .dest__inner");
+    const activeVideo = [...document.querySelectorAll(".koi-world__clip[data-koi-clip]")]
+      .sort((a, b) => Number(getComputedStyle(b).opacity) - Number(getComputedStyle(a).opacity))[0];
+    const rect = content?.getBoundingClientRect();
+    return {
+      content: rect ? { top: rect.top, left: rect.left, opacity: Number(getComputedStyle(content).opacity) } : null,
+      videoTime: activeVideo?.currentTime ?? 0,
+      videoPaused: !activeVideo || activeVideo.paused || activeVideo.dataset.koiStatic === "true",
+    };
+  })()`);
+
+  const contentStable = Boolean(
+    readingRestBefore.content &&
+    readingRestAfter.content &&
+    Math.abs(readingRestBefore.content.top - readingRestAfter.content.top) < 0.1 &&
+    Math.abs(readingRestBefore.content.left - readingRestAfter.content.left) < 0.1 &&
+    readingRestBefore.content.opacity >= 0.999 &&
+    readingRestAfter.content.opacity >= 0.999
+  );
+  const videoStable = readingRestBefore.videoPaused &&
+    readingRestAfter.videoPaused &&
+    Math.abs(readingRestBefore.videoTime - readingRestAfter.videoTime) < 0.03;
+  if (
+    readingRestBefore.phase !== "hold" ||
+    !contentStable ||
+    !videoStable ||
+    (frame.width >= 2800 && !readingRestBefore.videoInFrame) ||
+    !readingRestBefore.depthFullWidth ||
+    Math.abs(readingRestBefore.depthHeight - 1) > 0.1 ||
+    !readingRestBefore.depthFillHidden
+  ) {
+    throw new Error(
+      `${frame.name} reading rest stayed in motion: ${JSON.stringify({ readingRestBefore, readingRestAfter })}`,
     );
   }
 

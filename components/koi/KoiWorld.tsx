@@ -19,6 +19,8 @@ const ULTRAWIDE_MIN_WIDTH = 2800;
 const ULTRAWIDE_MIN_ASPECT = 2;
 const ULTRAWIDE_MOTION_WIDTH = 1600;
 const ULTRAWIDE_SCALE = 0.84;
+const READING_REST_PROGRESS = 0.46;
+const POINTER_SETTLE_MS = 450;
 const FADE_SECONDS = 0.24;
 const LOOP_FADE = 0.42;
 
@@ -201,9 +203,11 @@ export default function KoiWorld() {
     let pointerX = -1;
     let pointerY = -1;
     let pointerAmp = 0;
+    let lastPointerAt = Number.NEGATIVE_INFINITY;
     let paused = false;
     let activeIndex = -1;
     let lastWaterAt = 0;
+    let waterSettled = false;
     const published = new Map<string, string>();
     const publish = (name: string, value: string) => {
       if (published.get(name) === value) return;
@@ -243,10 +247,12 @@ export default function KoiWorld() {
       pointerX = event.clientX / window.innerWidth;
       pointerY = 1 - event.clientY / window.innerHeight;
       pointerAmp = 1;
+      lastPointerAt = performance.now();
     };
     const onPointerLeave = () => {
       pointerX = -1;
       pointerY = -1;
+      lastPointerAt = Number.NEGATIVE_INFINITY;
     };
 
     const onVisibility = () => {
@@ -272,6 +278,43 @@ export default function KoiWorld() {
         }
       }
       measure();
+    };
+
+    const onKoiLinkClick = (event: MouseEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+
+      if (!(event.target instanceof Element)) return;
+      const link = event.target.closest<HTMLAnchorElement>("a[data-koi-link]");
+      const id = link?.dataset.koiLink;
+      if (!link || !id || link.target === "_blank") return;
+
+      const band = bands.find((candidate) => candidate.destination.id === id);
+      if (!band) return;
+
+      event.preventDefault();
+      const activationOffset = window.innerHeight * (mobile ? 0.22 : 0.38);
+      const travel = Math.max(
+        band.height - window.innerHeight,
+        band.height * 0.45,
+      );
+      const top = id === DESTINATIONS[0].id
+        ? 0
+        : clamp(
+            band.top + travel * READING_REST_PROGRESS - activationOffset,
+            0,
+            Math.max(document.documentElement.scrollHeight - window.innerHeight, 0),
+          );
+      window.history.replaceState(null, "", `#${id}`);
+      window.scrollTo({ top, behavior: "smooth" });
     };
 
     const tick = (now: number) => {
@@ -343,6 +386,7 @@ export default function KoiWorld() {
         phase === "depart"
           ? smooth((t - DEPART_START) / (1 - DEPART_START)) * 0.8 + speed * 0.5
           : speed * 0.55;
+      const readingRest = phase === "hold" && Math.abs(velocity) < 0.04;
 
       // --- Clip management --------------------------------------------------
       const desired = clipFor(destination, t);
@@ -382,16 +426,22 @@ export default function KoiWorld() {
       const video = pool.get(mountedKey);
       let loopFade = 1;
       if (video && video.dataset.koiStatic !== "true") {
-        if (video.paused && video.readyState >= 2) {
+        if (readingRest) {
+          if (!video.paused) video.pause();
+        } else if (video.paused && video.readyState >= 2) {
           void video.play().catch(() => {
             /* Autoplay refusal is handled by the poster underneath. */
           });
         }
-        // Speed ramps: settled while reading, accelerating through transitions.
-        const rate =
-          phase === "hold" ? 0.5 + speed * 0.35 : phase === "arrive" ? 0.62 : 0.72 + surge * 1.15;
-        const clamped = clamp(rate, 0.25, 2.2);
-        if (Math.abs(video.playbackRate - clamped) > 0.02) video.playbackRate = clamped;
+        if (!readingRest) {
+          // Motion belongs to travel. At a reading rest the current frame is
+          // held until the visitor scrolls again.
+          const rate = phase === "arrive" ? 0.62 : 0.72 + surge * 1.15;
+          const clamped = clamp(rate, 0.25, 2.2);
+          if (Math.abs(video.playbackRate - clamped) > 0.02) {
+            video.playbackRate = clamped;
+          }
+        }
 
         // Dip the koi into the dark across the loop seam so the cut never pops.
         const duration = Number.isFinite(video.duration) && video.duration > 0
@@ -432,26 +482,29 @@ export default function KoiWorld() {
         "--koi-hold",
         (1 - smooth(clamp(Math.abs(t - 0.46) / 0.3))).toFixed(4),
       );
-      publish(
-        "--kw-journey",
-        clamp((destination.index + t) / DESTINATIONS.length).toFixed(4),
-      );
-
       if (video) {
         video.style.opacity = "1";
       }
 
       // --- Water ------------------------------------------------------------
+      const pointerActive = pointerX >= 0 && now - lastPointerAt < POINTER_SETTLE_MS;
+      pointerAmp += ((pointerActive ? 1 : 0) - pointerAmp) * clamp(dt * 4);
+      const calm = readingRest && pointerAmp < 0.02;
+      if (shell.dataset.koiRest !== String(calm)) {
+        shell.dataset.koiRest = String(calm);
+      }
+
       if (water) {
         const w = destination.water;
         const nextWater = DESTINATIONS[destination.index + 1]?.water ?? w;
         const blend = phase === "depart"
           ? smooth((t - DEPART_START) / (1 - DEPART_START))
           : 0;
-        pointerAmp += ((pointerX >= 0 ? 1 : 0) - pointerAmp) * clamp(dt * 4);
-        const calm = phase === "hold" && Math.abs(velocity) < 0.04 && pointerAmp < 0.02;
         const renderInterval = calm ? (mobile ? 66 : 50) : mobile ? 33 : 22;
-        if (now - lastWaterAt >= renderInterval) {
+        const shouldRender = calm
+          ? !waterSettled
+          : now - lastWaterAt >= renderInterval;
+        if (shouldRender) {
           lastWaterAt = now;
           water.render({
             time: now / 1000,
@@ -471,6 +524,7 @@ export default function KoiWorld() {
             quality: mobile ? 0.5 : 1,
           });
         }
+        waterSettled = calm;
       }
     };
 
@@ -486,6 +540,7 @@ export default function KoiWorld() {
     window.addEventListener("pointermove", onPointer, { passive: true });
     window.addEventListener("pointerleave", onPointerLeave);
     document.addEventListener("visibilitychange", onVisibility);
+    shell.addEventListener("click", onKoiLinkClick);
     mobileQuery.addEventListener("change", onMediaChange);
     frame = window.requestAnimationFrame(tick);
 
@@ -497,6 +552,7 @@ export default function KoiWorld() {
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener("pointerleave", onPointerLeave);
       document.removeEventListener("visibilitychange", onVisibility);
+      shell.removeEventListener("click", onKoiLinkClick);
       mobileQuery.removeEventListener("change", onMediaChange);
       for (const video of pool.values()) {
         video.pause();
@@ -511,10 +567,11 @@ export default function KoiWorld() {
       water?.dispose();
       shell.removeAttribute("data-koi-ready");
       delete shell.dataset.koiPhase;
+      delete shell.dataset.koiRest;
       for (const name of [
         "--koi-x", "--koi-y", "--koi-scale", "--koi-rotate", "--koi-blur",
         "--koi-opacity", "--koi-depth", "--koi-front", "--koi-surge",
-        "--koi-phase-t", "--koi-reveal", "--koi-hold", "--kw-journey",
+        "--koi-phase-t", "--koi-reveal", "--koi-hold",
       ]) {
         vars.style.removeProperty(name);
       }
