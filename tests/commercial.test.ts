@@ -141,6 +141,11 @@ test("the koi world leads through six destinations without hiding the business",
   // Koi Cave is present but never presented as something a visitor can obtain.
   assert.match(page, /Koi Cave/);
   assert.match(page, /Private build · not distributable/);
+  assert.doesNotMatch(
+    page,
+    /<Link\s+key=\{node\.title\}/,
+    "product cards that may cross a host rewrite must use full navigation",
+  );
 
   // The koi is composited into the page, not parked behind it.
   assert.match(styles, /mix-blend-mode: screen/);
