@@ -5,18 +5,12 @@ on:
     paths:
       - app/page.tsx
       - app/layout.tsx
-      - app/koi-scroll.css
-      - app/koi-depth.css
-      - app/koi-finished.css
-      - app/koi-wayfinding.css
-      - app/koi-navigation-clarity.css
-      - app/koi-navigation-final.css
-      - components/studio/ScrollKoiExperience.tsx
-      - components/studio/KoiNavigationMotion.tsx
-      - components/studio/KoiDepthPass.tsx
-      - public/brand/koi-scroll-single.mp4
-      - public/brand/koi-scroll-duo.mp4
-      - scripts/capture-koi-visuals.mjs
+      - app/koi-world.css
+      - components/koi/KoiWorld.tsx
+      - components/koi/water.ts
+      - lib/koi/journey.ts
+      - public/koi/**
+      - scripts/capture-koi-world.mjs
       - .github/workflows/koi-visual-smoke.yml
 
 permissions:
@@ -78,7 +72,7 @@ jobs:
             about:blank \
             > /tmp/koi-chrome.log 2>&1 &
           echo $! > /tmp/koi-chrome.pid
-          node scripts/capture-koi-visuals.mjs
+          node scripts/capture-koi-world.mjs
           test "$(find artifacts/koi-visuals -name '*.png' | wc -l)" -eq 6
 
       - name: Upload visual evidence
