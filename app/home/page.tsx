@@ -352,12 +352,15 @@ export default function DevHomePage() {
                   sources.
                 </span>
               </Link>
-              <a className="devroute__item" href={LINKS.email}>
-                <em>You&apos;d test a beta</em>
-                <strong>Ask for access</strong>
+              <a
+                className="devroute__item"
+                href="https://apps.apple.com/us/app/trendi-content-coach/id6776299336"
+              >
+                <em>You&apos;d try Trendi</em>
+                <strong>Get it on the App Store</strong>
                 <span>
-                  Trendi runs an invite-only TestFlight. Tell me what you make and I&apos;ll add
-                  you.
+                  Trendi: Content Coach is live — free, no account required. Type a messy
+                  thought, leave with words to say on camera.
                 </span>
               </a>
               <Link className="devroute__item" href="/resume">

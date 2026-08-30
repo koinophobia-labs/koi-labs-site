@@ -15,6 +15,7 @@ import TrendiMedia from "@/components/TrendiMedia";
 
 const inquiryHref =
   "mailto:koinophobia999@gmail.com?subject=Trendi%20inquiry&body=Hi%20Blake%2C%0A%0AI%27d%20like%20to%20ask%20about%20Trendi.%0A%0AMy%20question%3A%0A";
+const appStoreHref = "https://apps.apple.com/us/app/trendi-content-coach/id6776299336";
 
 export const metadata: Metadata = {
   title: "Trendi | Your Content Coach",
@@ -113,15 +114,15 @@ export default function TrendiPage() {
             start recording it.
           </p>
           <div className="trendiPage_actions">
-            <TrendiCtaLink id="trendi-hero-cta" className="trendiPage_primary" href={inquiryHref}>
-              Ask about Trendi <ArrowRight size={17} aria-hidden="true" />
+            <TrendiCtaLink id="trendi-hero-cta" className="trendiPage_primary" href={appStoreHref}>
+              Download on the App Store <ArrowRight size={17} aria-hidden="true" />
             </TrendiCtaLink>
             <a className="trendiPage_secondary" href="#real-product">
               Watch the real product <ArrowDown size={17} aria-hidden="true" />
             </a>
           </div>
           <p className="trendiPage_releaseNote">
-            The App Store release is in preparation. Email us with a Trendi question.
+            Trendi: Content Coach is live on the App Store — free, no account required.
           </p>
         </div>
         <div className="trendiPage_heroSide">

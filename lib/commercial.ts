@@ -198,10 +198,10 @@ export const products = [
   },
   {
     title: "Trendi",
-    status: "Internal Product · iPhone Release in Preparation",
+    status: "Shipped · Live on the App Store",
     audience: "Creators moving from idea to usable script",
-    body: "A focused creator workflow for shaping a rough thought into clear words to say on camera.",
-    capabilities: ["Structured creative workflow", "Responsive product UI", "User-state flow", "Product prototyping"],
+    body: "A focused creator workflow for shaping a rough thought into clear words to say on camera. Free on the App Store, no account required.",
+    capabilities: ["Structured creative workflow", "Responsive product UI", "User-state flow", "App Store release discipline"],
     href: "/trendi",
     cta: "Explore Trendi",
     image: "/trendi/trendi-final-output.jpg",
